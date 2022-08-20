@@ -9,11 +9,11 @@ import (
 type CLIArgumentsVersion struct {
 }
 
-func (C CLIArgumentsVersion) Mode() cli.Mode {
+func (a CLIArgumentsVersion) Mode() cli.Mode {
 	return cli.ModeVersion
 }
 
-func (C CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errors.New("Unknown argument: " + positionalArgs[0])
 	}
@@ -25,7 +25,7 @@ func (C CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.Argu
 	return nil
 }
 
-func (C CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
+func (a CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
 	switch ctx.Opt.Format {
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutput("{\"version\": \"" + consts.FFSCLIENT_VERSION + "\"}")

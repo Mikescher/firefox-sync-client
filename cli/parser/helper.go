@@ -27,8 +27,11 @@ func getVerb(v string) (cli.Verb, bool) {
 	case strings.ToLower(string(cli.ModeListCollections)):
 		return &impl.CLIArgumentsListCollections{}, true
 
-	case strings.ToLower(string(cli.ModeGetRecord)):
-		return &impl.CLIArgumentsGetRecord{}, true
+	case strings.ToLower(string(cli.ModeGetRawRecord)):
+		return &impl.CLIArgumentsGetRawRecord{}, true
+
+	case strings.ToLower(string(cli.ModeGetDecodedRecord)):
+		return &impl.CLIArgumentsGetDecodedRecord{}, true
 
 	case strings.ToLower(string(cli.ModeCreateRecord)):
 		return &impl.CLIArgumentsCreateRecord{}, true

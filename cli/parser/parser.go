@@ -4,6 +4,7 @@ import (
 	"errors"
 	"ffsyncclient/cli"
 	"ffsyncclient/cli/impl"
+	"ffsyncclient/consts"
 	"ffsyncclient/langext"
 	"os"
 	"strings"
@@ -12,7 +13,7 @@ import (
 func ParseCommandline() (cli.Verb, cli.Options) {
 	v, o, err := parseCommandlineInternal()
 	if err != nil {
-		return &impl.CLIArgumentsHelp{Extra: err.Error()}, cli.Options{}
+		return &impl.CLIArgumentsHelp{Extra: err.Error(), ExitCode: consts.ExitcodeCLIParse}, cli.Options{}
 	}
 	return v, o
 }
@@ -25,7 +26,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 	// Process special cases
 
 	if len(unprocessedArgs) == 0 {
-		return &impl.CLIArgumentsHelp{Extra: "ffsclient: missing arguments"}, cli.Options{}, nil
+		return &impl.CLIArgumentsHelp{Extra: "ffsclient: missing arguments", ExitCode: consts.ExitcodeNoArguments}, cli.Options{}, nil
 	}
 
 	if unprocessedArgs[0] == "-v" {
@@ -52,7 +53,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	verbArg, found := getVerb(verb)
 	if !found {
-		return nil, cli.Options{}, errors.New("Unknown verb: " + verb)
+		return nil, cli.Options{}, errors.New("Unknown command: " + verb)
 	}
 
 	positionalArguments := make([]string, 0)
@@ -131,6 +132,10 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if arg.Key == "help" && arg.Value == nil {
 			return &impl.CLIArgumentsHelp{Verb: langext.Ptr(verbArg.Mode())}, cli.Options{}, nil
+		}
+
+		if arg.Key == "version" && arg.Value == nil {
+			return &impl.CLIArgumentsVersion{}, cli.Options{}, nil
 		}
 
 		if (arg.Key == "v" || arg.Key == "verbose") && arg.Value == nil {
