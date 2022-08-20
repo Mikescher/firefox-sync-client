@@ -1,10 +1,15 @@
 package cli
 
+import (
+	"ffsyncclient/consts"
+)
+
 type Options struct {
 	Quiet          bool
 	Verbose        bool
 	Format         OutputFormat
 	ConfigFilePath string
+	ServerURL      string
 }
 
 func DefaultCLIOptions() Options {
@@ -13,5 +18,6 @@ func DefaultCLIOptions() Options {
 		Verbose:        false,
 		Format:         OutputFormatText,
 		ConfigFilePath: "~/.config/firefox-sync-client.secret",
+		ServerURL:      consts.ServerURLProduction,
 	}
 }

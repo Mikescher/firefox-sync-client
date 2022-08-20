@@ -2,8 +2,8 @@ package impl
 
 import "C"
 import (
-	"errors"
 	"ffsyncclient/cli"
+	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsHelp struct {
@@ -12,23 +12,23 @@ type CLIArgumentsHelp struct {
 	ExitCode int
 }
 
-func (a CLIArgumentsHelp) Mode() cli.Mode {
+func (a *CLIArgumentsHelp) Mode() cli.Mode {
 	return cli.ModeHelp
 }
 
-func (a CLIArgumentsHelp) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsHelp) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
-		return errors.New("Unknown argument: " + positionalArgs[0])
+		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
 	}
 
 	if len(optionArgs) > 0 {
-		return errors.New("Unknown argument: " + optionArgs[0].Key)
+		return errorx.InternalError.New("Unknown argument: " + optionArgs[0].Key)
 	}
 
 	return nil
 }
 
-func (a CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 	if a.Extra != "" {
 		ctx.PrintPrimaryOutput(a.Extra)
 		ctx.PrintPrimaryOutput("")
@@ -61,6 +61,7 @@ func (a CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("                                                # - 'json'")
 		ctx.PrintPrimaryOutput("                                                # - 'netscape'     (default firefox bookmarks format)")
 		ctx.PrintPrimaryOutput("                                                # - 'bookmarksxml' (custom XML bookmarks format)")
+		ctx.PrintPrimaryOutput("  --server <conf>, --server=<conf>            Specify the (authentication) server-url")
 		return a.ExitCode
 
 	} else {
@@ -81,7 +82,7 @@ func (a CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")
 
 		case cli.ModeLogin:
-			ctx.PrintPrimaryOutput("ffsclient login <login> <password>")
+			ctx.PrintPrimaryOutput("ffsclient login <email> <password>")
 			ctx.PrintPrimaryOutput("")
 			ctx.PrintPrimaryOutput("Login to FF-Sync account")
 			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")

@@ -1,11 +1,11 @@
 package parser
 
 import (
-	"errors"
 	"ffsyncclient/cli"
 	"ffsyncclient/cli/impl"
 	"ffsyncclient/consts"
 	"ffsyncclient/langext"
+	"github.com/joomcode/errorx"
 	"os"
 	"strings"
 )
@@ -43,7 +43,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 	}
 
 	if strings.HasPrefix(unprocessedArgs[0], "-") {
-		return nil, cli.Options{}, errors.New("Failed to parse commandline arguments") // no verb
+		return nil, cli.Options{}, errorx.InternalError.New("Failed to parse commandline arguments") // no verb
 	}
 
 	// Get verb (sub_routine)
@@ -53,7 +53,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	verbArg, found := getVerb(verb)
 	if !found {
-		return nil, cli.Options{}, errors.New("Unknown command: " + verb)
+		return nil, cli.Options{}, errorx.InternalError.New("Unknown command: " + verb)
 	}
 
 	positionalArguments := make([]string, 0)
@@ -68,7 +68,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if !strings.HasPrefix(arg, "-") {
 			if !positional {
-				return nil, cli.Options{}, errors.New("Unknown/Misplaced argument: " + arg)
+				return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
 			}
 			positionalArguments = append(positionalArguments, arg)
 			continue
@@ -85,7 +85,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 				val := arg[strings.Index(arg, "=")+1:]
 
 				if len(key) <= 1 {
-					return nil, cli.Options{}, errors.New("Unknown/Misplaced argument: " + arg)
+					return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
 				}
 
 				allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: key, Value: langext.Ptr(val)})
@@ -95,7 +95,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 				key := arg
 
 				if len(key) <= 1 {
-					return nil, cli.Options{}, errors.New("Unknown/Misplaced argument: " + arg)
+					return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
 				}
 
 				if len(unprocessedArgs) == 0 || strings.HasPrefix(unprocessedArgs[0], "-") {
@@ -118,7 +118,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 
 		} else {
-			return nil, cli.Options{}, errors.New("Unknown/Misplaced argument: " + arg)
+			return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
 		}
 	}
 
@@ -151,7 +151,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		if (arg.Key == "f" || arg.Key == "format") && arg.Value != nil {
 			opt.Format, found = cli.GetOutputFormat(*arg.Value)
 			if !found {
-				return nil, cli.Options{}, errors.New("Unknown format: " + *arg.Value)
+				return nil, cli.Options{}, errorx.InternalError.New("Unknown format: " + *arg.Value)
 			}
 			continue
 		}
@@ -161,12 +161,17 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if arg.Key == "server" && arg.Value != nil {
+			opt.ServerURL = *arg.Value
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 
 	err = verbArg.Init(positionalArguments, optionArguments)
 	if err != nil {
-		return nil, cli.Options{}, err
+		return nil, cli.Options{}, errorx.Decorate(err, "failed to init "+verbArg.Mode().String())
 	}
 
 	return verbArg, opt, nil
