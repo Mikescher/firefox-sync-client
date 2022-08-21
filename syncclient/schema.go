@@ -49,6 +49,10 @@ type hawkCredResponseSchema struct {
 
 type collectionsInfoResponseSchema map[string]float64
 
+type collectionsCountResponseSchema map[string]int
+
+type collectionsUsageResponseSchema map[string]float64
+
 type getRecordSchema struct {
 	ID       string  `json:"id"`
 	Modified float64 `json:"modified"`

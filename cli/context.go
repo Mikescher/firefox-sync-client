@@ -3,6 +3,8 @@ package cli
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
+	"encoding/xml"
 	"ffsyncclient/langext"
 	"fmt"
 	"github.com/joomcode/errorx"
@@ -22,10 +24,83 @@ func (c FFSContext) PrintPrimaryOutput(msg string) {
 		return
 	}
 
-	_, err := os.Stdout.WriteString(msg + "\n")
-	if err != nil {
-		panic("failed to write to stdout: " + err.Error())
+	writeStdout(msg + "\n")
+}
+
+func (c FFSContext) PrintPrimaryOutputJSON(data any) {
+	if c.Opt.Quiet {
+		return
 	}
+
+	msg, err := json.MarshalIndent(data, "", "  ")
+	if err != nil {
+		panic("failed to marshal output: " + err.Error())
+	}
+
+	writeStdout(string(msg) + "\n")
+}
+
+func (c FFSContext) PrintPrimaryOutputXML(data any) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	msg, err := xml.MarshalIndent(data, "", "  ")
+	if err != nil {
+		panic("failed to marshal output: " + err.Error())
+	}
+
+	writeStdout(string(msg) + "\n")
+}
+
+func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	if len(data) == 0 {
+		return
+	}
+
+	lens := make([]int, len(data[0]))
+	for _, row := range data {
+		for i, cell := range row {
+			lens[i] = langext.Max(lens[i], len(cell))
+		}
+	}
+
+	for _, row := range data {
+		for i, cell := range row {
+			lens[i] = langext.Max(lens[i], len(cell))
+		}
+	}
+
+	for rowidx, row := range data {
+
+		{
+			rowstr := ""
+			for colidx, cell := range row {
+				if colidx > 0 {
+					rowstr += "    "
+				}
+				rowstr += langext.StrPadRight(cell, " ", lens[colidx])
+			}
+			writeStdout(rowstr + "\n")
+		}
+
+		if rowidx == 0 && header {
+			rowstr := ""
+			for colidx := range row {
+				if colidx > 0 {
+					rowstr += "    "
+				}
+				rowstr += langext.StrPadRight("", "-", lens[colidx])
+			}
+			writeStdout(rowstr + "\n")
+		}
+
+	}
+
 }
 
 func (c FFSContext) PrintFatalMessage(msg string) {
@@ -33,10 +108,7 @@ func (c FFSContext) PrintFatalMessage(msg string) {
 		return
 	}
 
-	_, err := os.Stderr.WriteString(msg + "\n")
-	if err != nil {
-		panic("failed to write to stderr: " + err.Error())
-	}
+	writeStderr(msg + "\n")
 }
 
 func (c FFSContext) PrintFatalError(e error) {
@@ -44,10 +116,7 @@ func (c FFSContext) PrintFatalError(e error) {
 		return
 	}
 
-	_, err := os.Stderr.WriteString(e.Error() + "\n")
-	if err != nil {
-		panic("failed to write to stderr: " + err.Error())
-	}
+	writeStderr(e.Error() + "\n")
 }
 
 func (c FFSContext) PrintVerbose(msg string) {
@@ -55,16 +124,16 @@ func (c FFSContext) PrintVerbose(msg string) {
 		return
 	}
 
-	_, err := os.Stdout.WriteString(msg + "\n")
-	if err != nil {
-		panic("failed to write to stdout: " + err.Error())
-	}
+	writeStdout(msg + "\n")
 }
 
 func (c FFSContext) PrintVerboseKV(key string, vval any) {
 	if c.Opt.Quiet || !c.Opt.Verbose {
 		return
 	}
+
+	termlen := 236
+	keylen := 21
 
 	var val = ""
 	switch v := vval.(type) {
@@ -76,20 +145,14 @@ func (c FFSContext) PrintVerboseKV(key string, vval any) {
 		val = fmt.Sprintf("%v", v)
 	}
 
-	if len(val) > (236-16-4) || strings.Contains(val, "\n") {
+	if len(val) > (termlen-keylen-4) || strings.Contains(val, "\n") {
 
-		_, err := os.Stdout.WriteString(key + " :=\n" + val + "\n")
-		if err != nil {
-			panic("failed to write to stdout: " + err.Error())
-		}
+		writeStdout(key + " :=\n" + val + "\n")
 
 	} else {
 
-		padkey := langext.StrPadRight(key, " ", 16)
-		_, err := os.Stdout.WriteString(padkey + " := " + val + "\n")
-		if err != nil {
-			panic("failed to write to stdout: " + err.Error())
-		}
+		padkey := langext.StrPadRight(key, " ", keylen)
+		writeStdout(padkey + " := " + val + "\n")
 
 	}
 }
@@ -117,6 +180,20 @@ func (c FFSContext) AbsConfigFilePath() (string, error) {
 	}
 
 	return fp, nil
+}
+
+func writeStdout(msg string) {
+	_, err := os.Stdout.WriteString(msg)
+	if err != nil {
+		panic("failed to write to stdout: " + err.Error())
+	}
+}
+
+func writeStderr(msg string) {
+	_, err := os.Stderr.WriteString(msg)
+	if err != nil {
+		panic("failed to write to stdout: " + err.Error())
+	}
 }
 
 func NewContext(opt Options) *FFSContext {

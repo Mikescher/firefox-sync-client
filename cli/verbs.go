@@ -13,6 +13,7 @@ const (
 	ModeGetDecodedRecord Mode = "get"
 	ModeCreateRecord     Mode = "create"
 	ModeUpdateRecord     Mode = "update"
+	ModeGetQuota         Mode = "quota"
 )
 
 func (m Mode) String() string {

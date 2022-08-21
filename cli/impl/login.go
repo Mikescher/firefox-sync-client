@@ -45,7 +45,9 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 			if err := validateServiceName(a.ServiceName); err != nil {
 				return errorx.Decorate(err, "invalid service-name")
 			}
+			continue
 		}
+		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}
 
 	if len(optionArgs) > 0 {

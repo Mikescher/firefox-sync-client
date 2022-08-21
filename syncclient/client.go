@@ -11,10 +11,12 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/langext"
+	"ffsyncclient/models"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/joomcode/errorx"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"time"
@@ -167,8 +169,7 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session LoginSession) ([]byte,
 	return keyA, keyB, nil
 }
 
-func (f FxAClient) ListCollections(ctx *cli.FFSContext, session FFSyncSession) ([]any, error) {
-
+func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionInfo, error) {
 	binResp, err := f.request(ctx, session, "GET", "/info/collections", nil)
 	if err != nil {
 		return nil, errorx.Decorate(err, "API request failed")
@@ -180,8 +181,62 @@ func (f FxAClient) ListCollections(ctx *cli.FFSContext, session FFSyncSession) (
 		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	panic(resp) //TODO
+	result := make([]models.CollectionInfo, 0, len(resp))
+	for k, v := range resp {
+		sec, dec := math.Modf(v)
+		result = append(result, models.CollectionInfo{
+			Name:         k,
+			LastModified: time.Unix(int64(sec), int64(dec*(1e9))),
+		})
+	}
 
+	return result, nil
+}
+
+func (f FxAClient) GetCollectionsCounts(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionCount, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/collection_counts", nil)
+	if err != nil {
+		return nil, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp collectionsCountResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	result := make([]models.CollectionCount, 0, len(resp))
+	for k, v := range resp {
+		result = append(result, models.CollectionCount{
+			Name:  k,
+			Count: v,
+		})
+	}
+
+	return result, nil
+}
+
+func (f FxAClient) GetCollectionsUsage(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionUsage, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/collection_usage", nil)
+	if err != nil {
+		return nil, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp collectionsUsageResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	result := make([]models.CollectionUsage, 0, len(resp))
+	for k, v := range resp {
+		result = append(result, models.CollectionUsage{
+			Name:  k,
+			Usage: int64(v * 1024),
+		})
+	}
+
+	return result, nil
 }
 
 func (f FxAClient) AssertBrowserID(ctx *cli.FFSContext, session KeyedSession) (BrowserIdSession, error) {

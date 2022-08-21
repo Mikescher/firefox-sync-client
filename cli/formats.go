@@ -7,10 +7,11 @@ import (
 type OutputFormat string
 
 const (
-	OutputFormatText         OutputFormat = "text"
-	OutputFormatJson         OutputFormat = "json"
-	OutputFormatNetscape     OutputFormat = "netscape"
-	OutputFormatBookmarksXML OutputFormat = "bookmarksxml"
+	OutputFormatText     OutputFormat = "text"
+	OutputFormatJson     OutputFormat = "json"
+	OutputFormatNetscape OutputFormat = "netscape"
+	OutputFormatXML      OutputFormat = "xml"
+	OutputFormatTable    OutputFormat = "table"
 )
 
 func (f OutputFormat) String() string {
@@ -29,8 +30,11 @@ func GetOutputFormat(v string) (OutputFormat, bool) {
 	case strings.ToLower(string(OutputFormatNetscape)):
 		return OutputFormatNetscape, true
 
-	case strings.ToLower(string(OutputFormatBookmarksXML)):
-		return OutputFormatBookmarksXML, true
+	case strings.ToLower(string(OutputFormatXML)):
+		return OutputFormatXML, true
+
+	case strings.ToLower(string(OutputFormatTable)):
+		return OutputFormatTable, true
 
 	default:
 		return "", false

@@ -3,6 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
 )
 
@@ -22,20 +23,28 @@ func (a *CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.Arg
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
 	}
 
-	if len(optionArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + optionArgs[0].Key)
+	for _, arg := range optionArgs {
+		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil
 }
 
 func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
-	switch ctx.Opt.Format {
-	case cli.OutputFormatJson:
-		ctx.PrintPrimaryOutput("{\"version\": \"" + consts.FFSCLIENT_VERSION + "\"}")
-		return 0
+	type xml struct {
+		Version string   `xml:"Version,attr"`
+		XMLName struct{} `xml:"FirefoxSyncClient"`
+	}
+
+	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
+		return 0
+	case cli.OutputFormatJson:
+		ctx.PrintPrimaryOutputJSON(langext.H{"version": consts.FFSCLIENT_VERSION})
+		return 0
+	case cli.OutputFormatXML:
+		ctx.PrintPrimaryOutputXML(xml{Version: consts.FFSCLIENT_VERSION})
 		return 0
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())

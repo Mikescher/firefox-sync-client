@@ -39,6 +39,9 @@ func getVerb(v string) (cli.Verb, bool) {
 	case strings.ToLower(string(cli.ModeUpdateRecord)):
 		return impl.NewCLIArgumentsUpdateRecord(), true
 
+	case strings.ToLower(string(cli.ModeGetQuota)):
+		return impl.NewCLIArgumentsGetQuota(), true
+
 	}
 
 	return nil, false

@@ -8,6 +8,7 @@ import (
 	"github.com/joomcode/errorx"
 	"os"
 	"strings"
+	"time"
 )
 
 func ParseCommandline() (cli.Verb, cli.Options) {
@@ -112,10 +113,30 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		} else if strings.HasPrefix(arg, "-") {
 
-			for i := 1; i < len(arg); i++ {
-				allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: arg[i : i+1], Value: nil})
+			arg = arg[1:]
+
+			if len(arg) > 1 {
+				for i := 1; i < len(arg); i++ {
+					allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: arg[i : i+1], Value: nil})
+				}
+				continue
 			}
-			continue
+
+			key := arg
+
+			if key == "" {
+				return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+			}
+
+			if len(unprocessedArgs) == 0 || strings.HasPrefix(unprocessedArgs[0], "-") {
+				allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: key, Value: nil})
+				continue
+			} else {
+				val := unprocessedArgs[0]
+				unprocessedArgs = unprocessedArgs[1:]
+				allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: key, Value: langext.Ptr(val)})
+				continue
+			}
 
 		} else {
 			return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
@@ -149,10 +170,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		}
 
 		if (arg.Key == "f" || arg.Key == "format") && arg.Value != nil {
-			opt.Format, found = cli.GetOutputFormat(*arg.Value)
+			fmt, found := cli.GetOutputFormat(*arg.Value)
 			if !found {
 				return nil, cli.Options{}, errorx.InternalError.New("Unknown format: " + *arg.Value)
 			}
+			opt.Format = langext.Ptr(fmt)
 			continue
 		}
 
@@ -168,6 +190,20 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if arg.Key == "token-server" && arg.Value != nil {
 			opt.TokenServerURL = *arg.Value
+			continue
+		}
+
+		if arg.Key == "timezone" && arg.Value != nil {
+			loc, err := time.LoadLocation(*arg.Value)
+			if err != nil {
+				return nil, cli.Options{}, errorx.InternalError.New("Unknown timezone: " + *arg.Value)
+			}
+			opt.TimeZone = loc
+			continue
+		}
+
+		if arg.Key == "timeformat" && arg.Value != nil {
+			opt.TimeFormat = *arg.Value
 			continue
 		}
 
