@@ -11,6 +11,10 @@ import (
 type CLIArgumentsListCollections struct {
 }
 
+func NewCLIArgumentsListCollections() *CLIArgumentsListCollections {
+	return &CLIArgumentsListCollections{}
+}
+
 func (a *CLIArgumentsListCollections) Mode() cli.Mode {
 	return cli.ModeListCollections
 }
@@ -29,7 +33,8 @@ func (a *CLIArgumentsListCollections) Init(positionalArgs []string, optionArgs [
 
 func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[List collections]")
-	ctx.PrintVerbose("Server          := " + ctx.Opt.ServerURL)
+	ctx.PrintVerboseKV("Auth-Server", ctx.Opt.AuthServerURL)
+	ctx.PrintVerboseKV("Token-Server", ctx.Opt.TokenServerURL)
 
 	cfp, err := ctx.AbsConfigFilePath()
 	if err != nil {
@@ -43,24 +48,16 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeNoLogin
 	}
 
-	client := syncclient.NewFxAClient(ctx.Opt.ServerURL)
+	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
 
 	ctx.PrintVerbose("Load existing session from " + cfp)
-	sessionext, err := syncclient.LoadSession(ctx, cfp)
+	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
 	}
 
-	//TODO check_session_status
-
-	sessionHawk, err := client.HawkAuth(ctx, sessionext)
-	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
-	}
-
-	_, err = client.ListCollections(ctx, sessionHawk)
+	collections, err := client.ListCollections(ctx, session)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

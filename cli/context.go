@@ -2,6 +2,9 @@ package cli
 
 import (
 	"context"
+	"encoding/hex"
+	"ffsyncclient/langext"
+	"fmt"
 	"github.com/joomcode/errorx"
 	"os"
 	"os/user"
@@ -55,6 +58,39 @@ func (c FFSContext) PrintVerbose(msg string) {
 	_, err := os.Stdout.WriteString(msg + "\n")
 	if err != nil {
 		panic("failed to write to stdout: " + err.Error())
+	}
+}
+
+func (c FFSContext) PrintVerboseKV(key string, vval any) {
+	if c.Opt.Quiet || !c.Opt.Verbose {
+		return
+	}
+
+	var val = ""
+	switch v := vval.(type) {
+	case []byte:
+		val = hex.EncodeToString(v)
+	case string:
+		val = v
+	default:
+		val = fmt.Sprintf("%v", v)
+	}
+
+	if len(val) > (236-16-4) || strings.Contains(val, "\n") {
+
+		_, err := os.Stdout.WriteString(key + " :=\n" + val + "\n")
+		if err != nil {
+			panic("failed to write to stdout: " + err.Error())
+		}
+
+	} else {
+
+		padkey := langext.StrPadRight(key, " ", 16)
+		_, err := os.Stdout.WriteString(padkey + " := " + val + "\n")
+		if err != nil {
+			panic("failed to write to stdout: " + err.Error())
+		}
+
 	}
 }
 

@@ -2,6 +2,8 @@ package syncclient
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -68,4 +70,38 @@ func verifyHMAC(key []byte, data []byte, insig []byte) bool {
 	rsig := h.Sum(nil)
 
 	return bytes.Equal(rsig, insig)
+}
+
+func decryptPayload(rawciphertext string, ciphertext []byte, iv []byte, hmacval []byte, key KeyBundle) ([]byte, error) {
+
+	hmacBuilder := hmac.New(sha256.New, key.HMACKey)
+	hmacBuilder.Write([]byte(rawciphertext))
+	expectedHMAC := hmacBuilder.Sum(nil)
+
+	if !bytes.Equal(hmacval, expectedHMAC) {
+		return nil, errorx.InternalError.New("HMAC mismatch")
+	}
+
+	block, err := aes.NewCipher(key.EncryptionKey)
+	if err != nil {
+		return nil, errorx.Decorate(err, "cannot create aes cipher")
+	}
+
+	plaintext := make([]byte, len(ciphertext))
+	mode := cipher.NewCBCDecrypter(block, iv)
+	mode.CryptBlocks(plaintext, ciphertext)
+
+	plaintext = bytes.Trim(plaintext, " \n\t")
+
+	eot := bytes.LastIndexByte(plaintext, '}')
+
+	plaintext = plaintext[:eot+1]
+
+	return plaintext, nil
+}
+
+func PKCS7Unpad(src []byte) []byte {
+	length := len(src)
+	unpadding := int(src[length-1])
+	return src[:(length - unpadding)]
 }

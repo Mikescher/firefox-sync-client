@@ -9,7 +9,9 @@ type Options struct {
 	Verbose        bool
 	Format         OutputFormat
 	ConfigFilePath string
-	ServerURL      string
+	AuthServerURL  string
+	TokenServerURL string
+	OutputColor    *bool
 }
 
 func DefaultCLIOptions() Options {
@@ -18,6 +20,8 @@ func DefaultCLIOptions() Options {
 		Verbose:        false,
 		Format:         OutputFormatText,
 		ConfigFilePath: "~/.config/firefox-sync-client.secret",
-		ServerURL:      consts.ServerURLProduction,
+		AuthServerURL:  consts.ServerURLProduction,
+		TokenServerURL: consts.TokenServerURL,
+		OutputColor:    nil,
 	}
 }

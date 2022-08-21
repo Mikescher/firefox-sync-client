@@ -161,8 +161,33 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
-		if arg.Key == "server" && arg.Value != nil {
-			opt.ServerURL = *arg.Value
+		if arg.Key == "auth-server" && arg.Value != nil {
+			opt.AuthServerURL = *arg.Value
+			continue
+		}
+
+		if arg.Key == "token-server" && arg.Value != nil {
+			opt.TokenServerURL = *arg.Value
+			continue
+		}
+
+		if arg.Key == "color" && arg.Value == nil {
+			opt.OutputColor = langext.Ptr(true)
+			continue
+		}
+
+		if arg.Key == "color" && arg.Value != nil && (strings.ToLower(*arg.Value) == "true" || *arg.Value == "1") {
+			opt.OutputColor = langext.Ptr(true)
+			continue
+		}
+
+		if arg.Key == "color" && arg.Value != nil && (strings.ToLower(*arg.Value) == "false" || *arg.Value == "0") {
+			opt.OutputColor = langext.Ptr(false)
+			continue
+		}
+
+		if arg.Key == "no-color" && arg.Value == nil {
+			opt.OutputColor = langext.Ptr(false)
 			continue
 		}
 

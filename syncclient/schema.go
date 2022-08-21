@@ -47,4 +47,22 @@ type hawkCredResponseSchema struct {
 	NodeType      string `json:"node_type"`
 }
 
-type collectionsInfoResponse map[string]float64
+type collectionsInfoResponseSchema map[string]float64
+
+type getRecordSchema struct {
+	ID       string  `json:"id"`
+	Modified float64 `json:"modified"`
+	Payload  string  `json:"payload"`
+}
+
+type payloadSchema struct {
+	Ciphertext string `json:"ciphertext"`
+	IV         string `json:"IV"`
+	HMAC       string `json:"hmac"`
+}
+
+type cryptoKeysSchema struct {
+	Default     []string            `json:"default"`
+	Collections map[string][]string `json:"collections"`
+	Collection  string              `json:"collection"`
+}

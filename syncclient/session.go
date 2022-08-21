@@ -1,7 +1,6 @@
 package syncclient
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -11,25 +10,35 @@ import (
 	"time"
 )
 
-type FxASession struct {
-	URL               string
-	Email             string
-	StretchPassword   []byte
-	UserId            string
-	SessionToken      []byte
-	KeyFetchToken     []byte
-	SessionUpdateTime time.Time
+type LoginSession struct {
+	URL             string
+	Email           string
+	StretchPassword []byte
+	UserId          string
+	SessionToken    []byte
+	KeyFetchToken   []byte
 }
 
 type FxAKeys struct {
-	KeyA           []byte
-	KeyB           []byte
-	KeysUpdateTime time.Time
+	KeyA []byte
+	KeyB []byte
 }
 
-type FxASessionExt struct {
-	FxASession
+type KeyedSession struct {
+	LoginSession
 	FxAKeys
+}
+
+type FxABrowserID struct {
+	BrowserID    string
+	CertTime     time.Time
+	CertDuration time.Duration
+}
+
+type BrowserIdSession struct {
+	LoginSession
+	FxAKeys
+	FxABrowserID
 }
 
 type HawkCredentials struct {
@@ -38,41 +47,124 @@ type HawkCredentials struct {
 	APIEndpoint       string
 	HawkDuration      int64
 	HawkHashAlgorithm string
-	HawkUpdateTime    time.Time
 }
 
 type HawkSession struct {
-	FxASession
+	LoginSession
 	FxAKeys
+	FxABrowserID
 	HawkCredentials
 }
 
-type sessionJson struct {
-	URL               string `json:"u"`
-	Email             string `json:"em"`
-	StretchPassword   string `json:"sp"`
-	UserId            string `json:"uid"`
-	SessionToken      string `json:"st"`
-	KeyFetchToken     string `json:"kft"`
-	SessionUpdateTime string `json:"sut"`
-	KeyA              string `json:"ka"`
-	KeyB              string `json:"kb"`
-	KeysUpdateTime    string `json:"kut"`
+type CryptoKeys struct {
+	Keys map[string]KeyBundle
 }
 
-func (s FxASession) Extend(ka []byte, kb []byte) FxASessionExt {
-	return FxASessionExt{
-		FxASession: s,
+type CryptoSession struct {
+	LoginSession
+	FxAKeys
+	FxABrowserID
+	HawkCredentials
+	CryptoKeys
+}
+
+type FFSyncSession struct {
+	SessionToken      []byte
+	KeyB              []byte
+	UserId            string
+	APIEndpoint       string
+	HawkID            string
+	HawkKey           string
+	HawkHashAlgorithm string
+	HawkTimeout       time.Time
+	BulkKeys          map[string]KeyBundle
+}
+
+type sessionHawkJson struct {
+	APIEndpoint   string              `json:"apiEndpoint"`
+	ID            string              `json:"id"`
+	Key           string              `json:"key"`
+	HashAlgorithm string              `json:"algorithm"`
+	Timeout       int64               `json:"timeout"`
+	BulkKeys      map[string][]string `json:"bulkKeys"`
+}
+
+type sessionJson struct {
+	SessionToken string          `json:"sessionToken"`
+	KeyB         string          `json:"keyB"`
+	UserId       string          `json:"userID"`
+	Hawk         sessionHawkJson `json:"hawk"`
+}
+
+func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
+	return KeyedSession{
+		LoginSession: s,
 		FxAKeys: FxAKeys{
-			KeyA:           ka,
-			KeyB:           kb,
-			KeysUpdateTime: time.Now(),
+			KeyA: ka,
+			KeyB: kb,
 		},
 	}
 }
 
-func (e FxASessionExt) Save(path string) error {
+func (e KeyedSession) Extend(bid string, t0 time.Time, dur time.Duration) BrowserIdSession {
+	return BrowserIdSession{
+		LoginSession: e.LoginSession,
+		FxAKeys:      e.FxAKeys,
+		FxABrowserID: FxABrowserID{
+			BrowserID:    bid,
+			CertTime:     t0,
+			CertDuration: dur,
+		},
+	}
+}
 
+func (e BrowserIdSession) Extend(cred HawkCredentials) HawkSession {
+	return HawkSession{
+		LoginSession:    e.LoginSession,
+		FxAKeys:         e.FxAKeys,
+		FxABrowserID:    e.FxABrowserID,
+		HawkCredentials: cred,
+	}
+}
+
+func (e HawkSession) Extend(keys CryptoKeys) CryptoSession {
+	return CryptoSession{
+		LoginSession:    e.LoginSession,
+		FxAKeys:         e.FxAKeys,
+		FxABrowserID:    e.FxABrowserID,
+		HawkCredentials: e.HawkCredentials,
+		CryptoKeys:      keys,
+	}
+}
+
+func (e HawkSession) ToKeylessSession() FFSyncSession {
+	return FFSyncSession{
+		SessionToken:      e.SessionToken,
+		KeyB:              e.KeyB,
+		UserId:            e.UserId,
+		APIEndpoint:       e.APIEndpoint,
+		HawkID:            e.HawkID,
+		HawkKey:           e.HawkKey,
+		HawkHashAlgorithm: e.HawkHashAlgorithm,
+		HawkTimeout:       e.CertTime.Add(e.CertDuration),
+	}
+}
+
+func (s CryptoSession) Reduce() FFSyncSession {
+	return FFSyncSession{
+		SessionToken:      s.SessionToken,
+		KeyB:              s.KeyB,
+		UserId:            s.UserId,
+		APIEndpoint:       s.APIEndpoint,
+		HawkID:            s.HawkID,
+		HawkKey:           s.HawkKey,
+		HawkHashAlgorithm: s.HawkHashAlgorithm,
+		HawkTimeout:       s.CertTime.Add(s.CertDuration),
+		BulkKeys:          s.Keys,
+	}
+}
+
+func (s FFSyncSession) Save(path string) error {
 	dir := filepath.Dir(path)
 
 	err := os.MkdirAll(dir, 0644)
@@ -81,19 +173,23 @@ func (e FxASessionExt) Save(path string) error {
 	}
 
 	sj := sessionJson{
-		URL:               e.URL,
-		Email:             e.Email,
-		StretchPassword:   hex.EncodeToString(e.StretchPassword),
-		UserId:            e.UserId,
-		SessionToken:      hex.EncodeToString(e.SessionToken),
-		KeyFetchToken:     hex.EncodeToString(e.KeyFetchToken),
-		SessionUpdateTime: e.SessionUpdateTime.UTC().Format(time.RFC3339Nano),
-		KeyA:              hex.EncodeToString(e.KeyA),
-		KeyB:              hex.EncodeToString(e.KeyB),
-		KeysUpdateTime:    e.KeysUpdateTime.UTC().Format(time.RFC3339Nano),
+		SessionToken: hex.EncodeToString(s.SessionToken),
+		KeyB:         hex.EncodeToString(s.KeyB),
+		UserId:       s.UserId,
+		Hawk: sessionHawkJson{
+			APIEndpoint:   s.APIEndpoint,
+			ID:            s.HawkID,
+			Key:           s.HawkKey,
+			HashAlgorithm: s.HawkHashAlgorithm,
+			Timeout:       s.HawkTimeout.UnixMicro(),
+			BulkKeys:      make(map[string][]string, len(s.BulkKeys)),
+		},
+	}
+	for k, v := range s.BulkKeys {
+		sj.Hawk.BulkKeys[k] = []string{hex.EncodeToString(v.EncryptionKey), hex.EncodeToString(v.HMACKey)}
 	}
 
-	dat, err := json.Marshal(sj)
+	dat, err := json.MarshalIndent(sj, "", "  ")
 	if err != nil {
 		return errorx.Decorate(err, "failed to marshal json")
 	}
@@ -106,89 +202,47 @@ func (e FxASessionExt) Save(path string) error {
 	return nil
 }
 
-func (e FxASessionExt) State() string {
-	sha := sha256.New()
-	sha.Write(e.KeyB)
-	return hex.EncodeToString(sha.Sum(nil)[0:16])
-}
-
-func (e FxASessionExt) Extend(cred HawkCredentials) HawkSession {
-	return HawkSession{
-		FxASession:      e.FxASession,
-		FxAKeys:         e.FxAKeys,
-		HawkCredentials: cred,
-	}
-}
-
-func LoadSession(ctx *cli.FFSContext, path string) (FxASessionExt, error) {
+func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 
 	dat, err := os.ReadFile(path)
 	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to open configfile")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to open configfile")
 	}
 
 	var sj sessionJson
 	err = json.Unmarshal(dat, &sj)
 	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file")
 	}
 
-	stretchPW, err := hex.DecodeString(sj.StretchPassword)
+	sessionToken, err := hex.DecodeString(sj.SessionToken)
 	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (StretchPassword)")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (SessionToken)")
 	}
 
-	sessionUpdateTime, err := time.Parse(time.RFC3339Nano, sj.SessionUpdateTime)
+	keyb, err := hex.DecodeString(sj.KeyB)
 	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (SessionUpdateTime)")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (KeyB)")
 	}
 
-	keyA, err := hex.DecodeString(sj.KeyA)
-	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (KeyA)")
+	bulkkeys := make(map[string]KeyBundle, len(sj.Hawk.BulkKeys))
+	for k, v := range sj.Hawk.BulkKeys {
+		kb, err := keyBundleFromB64Array(v)
+		if err != nil {
+			return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (BulkKeys)")
+		}
+		bulkkeys[k] = kb
 	}
 
-	keyB, err := hex.DecodeString(sj.KeyB)
-	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (KeyB)")
-	}
-
-	keysUpdateTime, err := time.Parse(time.RFC3339Nano, sj.KeysUpdateTime)
-	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (KeysUpdateTime)")
-	}
-
-	st, err := hex.DecodeString(sj.SessionToken)
-	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (SessionToken)")
-	}
-
-	kft, err := hex.DecodeString(sj.KeyFetchToken)
-	if err != nil {
-		return FxASessionExt{}, errorx.Decorate(err, "failed to unmarshal config-file (KeyFetchToken)")
-	}
-
-	session := FxASessionExt{
-		FxASession: FxASession{
-			URL:               sj.URL,
-			Email:             sj.Email,
-			StretchPassword:   stretchPW,
-			UserId:            sj.UserId,
-			SessionToken:      st,
-			KeyFetchToken:     kft,
-			SessionUpdateTime: sessionUpdateTime,
-		},
-		FxAKeys: FxAKeys{
-			KeyA:           keyA,
-			KeyB:           keyB,
-			KeysUpdateTime: keysUpdateTime,
-		},
-	}
-
-	if session.URL != ctx.Opt.ServerURL {
-		return FxASessionExt{}, errorx.Decorate(err, "config-file references a different server-url")
-	}
-
-	return session, nil
-
+	return FFSyncSession{
+		SessionToken:      sessionToken,
+		KeyB:              keyb,
+		UserId:            sj.UserId,
+		APIEndpoint:       sj.Hawk.APIEndpoint,
+		HawkID:            sj.Hawk.ID,
+		HawkKey:           sj.Hawk.Key,
+		HawkHashAlgorithm: sj.Hawk.HashAlgorithm,
+		HawkTimeout:       time.UnixMicro(sj.Hawk.Timeout),
+		BulkKeys:          bulkkeys,
+	}, nil
 }

@@ -5,6 +5,10 @@ import "ffsyncclient/cli"
 type CLIArgumentsUpdateRecord struct {
 }
 
+func NewCLIArgumentsUpdateRecord() *CLIArgumentsUpdateRecord {
+	return &CLIArgumentsUpdateRecord{}
+}
+
 func (a *CLIArgumentsUpdateRecord) Mode() cli.Mode {
 	return cli.ModeUpdateRecord
 }

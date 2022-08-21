@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"crypto/dsa"
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -14,6 +16,7 @@ import (
 	"github.com/joomcode/errorx"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -31,17 +34,17 @@ func NewFxAClient(serverurl string) *FxAClient {
 	}
 }
 
-func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (FxASession, error) {
+func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, serviceName string) (LoginSession, error) {
 	stretchpwd := stretchPassword(email, password)
 
-	ctx.PrintVerbose("StretchPW       := " + hex.EncodeToString(stretchpwd))
+	ctx.PrintVerboseKV("StretchPW", stretchpwd)
 
 	authPW, err := deriveKey(stretchpwd, "authPW", 32)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to derive key")
+		return LoginSession{}, errorx.Decorate(err, "failed to derive key")
 	}
 
-	ctx.PrintVerbose("AuthPW          := " + hex.EncodeToString(authPW))
+	ctx.PrintVerboseKV("AuthPW", authPW)
 
 	body := loginRequestSchema{
 		Email:  email,
@@ -51,38 +54,36 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Fx
 
 	bytesBody, err := json.Marshal(body)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to marshal body")
+		return LoginSession{}, errorx.Decorate(err, "failed to marshal body")
 	}
 
-	url := f.authURL + "/account/login?keys=true"
+	requestURL := f.authURL + "/account/login?keys=true&service=" + url.QueryEscape(serviceName)
 
-	//TODO [unblockCode, verificationMethod] (2FA ?)
-
-	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(bytesBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(bytesBody))
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to create request")
+		return LoginSession{}, errorx.Decorate(err, "failed to create request")
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("User-Agent", "firefox-sync-client/"+consts.FFSCLIENT_VERSION)
 	req.Header.Add("Accept", "application/json")
 
-	ctx.PrintVerbose("Request session from " + url)
+	ctx.PrintVerbose("Request session from " + requestURL)
 
 	rawResp, err := f.client.Do(req)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to do request")
+		return LoginSession{}, errorx.Decorate(err, "failed to do request")
 	}
 
 	respBodyRaw, err := io.ReadAll(rawResp.Body)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to read response-body request")
+		return LoginSession{}, errorx.Decorate(err, "failed to read response-body request")
 	}
 
 	//TODO statuscode [429, 500, 503] means retry-after
 
 	if rawResp.StatusCode != 200 {
-		return FxASession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
 	}
 
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
@@ -91,35 +92,34 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Fx
 	var resp loginResponseSchema
 	err = json.Unmarshal(respBodyRaw, &resp)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+		return LoginSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
 	}
 
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to read KeyFetchToken: "+resp.KeyFetchToken)
+		return LoginSession{}, errorx.Decorate(err, "failed to read KeyFetchToken: "+resp.KeyFetchToken)
 	}
 
 	st, err := hex.DecodeString(resp.SessionToken)
 	if err != nil {
-		return FxASession{}, errorx.Decorate(err, "failed to read SessionToken: "+resp.SessionToken)
+		return LoginSession{}, errorx.Decorate(err, "failed to read SessionToken: "+resp.SessionToken)
 	}
 
-	ctx.PrintVerbose("UserID          := " + resp.UserID)
-	ctx.PrintVerbose("SessionToken    := " + hex.EncodeToString(st))
-	ctx.PrintVerbose("KeyFetchToken   := " + hex.EncodeToString(kft))
+	ctx.PrintVerboseKV("UserID", resp.UserID)
+	ctx.PrintVerboseKV("SessionToken", st)
+	ctx.PrintVerboseKV("KeyFetchToken", kft)
 
-	return FxASession{
-		URL:               f.authURL,
-		Email:             email,
-		StretchPassword:   stretchpwd,
-		UserId:            resp.UserID,
-		SessionToken:      st,
-		KeyFetchToken:     kft,
-		SessionUpdateTime: time.Now(),
+	return LoginSession{
+		URL:             f.authURL,
+		Email:           email,
+		StretchPassword: stretchpwd,
+		UserId:          resp.UserID,
+		SessionToken:    st,
+		KeyFetchToken:   kft,
 	}, nil
 }
 
-func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session FxASession) ([]byte, []byte, error) {
+func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session LoginSession) ([]byte, []byte, error) {
 
 	ctx.PrintVerbose("Request keys from " + "/account/keys")
 
@@ -134,7 +134,7 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session FxASession) ([]byte, [
 		return nil, nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("Bundle          := %v", resp.Bundle))
+	ctx.PrintVerboseKV("Bundle", resp.Bundle)
 
 	bundle, err := hex.DecodeString(resp.Bundle)
 	if err != nil {
@@ -146,14 +146,14 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session FxASession) ([]byte, [
 		return nil, nil, errorx.Decorate(err, "failed to unbundle")
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("Keys<unbundled> := %v", hex.EncodeToString(keys)))
+	ctx.PrintVerboseKV("Keys<unbundled>", keys)
 
 	unwrapKey, err := deriveKey(session.StretchPassword, "unwrapBkey", 32)
 	if err != nil {
 		return nil, nil, errorx.Decorate(err, "failed to derive-key")
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("Keys<unwrapped> := %v", hex.EncodeToString(unwrapKey)))
+	ctx.PrintVerboseKV("Keys<unwrapped>", unwrapKey)
 
 	kLow := keys[:32]
 	kHigh := keys[32:]
@@ -167,14 +167,14 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session FxASession) ([]byte, [
 	return keyA, keyB, nil
 }
 
-func (f FxAClient) ListCollections(ctx *cli.FFSContext, session HawkSession) ([]any, error) {
+func (f FxAClient) ListCollections(ctx *cli.FFSContext, session FFSyncSession) ([]any, error) {
 
 	binResp, err := f.request(ctx, session, "GET", "/info/collections", nil)
 	if err != nil {
 		return nil, errorx.Decorate(err, "API request failed")
 	}
 
-	var resp collectionsInfoResponse
+	var resp collectionsInfoResponseSchema
 	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
@@ -184,21 +184,29 @@ func (f FxAClient) ListCollections(ctx *cli.FFSContext, session HawkSession) ([]
 
 }
 
-func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session FxASessionExt) (HawkSession, error) {
-	ctx.PrintVerbose("Authenticate HAWK")
+func (f FxAClient) AssertBrowserID(ctx *cli.FFSContext, session KeyedSession) (BrowserIdSession, error) {
+	ctx.PrintVerbose("Create & Sign Certificate")
 
-	bid, t0, err := f.getBrowserIDAssertion(ctx, session)
+	bid, t0, dur, err := f.getBrowserIDAssertion(ctx, session)
 	if err != nil {
-		return HawkSession{}, errorx.Decorate(err, "Failed to assert BID")
+		return BrowserIdSession{}, errorx.Decorate(err, "Failed to assert BID")
 	}
 
-	ctx.PrintVerbose("BID-Assertion   := " + bid)
+	ctx.PrintVerboseKV("BID-Assertion", bid)
 
-	sessionState := session.State()
+	return session.Extend(bid, t0, dur), nil
+}
 
-	ctx.PrintVerbose("Session-State   := " + sessionState)
+func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (HawkSession, error) {
+	ctx.PrintVerbose("Authenticate HAWK")
 
-	cred, err := f.getHawkCredentials(ctx, t0, bid, sessionState)
+	sha := sha256.New()
+	sha.Write(session.KeyB)
+	sessionState := hex.EncodeToString(sha.Sum(nil)[0:16])
+
+	ctx.PrintVerboseKV("Session-State", sessionState)
+
+	cred, err := f.getHawkCredentials(ctx, session.BrowserID, sessionState)
 	if err != nil {
 		return HawkSession{}, errorx.Decorate(err, "Failed to get hawk credentials")
 	}
@@ -206,12 +214,102 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session FxASessionExt) (HawkSes
 	return session.Extend(cred), nil
 }
 
-func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session FxASessionExt) (string, time.Time, error) {
+func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (CryptoSession, error) {
+	ctx.PrintVerbose("Get crypto/keys from storage")
+
+	syncKeys, err := keyBundleFromMasterKey(session.KeyB, "identity.mozilla.com/picl/v1/oldsync")
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "Failed to generate syncKeys")
+	}
+
+	ctx.PrintVerboseKV("syncKeys.EncryptionKey", syncKeys.EncryptionKey)
+	ctx.PrintVerboseKV("syncKeys.HMACKey", syncKeys.HMACKey)
+
+	binResp, err := f.request(ctx, session.ToKeylessSession(), "GET", "/storage/crypto/keys", nil)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp getRecordSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	ctx.PrintVerboseKV("record.ID", resp.ID)
+	ctx.PrintVerboseKV("record.Modified", resp.Modified)
+	ctx.PrintVerboseKV("record.Payload", resp.Payload)
+
+	var payload payloadSchema
+	err = json.Unmarshal([]byte(resp.Payload), &payload)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal payload:\n"+resp.Payload)
+	}
+
+	ctx.PrintVerboseKV("payload.IV", payload.IV)
+	ctx.PrintVerboseKV("payload.HMAC", payload.HMAC)
+	ctx.PrintVerboseKV("payload.Ciphertext", payload.Ciphertext)
+
+	ciphertext, err := base64.StdEncoding.DecodeString(payload.Ciphertext)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to b64-decode payload.ciphertext")
+	}
+
+	iv, err := base64.StdEncoding.DecodeString(payload.IV)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to b64-decode payload.iv")
+	}
+
+	hmac, err := hex.DecodeString(payload.HMAC)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode payload.hmac")
+	}
+
+	dplBin, err := decryptPayload(payload.Ciphertext, ciphertext, iv, hmac, syncKeys)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to decrypt payload")
+	}
+
+	ctx.PrintVerboseKV("payload<decrypted>", string(dplBin))
+
+	var cryptoKeys cryptoKeysSchema
+	err = json.Unmarshal(dplBin, &cryptoKeys)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal cryptoKeys:\n"+resp.Payload)
+	}
+
+	result := CryptoKeys{Keys: make(map[string]KeyBundle, len(cryptoKeys.Collections)+1)}
+
+	result.Keys[""], err = keyBundleFromB64Array(cryptoKeys.Default)
+	if err != nil {
+		return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode cryptokeys.default")
+	}
+
+	for k, v := range cryptoKeys.Collections {
+		result.Keys[k], err = keyBundleFromB64Array(v)
+		if err != nil {
+			return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode cryptokeys.default")
+		}
+	}
+
+	ctx.PrintVerboseKV("bulkKeys.0", cryptoKeys.Default[0])
+	ctx.PrintVerboseKV("bulkKeys.1", cryptoKeys.Default[1])
+	for k, v := range cryptoKeys.Collections {
+		ctx.PrintVerboseKV("bulkKeys."+k+".0", v[0])
+		ctx.PrintVerboseKV("bulkKeys."+k+".1", v[1])
+	}
+
+	return session.Extend(result), nil
+}
+
+func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session KeyedSession) (string, time.Time, time.Duration, error) {
+
+	duration := time.Second * consts.DefaultBIDAssertionDuration
 
 	params := dsa.Parameters{}
 	err := dsa.GenerateParameters(&params, rand.Reader, dsa.L1024N160)
 	if err != nil {
-		return "", time.Time{}, errorx.Decorate(err, "Failed to generate DSA params")
+		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to generate DSA params")
 	}
 
 	var privateKey dsa.PrivateKey
@@ -219,7 +317,7 @@ func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session FxASession
 
 	err = dsa.GenerateKey(&privateKey, rand.Reader)
 	if err != nil {
-		return "", time.Time{}, errorx.Decorate(err, "Failed to generate DSA key-pair")
+		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to generate DSA key-pair")
 	}
 
 	body := signCertRequestSchema{
@@ -230,42 +328,44 @@ func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session FxASession
 			G:         privateKey.G.Text(16),
 			Y:         privateKey.Y.Text(16),
 		},
-		Duration: consts.DefaultBIDAssertionDuration * 1000,
+		Duration: duration.Milliseconds(),
 	}
 
 	ctx.PrintVerbose("Sign new certificate via " + "/certificate/sign")
 
 	binResp, _, err := f.requestWithHawkToken(ctx, "POST", "/certificate/sign", body, session.SessionToken, "sessionToken")
 	if err != nil {
-		return "", time.Time{}, errorx.Decorate(err, "Failed to sign cert")
+		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to sign cert")
 	}
 
 	var resp signCertResponseSchema
 	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
-		return "", time.Time{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+		return "", time.Time{}, 0, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("Cert :=\n%v", resp.Certificate))
+	ctx.PrintVerboseKV("Certificate", resp.Certificate)
 
 	t0 := time.Now()
-	exp := t0.UnixMilli() + consts.DefaultBIDAssertionDuration*1000
+	exp := t0.UnixMilli() + duration.Milliseconds()
 
 	token := jwt.NewWithClaims(&SigningMethodDS128{}, jwt.MapClaims{
 		"exp": exp,
-		"aud": consts.TokenServerURL,
+		"aud": ctx.Opt.TokenServerURL,
 	})
 
 	assertion, err := token.SignedString(&privateKey)
 	if err != nil {
-		return "", time.Time{}, errorx.Decorate(err, "failed to generate JWT")
+		return "", time.Time{}, 0, errorx.Decorate(err, "failed to generate JWT")
 	}
 
-	return resp.Certificate + "~" + assertion, t0, nil
+	ctx.PrintVerboseKV("Assertion:JWT", assertion)
+
+	return resp.Certificate + "~" + assertion, t0, duration, nil
 }
 
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
-	url := f.authURL + relurl
+	requestURL := f.authURL + relurl
 
 	strBody := ""
 	var bodyReader io.Reader = nil
@@ -278,7 +378,7 @@ func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relu
 		bodyReader = bytes.NewReader(bytesBody)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
 	if err != nil {
 		return nil, nil, errorx.Decorate(err, "failed to create request")
 	}
@@ -295,8 +395,8 @@ func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relu
 		return nil, nil, errorx.Decorate(err, "failed to create hawk-auth")
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-Auth-Token := %v", hawkAuth))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-Bundle-Key := %v", hex.EncodeToString(hawkBundleKey)))
+	ctx.PrintVerboseKV("HAWK-Auth-Token", hawkAuth)
+	ctx.PrintVerboseKV("HAWK-Bundle-Key", hawkBundleKey)
 
 	req.Header.Add("Authorization", hawkAuth)
 
@@ -324,10 +424,10 @@ func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relu
 	return respBodyRaw, hawkBundleKey, nil
 }
 
-func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, t0 time.Time, bid string, clientState string) (HawkCredentials, error) {
+func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, bid string, clientState string) (HawkCredentials, error) {
 	auth := "BrowserID " + bid
 
-	req, err := http.NewRequestWithContext(ctx, "GET", consts.TokenServerURL+"/1.0/sync/1.5", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", ctx.Opt.TokenServerURL+"/1.0/sync/1.5", nil)
 	if err != nil {
 		return HawkCredentials{}, errorx.Decorate(err, "failed to create request")
 	}
@@ -356,14 +456,14 @@ func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, t0 time.Time, bid str
 		return HawkCredentials{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
 	}
 
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-ID         := %v", resp.ID))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-Key        := %v", resp.Key))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-UserID     := %v", resp.UID))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-Endpoint   := %v", resp.APIEndpoint))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-Duration   := %v", resp.Duration))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-HashAlgo   := %v", resp.HashAlgorithm))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-FxA-Uid    := %v", resp.HashedFxAUID))
-	ctx.PrintVerbose(fmt.Sprintf("HAWK-NodeType   := %v", resp.NodeType))
+	ctx.PrintVerboseKV("HAWK-ID", resp.ID)
+	ctx.PrintVerboseKV("HAWK-Key", resp.Key)
+	ctx.PrintVerboseKV("HAWK-UserID", resp.UID)
+	ctx.PrintVerboseKV("HAWK-Endpoint", resp.APIEndpoint)
+	ctx.PrintVerboseKV("HAWK-Duration", resp.Duration)
+	ctx.PrintVerboseKV("HAWK-HashAlgo", resp.HashAlgorithm)
+	ctx.PrintVerboseKV("HAWK-FxA-Uid", resp.HashedFxAUID)
+	ctx.PrintVerboseKV("HAWK-NodeType", resp.NodeType)
 
 	return HawkCredentials{
 		HawkID:            resp.ID,
@@ -371,13 +471,12 @@ func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, t0 time.Time, bid str
 		APIEndpoint:       resp.APIEndpoint,
 		HawkDuration:      resp.Duration,
 		HawkHashAlgorithm: resp.HashAlgorithm,
-		HawkUpdateTime:    t0,
 	}, nil
 }
 
-func (f FxAClient) request(ctx *cli.FFSContext, session HawkSession, method string, relurl string, body any) ([]byte, error) {
+func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method string, relurl string, body any) ([]byte, error) {
 
-	url := session.APIEndpoint + relurl
+	requestURL := session.APIEndpoint + relurl
 
 	strBody := ""
 	var bodyReader io.Reader = nil
@@ -390,7 +489,7 @@ func (f FxAClient) request(ctx *cli.FFSContext, session HawkSession, method stri
 		bodyReader = bytes.NewReader(bytesBody)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to create request")
 	}
@@ -402,14 +501,14 @@ func (f FxAClient) request(ctx *cli.FFSContext, session HawkSession, method stri
 
 	ctx.PrintVerbose(fmt.Sprintf("Calculate HAWK-Auth-Token"))
 
-	hawkAuth, err := calcHawkAuth(ctx, session, req.Method, req.URL.String(), strBody, "application/json")
+	hawkAuth, err := calcHawkSessionAuth(session, req.Method, req.URL.String(), strBody, "application/json")
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to create hawk-auth")
 	}
 
 	req.Header.Add("Authorization", hawkAuth)
 
-	ctx.PrintVerbose(fmt.Sprintf("Authorization   := %v", hawkAuth))
+	ctx.PrintVerboseKV("Authorization", hawkAuth)
 
 	rawResp, err := f.client.Do(req)
 	if err != nil {

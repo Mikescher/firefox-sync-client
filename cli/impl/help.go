@@ -12,6 +12,14 @@ type CLIArgumentsHelp struct {
 	ExitCode int
 }
 
+func NewCLIArgumentsHelp() *CLIArgumentsHelp {
+	return &CLIArgumentsHelp{
+		Extra:    "",
+		Verb:     nil,
+		ExitCode: 0,
+	}
+}
+
 func (a *CLIArgumentsHelp) Mode() cli.Mode {
 	return cli.ModeHelp
 }
@@ -42,6 +50,8 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
 		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default config location")
+		ctx.PrintPrimaryOutput("                  [--sevice-name=<name>]")
+		ctx.PrintPrimaryOutput("                  [--sevice-name <name>]")
 		ctx.PrintPrimaryOutput("  ffsclient delete-all                        Delete all (!) records in the server")
 		ctx.PrintPrimaryOutput("  ffsclient delete <record-id>                Delete the specified record")
 		ctx.PrintPrimaryOutput("  ffsclient collections                       List all available collections")
@@ -61,7 +71,10 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("                                                # - 'json'")
 		ctx.PrintPrimaryOutput("                                                # - 'netscape'     (default firefox bookmarks format)")
 		ctx.PrintPrimaryOutput("                                                # - 'bookmarksxml' (custom XML bookmarks format)")
-		ctx.PrintPrimaryOutput("  --server <conf>, --server=<conf>            Specify the (authentication) server-url")
+		ctx.PrintPrimaryOutput("  --auth-server <url>, --auth-server=<url>    Specify the (authentication) server-url")
+		ctx.PrintPrimaryOutput("  --token-server <url>, --token-server=<url>  Specify the (token) server-url")
+		ctx.PrintPrimaryOutput("  --color                                     Enforce colored output")
+		ctx.PrintPrimaryOutput("  --no-color                                  Disable colored output")
 		return a.ExitCode
 
 	} else {

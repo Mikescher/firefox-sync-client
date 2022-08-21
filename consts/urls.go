@@ -6,4 +6,6 @@ const (
 	ServerURLStaging    = "https://api-accounts.stage.mozaws.net/v1"
 )
 
-const TokenServerURL = "https://token.services.mozilla.com" //TODO move into opt
+const (
+	TokenServerURL = "https://token.services.mozilla.com"
+)

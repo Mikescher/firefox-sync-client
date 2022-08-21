@@ -9,6 +9,10 @@ import (
 type CLIArgumentsVersion struct {
 }
 
+func NewCLIArgumentsVersion() *CLIArgumentsVersion {
+	return &CLIArgumentsVersion{}
+}
+
 func (a *CLIArgumentsVersion) Mode() cli.Mode {
 	return cli.ModeVersion
 }

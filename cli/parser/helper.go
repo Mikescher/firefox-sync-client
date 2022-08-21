@@ -10,34 +10,34 @@ func getVerb(v string) (cli.Verb, bool) {
 	switch strings.ToLower(v) {
 
 	case strings.ToLower(string(cli.ModeHelp)):
-		return &impl.CLIArgumentsHelp{}, true
+		return impl.NewCLIArgumentsHelp(), true
 
 	case strings.ToLower(string(cli.ModeVersion)):
-		return &impl.CLIArgumentsVersion{}, true
+		return impl.NewCLIArgumentsVersion(), true
 
 	case strings.ToLower(string(cli.ModeLogin)):
-		return &impl.CLIArgumentsLogin{}, true
+		return impl.NewCLIArgumentsLogin(), true
 
 	case strings.ToLower(string(cli.ModeDeleteAll)):
-		return &impl.CLIArgumentsDeleteAll{}, true
+		return impl.NewCLIArgumentsDeleteAll(), true
 
 	case strings.ToLower(string(cli.ModeDeleteSingle)):
-		return &impl.CLIArgumentsDeleteSingle{}, true
+		return impl.NewCLIArgumentsDeleteSingle(), true
 
 	case strings.ToLower(string(cli.ModeListCollections)):
-		return &impl.CLIArgumentsListCollections{}, true
+		return impl.NewCLIArgumentsListCollections(), true
 
 	case strings.ToLower(string(cli.ModeGetRawRecord)):
-		return &impl.CLIArgumentsGetRawRecord{}, true
+		return impl.NewCLIArgumentsGetRawRecord(), true
 
 	case strings.ToLower(string(cli.ModeGetDecodedRecord)):
-		return &impl.CLIArgumentsGetDecodedRecord{}, true
+		return impl.NewCLIArgumentsGetDecodedRecord(), true
 
 	case strings.ToLower(string(cli.ModeCreateRecord)):
-		return &impl.CLIArgumentsCreateRecord{}, true
+		return impl.NewCLIArgumentsCreateRecord(), true
 
 	case strings.ToLower(string(cli.ModeUpdateRecord)):
-		return &impl.CLIArgumentsUpdateRecord{}, true
+		return impl.NewCLIArgumentsUpdateRecord(), true
 
 	}
 

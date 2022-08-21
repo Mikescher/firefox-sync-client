@@ -1,8 +1,14 @@
 package impl
 
-import "ffsyncclient/cli"
+import (
+	"ffsyncclient/cli"
+)
 
 type CLIArgumentsCreateRecord struct {
+}
+
+func NewCLIArgumentsCreateRecord() *CLIArgumentsCreateRecord {
+	return &CLIArgumentsCreateRecord{}
 }
 
 func (a *CLIArgumentsCreateRecord) Mode() cli.Mode {

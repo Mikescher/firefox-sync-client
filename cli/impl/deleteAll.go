@@ -5,6 +5,10 @@ import "ffsyncclient/cli"
 type CLIArgumentsDeleteAll struct {
 }
 
+func NewCLIArgumentsDeleteAll() *CLIArgumentsDeleteAll {
+	return &CLIArgumentsDeleteAll{}
+}
+
 func (a *CLIArgumentsDeleteAll) Mode() cli.Mode {
 	return cli.ModeDeleteAll
 }

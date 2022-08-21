@@ -5,6 +5,10 @@ import "ffsyncclient/cli"
 type CLIArgumentsGetDecodedRecord struct {
 }
 
+func NewCLIArgumentsGetDecodedRecord() *CLIArgumentsGetDecodedRecord {
+	return &CLIArgumentsGetDecodedRecord{}
+}
+
 func (a *CLIArgumentsGetDecodedRecord) Mode() cli.Mode {
 	return cli.ModeGetDecodedRecord
 }
