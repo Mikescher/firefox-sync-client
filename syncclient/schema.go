@@ -39,10 +39,12 @@ type signCertResponseSchema struct {
 type hawkCredResponseSchema struct {
 	ID            string `json:"id"`
 	Key           string `json:"key"`
-	UID           string `json:"uid"`
+	UID           int64  `json:"uid"`
 	APIEndpoint   string `json:"api_endpoint"`
-	Duration      string `json:"duration"`
+	Duration      int64  `json:"duration"`
 	HashAlgorithm string `json:"hashalg"`
 	HashedFxAUID  string `json:"hashed_fxa_uid"`
 	NodeType      string `json:"node_type"`
 }
+
+type collectionsInfoResponse map[string]float64

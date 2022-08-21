@@ -1,6 +1,7 @@
 package syncclient
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -29,6 +30,21 @@ type FxAKeys struct {
 type FxASessionExt struct {
 	FxASession
 	FxAKeys
+}
+
+type HawkCredentials struct {
+	HawkID            string
+	HawkKey           string
+	APIEndpoint       string
+	HawkDuration      int64
+	HawkHashAlgorithm string
+	HawkUpdateTime    time.Time
+}
+
+type HawkSession struct {
+	FxASession
+	FxAKeys
+	HawkCredentials
 }
 
 type sessionJson struct {
@@ -88,6 +104,20 @@ func (e FxASessionExt) Save(path string) error {
 	}
 
 	return nil
+}
+
+func (e FxASessionExt) State() string {
+	sha := sha256.New()
+	sha.Write(e.KeyB)
+	return hex.EncodeToString(sha.Sum(nil)[0:16])
+}
+
+func (e FxASessionExt) Extend(cred HawkCredentials) HawkSession {
+	return HawkSession{
+		FxASession:      e.FxASession,
+		FxAKeys:         e.FxAKeys,
+		HawkCredentials: cred,
+	}
 }
 
 func LoadSession(ctx *cli.FFSContext, path string) (FxASessionExt, error) {

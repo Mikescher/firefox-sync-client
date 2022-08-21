@@ -54,11 +54,17 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 
 	//TODO check_session_status
 
-	_, err = client.ListCollections(ctx, sessionext)
+	sessionHawk, err := client.HawkAuth(ctx, sessionext)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
 	}
 
-	panic(0)
+	_, err = client.ListCollections(ctx, sessionHawk)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	panic(0) //TODO
 }
