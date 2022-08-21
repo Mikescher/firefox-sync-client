@@ -35,8 +35,8 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 }
 
 func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
-
-	ctx.PrintVerbose("Login against endpoint " + ctx.Opt.ServerURL)
+	ctx.PrintVerbose("[Login]")
+	ctx.PrintVerbose("Server          := " + ctx.Opt.ServerURL)
 	ctx.PrintVerbose("Email           := " + a.Email)
 	ctx.PrintVerbose("Password        := " + a.Password)
 
