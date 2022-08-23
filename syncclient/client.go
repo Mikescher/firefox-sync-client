@@ -419,66 +419,6 @@ func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session KeyedSessi
 	return resp.Certificate + "~" + assertion, t0, duration, nil
 }
 
-func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
-	requestURL := f.authURL + relurl
-
-	strBody := ""
-	var bodyReader io.Reader = nil
-	if body != nil {
-		bytesBody, err := json.Marshal(body)
-		if err != nil {
-			return nil, nil, errorx.Decorate(err, "failed to marshal body")
-		}
-		strBody = string(bytesBody)
-		bodyReader = bytes.NewReader(bytesBody)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, requestURL, bodyReader)
-	if err != nil {
-		return nil, nil, errorx.Decorate(err, "failed to create request")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "firefox-sync-client/"+consts.FFSCLIENT_VERSION)
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Host", req.URL.Host)
-
-	ctx.PrintVerbose(fmt.Sprintf("Calculate HAWK-Auth-Token"))
-
-	hawkAuth, hawkBundleKey, err := calcHawkTokenAuth(token, tokenType, req.Method, req.URL.String(), strBody)
-	if err != nil {
-		return nil, nil, errorx.Decorate(err, "failed to create hawk-auth")
-	}
-
-	ctx.PrintVerboseKV("HAWK-Auth-Token", hawkAuth)
-	ctx.PrintVerboseKV("HAWK-Bundle-Key", hawkBundleKey)
-
-	req.Header.Add("Authorization", hawkAuth)
-
-	ctx.PrintVerbose("Do HAWK-token authenticated request to " + relurl)
-
-	rawResp, err := f.client.Do(req)
-	if err != nil {
-		return nil, nil, errorx.Decorate(err, "failed to do request")
-	}
-
-	respBodyRaw, err := io.ReadAll(rawResp.Body)
-	if err != nil {
-		return nil, nil, errorx.Decorate(err, "failed to read response-body request")
-	}
-
-	//TODO statuscode [429, 500, 503] means retry-after
-
-	if rawResp.StatusCode != 200 {
-		return nil, nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v\n\n%v", relurl, rawResp.StatusCode, string(respBodyRaw)))
-	}
-
-	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
-	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%v", string(respBodyRaw)))
-
-	return respBodyRaw, hawkBundleKey, nil
-}
-
 func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, bid string, clientState string) (HawkCredentials, error) {
 	auth := "BrowserID " + bid
 
@@ -529,10 +469,50 @@ func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, bid string, clientSta
 	}, nil
 }
 
-func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method string, relurl string, body any) ([]byte, error) {
+func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
+	requestURL := f.authURL + relurl
 
+	var outBundleKey []byte
+
+	auth := func(method string, url string, body string, contentType string) (string, error) {
+		ctx.PrintVerbose(fmt.Sprintf("Calculate HAWK-Auth-Token (token request)"))
+		hawkAuth, hawkBundleKey, err := calcHawkTokenAuth(token, tokenType, method, url, body)
+		if err != nil {
+			return "", errorx.Decorate(err, "failed to create hawk-auth")
+		}
+		outBundleKey = hawkBundleKey
+		return hawkAuth, nil
+	}
+
+	res, err := f.internalRequest(ctx, auth, method, requestURL, body)
+	if err != nil {
+		return nil, nil, errorx.Decorate(err, "Request failed")
+	}
+
+	return res, outBundleKey, nil
+}
+
+func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method string, relurl string, body any) ([]byte, error) {
 	requestURL := session.APIEndpoint + relurl
 
+	auth := func(method string, url string, body string, contentType string) (string, error) {
+		ctx.PrintVerbose(fmt.Sprintf("Calculate HAWK-Auth-Token (normal request)"))
+		hawkAuth, err := calcHawkSessionAuth(session, method, url, body, contentType)
+		if err != nil {
+			return "", errorx.Decorate(err, "failed to create hawk-auth")
+		}
+		return hawkAuth, nil
+	}
+
+	res, err := f.internalRequest(ctx, auth, method, requestURL, body)
+	if err != nil {
+		return nil, errorx.Decorate(err, "Request failed")
+	}
+
+	return res, nil
+}
+
+func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string, url string, body string, contentType string) (string, error), method string, requestURL string, body any) ([]byte, error) {
 	strBody := ""
 	var bodyReader io.Reader = nil
 	if body != nil {
@@ -554,11 +534,9 @@ func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method st
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Host", req.URL.Host)
 
-	ctx.PrintVerbose(fmt.Sprintf("Calculate HAWK-Auth-Token"))
-
-	hawkAuth, err := calcHawkSessionAuth(session, req.Method, req.URL.String(), strBody, "application/json")
+	hawkAuth, err := auth(req.Method, req.URL.String(), strBody, "application/json")
 	if err != nil {
-		return nil, errorx.Decorate(err, "failed to create hawk-auth")
+		return nil, errorx.Decorate(err, "failed to create auth")
 	}
 
 	req.Header.Add("Authorization", hawkAuth)
@@ -578,7 +556,11 @@ func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method st
 	//TODO statuscode [429, 500, 503] means retry-after
 
 	if rawResp.StatusCode != 200 {
-		return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v\n\n%v", relurl, rawResp.StatusCode, string(respBodyRaw)))
+		if len(string(respBodyRaw)) > 1 {
+			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v\nBody:\n%v", requestURL, rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
+		}
 	}
 
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))

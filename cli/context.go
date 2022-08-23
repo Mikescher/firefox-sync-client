@@ -118,7 +118,12 @@ func (c FFSContext) PrintFatalError(e error) {
 		return
 	}
 
-	c.printErrorRaw(e.Error() + "\n")
+	if c.Opt.Verbose {
+		c.printErrorRaw(fmt.Sprintf("%+v", e) + "\n")
+	} else {
+		c.printErrorRaw(e.Error() + "\n")
+	}
+
 }
 
 func (c FFSContext) PrintVerbose(msg string) {
@@ -181,9 +186,9 @@ func (c FFSContext) printErrorRaw(msg string) {
 	}
 
 	if c.Opt.OutputColor {
-		writeStderr(term.Red(msg + "\n"))
+		writeStderr(term.Red(msg))
 	} else {
-		writeStderr(msg + "\n")
+		writeStderr(msg)
 	}
 }
 
@@ -193,9 +198,9 @@ func (c FFSContext) printVerboseRaw(msg string) {
 	}
 
 	if c.Opt.OutputColor {
-		writeStdout(term.Gray(msg + "\n"))
+		writeStdout(term.Gray(msg))
 	} else {
-		writeStdout(msg + "\n")
+		writeStdout(msg)
 	}
 }
 
