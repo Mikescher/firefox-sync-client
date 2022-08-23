@@ -52,14 +52,18 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default config location")
 		ctx.PrintPrimaryOutput("                  [--service-name=<name>]")
 		ctx.PrintPrimaryOutput("                  [--service-name <name>]")
-		ctx.PrintPrimaryOutput("  ffsclient delete-all                        Delete all (!) records in the server")
-		ctx.PrintPrimaryOutput("  ffsclient delete <record-id>                Delete the specified record")
+		ctx.PrintPrimaryOutput("  ffsclient refresh                           Refresh the current session (BID Assertion)")
 		ctx.PrintPrimaryOutput("  ffsclient collections                       List all available collections")
 		ctx.PrintPrimaryOutput("                  [--usage]                     # Include usage (storage space)")
+		ctx.PrintPrimaryOutput("  ffsclient quota <collection>                (TODO)")
 		ctx.PrintPrimaryOutput("  ffsclient raw <collection> <record-id>      get a single record (not decoded)")
 		ctx.PrintPrimaryOutput("  ffsclient get <collection> <record-id>      get a single record (decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient create <collection> ...           (TODO)")
-		ctx.PrintPrimaryOutput("  ffsclient update <collection> ...           (TODO)")
+		ctx.PrintPrimaryOutput("  ffsclient list-raw <collection>             get a whole collection (not decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient list <collection>                 get a whole record (decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient create <collection>               (TODO)")
+		ctx.PrintPrimaryOutput("  ffsclient update <collection>               (TODO)")
+		ctx.PrintPrimaryOutput("  ffsclient delete <record-id>                Delete the specified record")
+		ctx.PrintPrimaryOutput("  ffsclient delete-all                        Delete all (!) records in the server")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Options:")
 		ctx.PrintPrimaryOutput("  -h, --help                                  Show this screen.")
@@ -142,6 +146,18 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			return a.ExitCode
 
 		case cli.ModeGetQuota: //TODO
+			ctx.PrintPrimaryOutput("")
+			return a.ExitCode
+
+		case cli.ModeTokenRefresh: //TODO
+			ctx.PrintPrimaryOutput("")
+			return a.ExitCode
+
+		case cli.ModeGetAllRaw: //TODO
+			ctx.PrintPrimaryOutput("")
+			return a.ExitCode
+
+		case cli.ModeGetAllDecoded: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
 

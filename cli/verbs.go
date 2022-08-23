@@ -6,6 +6,7 @@ const (
 	ModeHelp             Mode = "help"
 	ModeVersion          Mode = "version"
 	ModeLogin            Mode = "login"
+	ModeTokenRefresh     Mode = "refresh"
 	ModeDeleteAll        Mode = "delete-all"
 	ModeDeleteSingle     Mode = "delete"
 	ModeListCollections  Mode = "collections"
@@ -14,6 +15,8 @@ const (
 	ModeCreateRecord     Mode = "create"
 	ModeUpdateRecord     Mode = "update"
 	ModeGetQuota         Mode = "quota"
+	ModeGetAllRaw        Mode = "list-raw"
+	ModeGetAllDecoded    Mode = "list"
 )
 
 func (m Mode) String() string {

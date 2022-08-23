@@ -42,6 +42,15 @@ func getVerb(v string) (cli.Verb, bool) {
 	case strings.ToLower(string(cli.ModeGetQuota)):
 		return impl.NewCLIArgumentsGetQuota(), true
 
+	case strings.ToLower(string(cli.ModeTokenRefresh)):
+		return impl.NewCLIArgumentsTokenRefresh(), true
+
+	case strings.ToLower(string(cli.ModeGetAllRaw)):
+		return impl.NewCLIArgumentsGetAllRaw(), true
+
+	case strings.ToLower(string(cli.ModeGetAllDecoded)):
+		return impl.NewCLIArgumentsGetAllDecoded(), true
+
 	}
 
 	return nil, false
