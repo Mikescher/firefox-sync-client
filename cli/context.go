@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"ffsyncclient/langext"
+	"ffsyncclient/utils/term"
 	"fmt"
 	"github.com/joomcode/errorx"
 	"os"
@@ -16,7 +17,8 @@ import (
 
 type FFSContext struct {
 	context.Context
-	Opt Options
+	Opt        Options
+	FileHandle *os.File
 }
 
 func (c FFSContext) PrintPrimaryOutput(msg string) {
@@ -24,7 +26,7 @@ func (c FFSContext) PrintPrimaryOutput(msg string) {
 		return
 	}
 
-	writeStdout(msg + "\n")
+	c.printPrimaryRaw(msg + "\n")
 }
 
 func (c FFSContext) PrintPrimaryOutputJSON(data any) {
@@ -37,7 +39,7 @@ func (c FFSContext) PrintPrimaryOutputJSON(data any) {
 		panic("failed to marshal output: " + err.Error())
 	}
 
-	writeStdout(string(msg) + "\n")
+	c.printPrimaryRaw(string(msg) + "\n")
 }
 
 func (c FFSContext) PrintPrimaryOutputXML(data any) {
@@ -50,7 +52,7 @@ func (c FFSContext) PrintPrimaryOutputXML(data any) {
 		panic("failed to marshal output: " + err.Error())
 	}
 
-	writeStdout(string(msg) + "\n")
+	c.printPrimaryRaw(string(msg) + "\n")
 }
 
 func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
@@ -85,7 +87,7 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 				}
 				rowstr += langext.StrPadRight(cell, " ", lens[colidx])
 			}
-			writeStdout(rowstr + "\n")
+			c.printPrimaryRaw(rowstr + "\n")
 		}
 
 		if rowidx == 0 && header {
@@ -96,7 +98,7 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 				}
 				rowstr += langext.StrPadRight("", "-", lens[colidx])
 			}
-			writeStdout(rowstr + "\n")
+			c.printPrimaryRaw(rowstr + "\n")
 		}
 
 	}
@@ -108,7 +110,7 @@ func (c FFSContext) PrintFatalMessage(msg string) {
 		return
 	}
 
-	writeStderr(msg + "\n")
+	c.printErrorRaw(msg + "\n")
 }
 
 func (c FFSContext) PrintFatalError(e error) {
@@ -116,7 +118,7 @@ func (c FFSContext) PrintFatalError(e error) {
 		return
 	}
 
-	writeStderr(e.Error() + "\n")
+	c.printErrorRaw(e.Error() + "\n")
 }
 
 func (c FFSContext) PrintVerbose(msg string) {
@@ -124,7 +126,7 @@ func (c FFSContext) PrintVerbose(msg string) {
 		return
 	}
 
-	writeStdout(msg + "\n")
+	c.printVerboseRaw(msg + "\n")
 }
 
 func (c FFSContext) PrintVerboseKV(key string, vval any) {
@@ -147,13 +149,53 @@ func (c FFSContext) PrintVerboseKV(key string, vval any) {
 
 	if len(val) > (termlen-keylen-4) || strings.Contains(val, "\n") {
 
-		writeStdout(key + " :=\n" + val + "\n")
+		c.printVerboseRaw(key + " :=\n" + val + "\n")
 
 	} else {
 
 		padkey := langext.StrPadRight(key, " ", keylen)
-		writeStdout(padkey + " := " + val + "\n")
+		c.printVerboseRaw(padkey + " := " + val + "\n")
 
+	}
+}
+
+func (c FFSContext) printPrimaryRaw(msg string) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	if c.FileHandle == nil {
+		writeStdout(msg)
+	} else {
+		_, err := c.FileHandle.WriteString(msg)
+		if err != nil {
+			panic("failed to write to file: " + err.Error())
+		}
+	}
+
+}
+
+func (c FFSContext) printErrorRaw(msg string) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	if c.Opt.OutputColor {
+		writeStderr(term.Red(msg + "\n"))
+	} else {
+		writeStderr(msg + "\n")
+	}
+}
+
+func (c FFSContext) printVerboseRaw(msg string) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	if c.Opt.OutputColor {
+		writeStdout(term.Gray(msg + "\n"))
+	} else {
+		writeStdout(msg + "\n")
 	}
 }
 
@@ -196,9 +238,29 @@ func writeStderr(msg string) {
 	}
 }
 
-func NewContext(opt Options) *FFSContext {
+func NewContext(opt Options) (*FFSContext, error) {
+	var fileHandle *os.File
+
+	if opt.OutputFile != nil {
+		fh, err := os.OpenFile(*opt.OutputFile, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0666)
+		if err != nil {
+			return nil, err
+		}
+		fileHandle = fh
+	}
+
 	return &FFSContext{
-		Context: context.Background(),
-		Opt:     opt,
+		Context:    context.Background(),
+		Opt:        opt,
+		FileHandle: fileHandle,
+	}, nil
+}
+
+func (c FFSContext) Finish() {
+	if c.FileHandle != nil {
+		err := c.FileHandle.Close()
+		if err != nil {
+			c.PrintFatalError(err)
+		}
 	}
 }

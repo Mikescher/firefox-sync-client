@@ -208,22 +208,27 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		}
 
 		if arg.Key == "color" && arg.Value == nil {
-			opt.OutputColor = langext.Ptr(true)
+			opt.OutputColor = true
 			continue
 		}
 
 		if arg.Key == "color" && arg.Value != nil && (strings.ToLower(*arg.Value) == "true" || *arg.Value == "1") {
-			opt.OutputColor = langext.Ptr(true)
+			opt.OutputColor = true
 			continue
 		}
 
 		if arg.Key == "color" && arg.Value != nil && (strings.ToLower(*arg.Value) == "false" || *arg.Value == "0") {
-			opt.OutputColor = langext.Ptr(false)
+			opt.OutputColor = false
 			continue
 		}
 
 		if arg.Key == "no-color" && arg.Value == nil {
-			opt.OutputColor = langext.Ptr(false)
+			opt.OutputColor = false
+			continue
+		}
+
+		if (arg.Key == "o" || arg.Key == "output") && arg.Value != nil {
+			opt.OutputFile = langext.Ptr(*arg.Value)
 			continue
 		}
 

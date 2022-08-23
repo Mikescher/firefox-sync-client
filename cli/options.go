@@ -2,6 +2,7 @@ package cli
 
 import (
 	"ffsyncclient/consts"
+	"ffsyncclient/utils/term"
 	"time"
 )
 
@@ -12,7 +13,8 @@ type Options struct {
 	ConfigFilePath string
 	AuthServerURL  string
 	TokenServerURL string
-	OutputColor    *bool
+	OutputColor    bool
+	OutputFile     *string
 	TimeZone       *time.Location
 	TimeFormat     string
 }
@@ -25,8 +27,9 @@ func DefaultCLIOptions() Options {
 		ConfigFilePath: "~/.config/firefox-sync-client.secret",
 		AuthServerURL:  consts.ServerURLProduction,
 		TokenServerURL: consts.TokenServerURL,
-		OutputColor:    nil,
+		OutputColor:    term.TermSupportsColors(),
 		TimeZone:       time.Local,
 		TimeFormat:     "2006-01-02 15:04:05Z07:00",
+		OutputFile:     nil,
 	}
 }

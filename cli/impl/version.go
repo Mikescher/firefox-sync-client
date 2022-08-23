@@ -40,6 +40,9 @@ func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
 		return 0
+	case cli.OutputFormatTable:
+		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
+		return 0
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(langext.H{"version": consts.FFSCLIENT_VERSION})
 		return 0

@@ -66,7 +66,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  -version                                    Show version.")
 		ctx.PrintPrimaryOutput("  -v, --verbose                               Output more intermediate information")
 		ctx.PrintPrimaryOutput("  -q, --quiet                                 Do not print anything")
-		ctx.PrintPrimaryOutput("  -c <f>, --config <conf>, --config=<conf>    Specify the config location")
+		ctx.PrintPrimaryOutput("  -c <cfg>, --config <cfg>, --config=<cfg>    Specify the config location")
 		ctx.PrintPrimaryOutput("  -f <fmt>, --format <fmt>, --format=<fmt>    Specify the output format")
 		ctx.PrintPrimaryOutput("                                                # - 'text'")
 		ctx.PrintPrimaryOutput("                                                # - 'json'")
@@ -83,6 +83,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("                                                #   - Local (default)")
 		ctx.PrintPrimaryOutput("                                                #   - IANA Time Zone, e.g. 'America/New_York'")
 		ctx.PrintPrimaryOutput("  --timeformat <url>, --timeformat=<url>      Specify the output timeformat (golang syntax)") //TODO use yyyy-MM-dd syntax and convert
+		ctx.PrintPrimaryOutput("  -o <f>, --output <f>, --output=<f>          Write the output to a file")
 		return a.ExitCode
 
 	} else {
