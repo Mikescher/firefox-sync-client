@@ -4,7 +4,7 @@ Primary Source(s):
  - https://github.com/mozilla-services/syncclient
  - https://github.com/mozilla/PyFxA
  - https://mozilla-services.readthedocs.io/en/latest/sync/index.html
-- https://mozilla-services.readthedocs.io/en/latest/storage/apis-1.5.html
+ - https://mozilla-services.readthedocs.io/en/latest/storage/apis-1.5.html
  - https://mozilla.github.io/ecosystem-platform/api#tag/Account/operation/postAccountLogin
 
 Additional Info:

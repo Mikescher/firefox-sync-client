@@ -18,7 +18,6 @@ import (
 	"io"
 	"math"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -59,7 +58,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, ser
 		return LoginSession{}, errorx.Decorate(err, "failed to marshal body")
 	}
 
-	requestURL := f.authURL + "/account/login?keys=true&service=" + url.QueryEscape(serviceName)
+	requestURL := f.authURL + "/account/login?keys=true"
 
 	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(bytesBody))
 	if err != nil {
@@ -67,8 +66,8 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, ser
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "firefox-sync-client/"+consts.FFSCLIENT_VERSION)
-	req.Header.Add("Accept", "application/json")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Mobile; Firefox Accounts; rv:1.0) firefox-sync-client/"+consts.FFSCLIENT_VERSION+"golang/1.19")
+	req.Header.Add("Accept", "*/*")
 
 	ctx.PrintVerbose("Request session from " + requestURL)
 
@@ -95,6 +94,10 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, ser
 	err = json.Unmarshal(respBodyRaw, &resp)
 	if err != nil {
 		return LoginSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+	}
+
+	if !resp.Verified {
+		return LoginSession{}, errorx.InternalError.New("You must verify the login attempt (e.g. per e-mail) before continuing")
 	}
 
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
