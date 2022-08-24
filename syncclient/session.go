@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
+	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
 	"os"
 	"path/filepath"
@@ -44,7 +45,6 @@ type HawkCredentials struct {
 	HawkID            string
 	HawkKey           string
 	APIEndpoint       string
-	HawkDuration      int64
 	HawkHashAlgorithm string
 }
 
@@ -54,12 +54,10 @@ type HawkSession struct {
 	KeyA              []byte
 	KeyB              []byte
 	BrowserID         string
-	CertTime          time.Time
-	CertDuration      time.Duration
+	Timeout           time.Time
 	HawkID            string
 	HawkKey           string
 	APIEndpoint       string
-	HawkDuration      int64
 	HawkHashAlgorithm string
 }
 
@@ -69,12 +67,10 @@ type CryptoSession struct {
 	KeyA              []byte
 	KeyB              []byte
 	BrowserID         string
-	CertTime          time.Time
-	CertDuration      time.Duration
+	Timeout           time.Time
 	HawkID            string
 	HawkKey           string
 	APIEndpoint       string
-	HawkDuration      int64
 	HawkHashAlgorithm string
 	CryptoKeys        map[string]KeyBundle
 }
@@ -88,7 +84,7 @@ type FFSyncSession struct {
 	HawkID            string
 	HawkKey           string
 	HawkHashAlgorithm string
-	HawkTimeout       time.Time
+	Timeout           time.Time
 	BulkKeys          map[string]KeyBundle
 }
 
@@ -97,7 +93,6 @@ type sessionHawkJson struct {
 	ID            string              `json:"id"`
 	Key           string              `json:"key"`
 	HashAlgorithm string              `json:"algorithm"`
-	Timeout       int64               `json:"timeout"`
 	BulkKeys      map[string][]string `json:"bulkKeys"`
 }
 
@@ -107,6 +102,7 @@ type sessionJson struct {
 	KeyB         string          `json:"keyB"`
 	UserId       string          `json:"userID"`
 	Hawk         sessionHawkJson `json:"hawk"`
+	Timeout      int64           `json:"timeout"`
 }
 
 func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
@@ -130,19 +126,17 @@ func (e KeyedSession) Extend(bid string, t0 time.Time, dur time.Duration) Browse
 	}
 }
 
-func (e BrowserIdSession) Extend(cred HawkCredentials) HawkSession {
+func (e BrowserIdSession) Extend(cred HawkCredentials, hawkTimeout time.Time) HawkSession {
 	return HawkSession{
 		UserId:            e.UserId,
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
 		BrowserID:         e.BrowserID,
-		CertTime:          e.CertTime,
-		CertDuration:      e.CertDuration,
+		Timeout:           langext.MinTime(e.CertTime.Add(e.CertDuration), hawkTimeout),
 		HawkID:            cred.HawkID,
 		HawkKey:           cred.HawkKey,
 		APIEndpoint:       cred.APIEndpoint,
-		HawkDuration:      cred.HawkDuration,
 		HawkHashAlgorithm: cred.HawkHashAlgorithm,
 	}
 }
@@ -154,12 +148,10 @@ func (e HawkSession) Extend(keys map[string]KeyBundle) CryptoSession {
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
 		BrowserID:         e.BrowserID,
-		CertTime:          e.CertTime,
-		CertDuration:      e.CertDuration,
+		Timeout:           e.Timeout,
 		HawkID:            e.HawkID,
 		HawkKey:           e.HawkKey,
 		APIEndpoint:       e.APIEndpoint,
-		HawkDuration:      e.HawkDuration,
 		HawkHashAlgorithm: e.HawkHashAlgorithm,
 		CryptoKeys:        keys,
 	}
@@ -175,7 +167,7 @@ func (e HawkSession) ToKeylessSession() FFSyncSession {
 		HawkID:            e.HawkID,
 		HawkKey:           e.HawkKey,
 		HawkHashAlgorithm: e.HawkHashAlgorithm,
-		HawkTimeout:       e.CertTime.Add(e.CertDuration),
+		Timeout:           e.Timeout,
 	}
 }
 
@@ -189,7 +181,7 @@ func (s CryptoSession) Reduce() FFSyncSession {
 		HawkID:            s.HawkID,
 		HawkKey:           s.HawkKey,
 		HawkHashAlgorithm: s.HawkHashAlgorithm,
-		HawkTimeout:       s.CertTime.Add(s.CertDuration),
+		Timeout:           s.Timeout,
 		BulkKeys:          s.CryptoKeys,
 	}
 }
@@ -207,12 +199,12 @@ func (s FFSyncSession) Save(path string) error {
 		KeyA:         hex.EncodeToString(s.KeyA),
 		KeyB:         hex.EncodeToString(s.KeyB),
 		UserId:       s.UserId,
+		Timeout:      s.Timeout.UnixMicro(),
 		Hawk: sessionHawkJson{
 			APIEndpoint:   s.APIEndpoint,
 			ID:            s.HawkID,
 			Key:           s.HawkKey,
 			HashAlgorithm: s.HawkHashAlgorithm,
-			Timeout:       s.HawkTimeout.UnixMicro(),
 			BulkKeys:      make(map[string][]string, len(s.BulkKeys)),
 		},
 	}
@@ -234,7 +226,7 @@ func (s FFSyncSession) Save(path string) error {
 }
 
 func (s FFSyncSession) Expired() bool {
-	return s.HawkTimeout.After(time.Now().Add(15 * time.Minute))
+	return s.Timeout.After(time.Now().Add(15 * time.Minute))
 }
 
 func (s FFSyncSession) ToKeyed() KeyedSession {
@@ -292,7 +284,7 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 		HawkID:            sj.Hawk.ID,
 		HawkKey:           sj.Hawk.Key,
 		HawkHashAlgorithm: sj.Hawk.HashAlgorithm,
-		HawkTimeout:       time.UnixMicro(sj.Hawk.Timeout),
+		Timeout:           time.UnixMicro(sj.Timeout),
 		BulkKeys:          bulkkeys,
 	}, nil
 }

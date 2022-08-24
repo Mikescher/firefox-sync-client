@@ -16,7 +16,6 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/joomcode/errorx"
 	"io"
-	"math"
 	"net/http"
 	"time"
 )
@@ -277,6 +276,8 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 
 	ctx.PrintVerbose("Query HAWK credentials")
 
+	t0 := time.Now()
+
 	rawResp, err := f.client.Do(req)
 	if err != nil {
 		return HawkSession{}, errorx.Decorate(err, "failed to do request")
@@ -297,6 +298,8 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 		return HawkSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
 	}
 
+	hawkTimeOut := t0.Add(time.Second * time.Duration(resp.Duration))
+
 	ctx.PrintVerboseKV("HAWK-ID", resp.ID)
 	ctx.PrintVerboseKV("HAWK-Key", resp.Key)
 	ctx.PrintVerboseKV("HAWK-UserID", resp.UID)
@@ -305,16 +308,20 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 	ctx.PrintVerboseKV("HAWK-HashAlgo", resp.HashAlgorithm)
 	ctx.PrintVerboseKV("HAWK-FxA-Uid", resp.HashedFxAUID)
 	ctx.PrintVerboseKV("HAWK-NodeType", resp.NodeType)
+	ctx.PrintVerboseKV("HAWK-Timeout", hawkTimeOut)
+
+	if resp.HashAlgorithm != "sha256" {
+		return HawkSession{}, errorx.InternalError.New("HAWK-HashAlgorithm '" + resp.HashAlgorithm + "' is currently not supported")
+	}
 
 	cred := HawkCredentials{
 		HawkID:            resp.ID,
 		HawkKey:           resp.Key,
 		APIEndpoint:       resp.APIEndpoint,
-		HawkDuration:      resp.Duration,
 		HawkHashAlgorithm: resp.HashAlgorithm,
 	}
 
-	return session.Extend(cred), nil
+	return session.Extend(cred, hawkTimeOut), nil
 }
 
 func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (CryptoSession, error) {
@@ -340,7 +347,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	}
 
 	ctx.PrintVerboseKV("record.ID", resp.ID)
-	ctx.PrintVerboseKV("record.Modified", resp.Modified)
+	ctx.PrintVerboseKV("record.Modified", langext.UnixFloatSeconds(resp.Modified))
 	ctx.PrintVerboseKV("record.Payload", resp.Payload)
 
 	var payload payloadSchema
@@ -483,10 +490,9 @@ func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession
 
 	result := make([]models.CollectionInfo, 0, len(resp))
 	for k, v := range resp {
-		sec, dec := math.Modf(v)
 		result = append(result, models.CollectionInfo{
 			Name:         k,
-			LastModified: time.Unix(int64(sec), int64(dec*(1e9))),
+			LastModified: langext.UnixFloatSeconds(v),
 		})
 	}
 

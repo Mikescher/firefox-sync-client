@@ -13,6 +13,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type FFSContext struct {
@@ -160,6 +161,8 @@ func (c FFSContext) PrintVerboseKV(key string, vval any) {
 		val = hex.EncodeToString(v)
 	case string:
 		val = v
+	case time.Time:
+		val = v.In(c.Opt.TimeZone).Format(time.RFC3339Nano)
 	default:
 		val = fmt.Sprintf("%v", v)
 	}

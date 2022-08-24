@@ -1,3 +1,3 @@
 package consts
 
-const DefaultBIDAssertionDuration = 60 // seconds
+const DefaultBIDAssertionDuration = 3600 // seconds
