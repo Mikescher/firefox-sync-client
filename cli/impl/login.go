@@ -70,12 +70,13 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 
 func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Login]")
+	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Auth-Server", ctx.Opt.AuthServerURL)
 	ctx.PrintVerboseKV("Token-Server", ctx.Opt.TokenServerURL)
 	ctx.PrintVerboseKV("Email", a.Email)
 	ctx.PrintVerboseKV("Password", a.Password)
 
-	cfp, err := ctx.AbsConfigFilePath()
+	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -154,7 +155,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	ffsyncSession := sessionCrypto.Reduce()
 
-	ctx.PrintVerbose("Save session-config to " + ctx.Opt.ConfigFilePath)
+	ctx.PrintVerbose("Save session to " + ctx.Opt.SessionFilePath)
 
 	err = ffsyncSession.Save(cfp)
 	if err != nil {

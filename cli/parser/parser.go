@@ -178,8 +178,8 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
-		if (arg.Key == "c" || arg.Key == "conf" || arg.Key == "config") && arg.Value != nil {
-			opt.ConfigFilePath = *arg.Value
+		if (arg.Key == "sessionfile" || arg.Key == "sessionfile") && arg.Value != nil {
+			opt.SessionFilePath = *arg.Value
 			continue
 		}
 
@@ -229,6 +229,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if (arg.Key == "o" || arg.Key == "output") && arg.Value != nil {
 			opt.OutputFile = langext.Ptr(*arg.Value)
+			continue
+		}
+
+		if arg.Key == "no-autosave-session" && arg.Value == nil {
+			opt.SaveRefreshedSession = false
 			continue
 		}
 

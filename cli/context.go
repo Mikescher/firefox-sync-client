@@ -216,8 +216,8 @@ func (c FFSContext) printVerboseRaw(msg string) {
 	}
 }
 
-func (c FFSContext) AbsConfigFilePath() (string, error) {
-	fp := c.Opt.ConfigFilePath
+func (c FFSContext) AbsSessionFilePath() (string, error) {
+	fp := c.Opt.SessionFilePath
 
 	if fp == "~" {
 		usr, err := user.Current()
@@ -235,7 +235,7 @@ func (c FFSContext) AbsConfigFilePath() (string, error) {
 
 	fp, err := filepath.Abs(fp)
 	if err != nil {
-		return "", errorx.Decorate(err, "failed to parse config filepath")
+		return "", errorx.Decorate(err, "failed to parse session filepath")
 	}
 
 	return fp, nil

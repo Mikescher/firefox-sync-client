@@ -11,22 +11,17 @@ import (
 )
 
 type LoginSession struct {
-	URL             string
-	Email           string
 	StretchPassword []byte
 	UserId          string
 	SessionToken    []byte
 	KeyFetchToken   []byte
 }
 
-type FxAKeys struct {
-	KeyA []byte
-	KeyB []byte
-}
-
 type KeyedSession struct {
-	LoginSession
-	FxAKeys
+	UserId       string
+	SessionToken []byte
+	KeyA         []byte
+	KeyB         []byte
 }
 
 type FxABrowserID struct {
@@ -36,9 +31,13 @@ type FxABrowserID struct {
 }
 
 type BrowserIdSession struct {
-	LoginSession
-	FxAKeys
-	FxABrowserID
+	UserId       string
+	SessionToken []byte
+	KeyA         []byte
+	KeyB         []byte
+	BrowserID    string
+	CertTime     time.Time
+	CertDuration time.Duration
 }
 
 type HawkCredentials struct {
@@ -50,26 +49,39 @@ type HawkCredentials struct {
 }
 
 type HawkSession struct {
-	LoginSession
-	FxAKeys
-	FxABrowserID
-	HawkCredentials
-}
-
-type CryptoKeys struct {
-	Keys map[string]KeyBundle
+	UserId            string
+	SessionToken      []byte
+	KeyA              []byte
+	KeyB              []byte
+	BrowserID         string
+	CertTime          time.Time
+	CertDuration      time.Duration
+	HawkID            string
+	HawkKey           string
+	APIEndpoint       string
+	HawkDuration      int64
+	HawkHashAlgorithm string
 }
 
 type CryptoSession struct {
-	LoginSession
-	FxAKeys
-	FxABrowserID
-	HawkCredentials
-	CryptoKeys
+	UserId            string
+	SessionToken      []byte
+	KeyA              []byte
+	KeyB              []byte
+	BrowserID         string
+	CertTime          time.Time
+	CertDuration      time.Duration
+	HawkID            string
+	HawkKey           string
+	APIEndpoint       string
+	HawkDuration      int64
+	HawkHashAlgorithm string
+	CryptoKeys        map[string]KeyBundle
 }
 
 type FFSyncSession struct {
 	SessionToken      []byte
+	KeyA              []byte
 	KeyB              []byte
 	UserId            string
 	APIEndpoint       string
@@ -91,6 +103,7 @@ type sessionHawkJson struct {
 
 type sessionJson struct {
 	SessionToken string          `json:"sessionToken"`
+	KeyA         string          `json:"keyA"`
 	KeyB         string          `json:"keyB"`
 	UserId       string          `json:"userID"`
 	Hawk         sessionHawkJson `json:"hawk"`
@@ -98,48 +111,64 @@ type sessionJson struct {
 
 func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
 	return KeyedSession{
-		LoginSession: s,
-		FxAKeys: FxAKeys{
-			KeyA: ka,
-			KeyB: kb,
-		},
+		UserId:       s.UserId,
+		SessionToken: s.SessionToken,
+		KeyA:         ka,
+		KeyB:         kb,
 	}
 }
 
 func (e KeyedSession) Extend(bid string, t0 time.Time, dur time.Duration) BrowserIdSession {
 	return BrowserIdSession{
-		LoginSession: e.LoginSession,
-		FxAKeys:      e.FxAKeys,
-		FxABrowserID: FxABrowserID{
-			BrowserID:    bid,
-			CertTime:     t0,
-			CertDuration: dur,
-		},
+		UserId:       e.UserId,
+		SessionToken: e.SessionToken,
+		KeyA:         e.KeyA,
+		KeyB:         e.KeyB,
+		BrowserID:    bid,
+		CertTime:     t0,
+		CertDuration: dur,
 	}
 }
 
 func (e BrowserIdSession) Extend(cred HawkCredentials) HawkSession {
 	return HawkSession{
-		LoginSession:    e.LoginSession,
-		FxAKeys:         e.FxAKeys,
-		FxABrowserID:    e.FxABrowserID,
-		HawkCredentials: cred,
+		UserId:            e.UserId,
+		SessionToken:      e.SessionToken,
+		KeyA:              e.KeyA,
+		KeyB:              e.KeyB,
+		BrowserID:         e.BrowserID,
+		CertTime:          e.CertTime,
+		CertDuration:      e.CertDuration,
+		HawkID:            cred.HawkID,
+		HawkKey:           cred.HawkKey,
+		APIEndpoint:       cred.APIEndpoint,
+		HawkDuration:      cred.HawkDuration,
+		HawkHashAlgorithm: cred.HawkHashAlgorithm,
 	}
 }
 
-func (e HawkSession) Extend(keys CryptoKeys) CryptoSession {
+func (e HawkSession) Extend(keys map[string]KeyBundle) CryptoSession {
 	return CryptoSession{
-		LoginSession:    e.LoginSession,
-		FxAKeys:         e.FxAKeys,
-		FxABrowserID:    e.FxABrowserID,
-		HawkCredentials: e.HawkCredentials,
-		CryptoKeys:      keys,
+		UserId:            e.UserId,
+		SessionToken:      e.SessionToken,
+		KeyA:              e.KeyA,
+		KeyB:              e.KeyB,
+		BrowserID:         e.BrowserID,
+		CertTime:          e.CertTime,
+		CertDuration:      e.CertDuration,
+		HawkID:            e.HawkID,
+		HawkKey:           e.HawkKey,
+		APIEndpoint:       e.APIEndpoint,
+		HawkDuration:      e.HawkDuration,
+		HawkHashAlgorithm: e.HawkHashAlgorithm,
+		CryptoKeys:        keys,
 	}
 }
 
 func (e HawkSession) ToKeylessSession() FFSyncSession {
 	return FFSyncSession{
 		SessionToken:      e.SessionToken,
+		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
 		UserId:            e.UserId,
 		APIEndpoint:       e.APIEndpoint,
@@ -153,6 +182,7 @@ func (e HawkSession) ToKeylessSession() FFSyncSession {
 func (s CryptoSession) Reduce() FFSyncSession {
 	return FFSyncSession{
 		SessionToken:      s.SessionToken,
+		KeyA:              s.KeyA,
 		KeyB:              s.KeyB,
 		UserId:            s.UserId,
 		APIEndpoint:       s.APIEndpoint,
@@ -160,7 +190,7 @@ func (s CryptoSession) Reduce() FFSyncSession {
 		HawkKey:           s.HawkKey,
 		HawkHashAlgorithm: s.HawkHashAlgorithm,
 		HawkTimeout:       s.CertTime.Add(s.CertDuration),
-		BulkKeys:          s.Keys,
+		BulkKeys:          s.CryptoKeys,
 	}
 }
 
@@ -174,6 +204,7 @@ func (s FFSyncSession) Save(path string) error {
 
 	sj := sessionJson{
 		SessionToken: hex.EncodeToString(s.SessionToken),
+		KeyA:         hex.EncodeToString(s.KeyA),
 		KeyB:         hex.EncodeToString(s.KeyB),
 		UserId:       s.UserId,
 		Hawk: sessionHawkJson{
@@ -202,40 +233,59 @@ func (s FFSyncSession) Save(path string) error {
 	return nil
 }
 
+func (s FFSyncSession) Expired() bool {
+	return s.HawkTimeout.After(time.Now().Add(15 * time.Minute))
+}
+
+func (s FFSyncSession) ToKeyed() KeyedSession {
+	return KeyedSession{
+		UserId:       s.UserId,
+		SessionToken: s.SessionToken,
+		KeyA:         s.KeyA,
+		KeyB:         s.KeyB,
+	}
+}
+
 func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 
 	dat, err := os.ReadFile(path)
 	if err != nil {
-		return FFSyncSession{}, errorx.Decorate(err, "failed to open configfile")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to open sessionfile")
 	}
 
 	var sj sessionJson
 	err = json.Unmarshal(dat, &sj)
 	if err != nil {
-		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file")
 	}
 
 	sessionToken, err := hex.DecodeString(sj.SessionToken)
 	if err != nil {
-		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (SessionToken)")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (SessionToken)")
+	}
+
+	keya, err := hex.DecodeString(sj.KeyA)
+	if err != nil {
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (KeyA)")
 	}
 
 	keyb, err := hex.DecodeString(sj.KeyB)
 	if err != nil {
-		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (KeyB)")
+		return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (KeyB)")
 	}
 
 	bulkkeys := make(map[string]KeyBundle, len(sj.Hawk.BulkKeys))
 	for k, v := range sj.Hawk.BulkKeys {
 		kb, err := keyBundleFromB64Array(v)
 		if err != nil {
-			return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal config-file (BulkKeys)")
+			return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (BulkKeys)")
 		}
 		bulkkeys[k] = kb
 	}
 
 	return FFSyncSession{
 		SessionToken:      sessionToken,
+		KeyA:              keya,
 		KeyB:              keyb,
 		UserId:            sj.UserId,
 		APIEndpoint:       sj.Hawk.APIEndpoint,

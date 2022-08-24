@@ -115,8 +115,6 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	ctx.PrintVerboseKV("KeyFetchToken", kft)
 
 	return LoginSession{
-		URL:             f.authURL,
-		Email:           email,
 		StretchPassword: stretchpwd,
 		UserId:          resp.UserID,
 		SessionToken:    st,
@@ -383,15 +381,15 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal cryptoKeys:\n"+resp.Payload)
 	}
 
-	result := CryptoKeys{Keys: make(map[string]KeyBundle, len(cryptoKeys.Collections)+1)}
+	result := make(map[string]KeyBundle, len(cryptoKeys.Collections)+1)
 
-	result.Keys[""], err = keyBundleFromB64Array(cryptoKeys.Default)
+	result[""], err = keyBundleFromB64Array(cryptoKeys.Default)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode cryptokeys.default")
 	}
 
 	for k, v := range cryptoKeys.Collections {
-		result.Keys[k], err = keyBundleFromB64Array(v)
+		result[k], err = keyBundleFromB64Array(v)
 		if err != nil {
 			return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode cryptokeys.default")
 		}
@@ -405,6 +403,70 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	}
 
 	return session.Extend(result), nil
+}
+
+func (f FxAClient) AutoRefreshSession(ctx *cli.FFSContext, session FFSyncSession) (FFSyncSession, error) {
+	session, changed, err := f.RefreshSession(ctx, session, false)
+	if err != nil {
+		return FFSyncSession{}, errorx.Decorate(err, "failed to refresh session")
+	}
+
+	if changed && ctx.Opt.SaveRefreshedSession {
+
+		ctx.PrintVerbose("Saved new session after auto-update")
+
+		ctx.PrintVerbose("Save session to " + ctx.Opt.SessionFilePath)
+
+		cfp, err := ctx.AbsSessionFilePath()
+		if err != nil {
+			return FFSyncSession{}, errorx.Decorate(err, "failed to get session file path")
+		}
+
+		err = session.Save(cfp)
+		if err != nil {
+			return FFSyncSession{}, errorx.Decorate(err, "failed to save session")
+		}
+
+	}
+
+	return session, nil
+}
+
+func (f FxAClient) RefreshSession(ctx *cli.FFSContext, session FFSyncSession, force bool) (FFSyncSession, bool, error) {
+
+	if session.Expired() {
+
+		ctx.PrintVerbose("Saved session is expired - refreshing")
+
+	} else if force {
+
+		ctx.PrintVerbose("Saved session is not expired - still refreshing (force)")
+
+	} else {
+
+		ctx.PrintVerbose("Saved session is not expired - nothing to do")
+
+		return session, false, nil
+	}
+
+	sessionBID, err := f.AssertBrowserID(ctx, session.ToKeyed())
+	if err != nil {
+		return FFSyncSession{}, false, errorx.Decorate(err, "failed to assert BID")
+	}
+
+	sessionHawk, err := f.HawkAuth(ctx, sessionBID)
+	if err != nil {
+		return FFSyncSession{}, false, errorx.Decorate(err, "failed to authenticate HAWK")
+	}
+
+	sessionCrypto, err := f.GetCryptoKeys(ctx, sessionHawk)
+	if err != nil {
+		return FFSyncSession{}, false, errorx.Decorate(err, "failed to get crypto/keys")
+	}
+
+	sessionSync := sessionCrypto.Reduce()
+
+	return sessionSync, true, nil
 }
 
 func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionInfo, error) {

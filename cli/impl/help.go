@@ -49,7 +49,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("firefox-sync-client.")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
-		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default config location")
+		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default session location")
 		ctx.PrintPrimaryOutput("                  [--device-name=<name>]")
 		ctx.PrintPrimaryOutput("                  [--device-type=<type>]")
 		ctx.PrintPrimaryOutput("  ffsclient refresh                           Refresh the current session (BID Assertion)")
@@ -70,7 +70,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  -version                                    Show version.")
 		ctx.PrintPrimaryOutput("  -v, --verbose                               Output more intermediate information")
 		ctx.PrintPrimaryOutput("  -q, --quiet                                 Do not print anything")
-		ctx.PrintPrimaryOutput("  -c <cfg>, --config <cfg>, --config=<cfg>    Specify the config location")
+		ctx.PrintPrimaryOutput("  --sessionfile <cfg>, --sessionfile=<cfg>    Specify the location of the saved session")
 		ctx.PrintPrimaryOutput("  -f <fmt>, --format <fmt>, --format=<fmt>    Specify the output format")
 		ctx.PrintPrimaryOutput("                                                # - 'text'")
 		ctx.PrintPrimaryOutput("                                                # - 'json'")
@@ -88,6 +88,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("                                                #   - IANA Time Zone, e.g. 'America/New_York'")
 		ctx.PrintPrimaryOutput("  --timeformat <url>, --timeformat=<url>      Specify the output timeformat (golang syntax)") //TODO use yyyy-MM-dd syntax and convert
 		ctx.PrintPrimaryOutput("  -o <f>, --output <f>, --output=<f>          Write the output to a file")
+		ctx.PrintPrimaryOutput("  --no-autosave-session                       Do not update the sessionfile if the session was auto-refreshed")
 		return a.ExitCode
 
 	} else {
@@ -105,13 +106,12 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("ffsclient version")
 			ctx.PrintPrimaryOutput("")
 			ctx.PrintPrimaryOutput("Login to FF-Sync account")
-			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")
 
 		case cli.ModeLogin:
 			ctx.PrintPrimaryOutput("ffsclient login <email> <password> [--device-name] [--device-type]")
 			ctx.PrintPrimaryOutput("")
 			ctx.PrintPrimaryOutput("Login to FF-Sync account")
-			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")
+			ctx.PrintPrimaryOutput("If no sesionfile location is provided this uses the default ~/.config/firefox-sync-client.secret")
 			ctx.PrintPrimaryOutput("Specify a Device-name to identify the client in the Firefox Account page")
 
 		case cli.ModeListCollections:
