@@ -19,6 +19,12 @@ type keysResponseSchema struct {
 	Bundle string `json:"bundle"`
 }
 
+type registerDeviceRequestSchema struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
 type signCertRequestSchemaPKey struct {
 	Algorithm string `json:"algorithm"`
 	P         string `json:"p"`

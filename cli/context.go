@@ -134,6 +134,18 @@ func (c FFSContext) PrintVerbose(msg string) {
 	c.printVerboseRaw(msg + "\n")
 }
 
+func (c FFSContext) PrintVerboseHeader(msg string) {
+	if c.Opt.Quiet || !c.Opt.Verbose {
+		return
+	}
+
+	c.printVerboseRaw("\n")
+	c.printVerboseRaw("========================================" + "\n")
+	c.printVerboseRaw(msg + "\n")
+	c.printVerboseRaw("========================================" + "\n")
+	c.printVerboseRaw("\n")
+}
+
 func (c FFSContext) PrintVerboseKV(key string, vval any) {
 	if c.Opt.Quiet || !c.Opt.Verbose {
 		return

@@ -50,8 +50,8 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
 		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default config location")
-		ctx.PrintPrimaryOutput("                  [--service-name=<name>]")
-		ctx.PrintPrimaryOutput("                  [--service-name <name>]")
+		ctx.PrintPrimaryOutput("                  [--device-name=<name>]")
+		ctx.PrintPrimaryOutput("                  [--device-type=<type>]")
 		ctx.PrintPrimaryOutput("  ffsclient refresh                           Refresh the current session (BID Assertion)")
 		ctx.PrintPrimaryOutput("  ffsclient collections                       List all available collections")
 		ctx.PrintPrimaryOutput("                  [--usage]                     # Include usage (storage space)")
@@ -108,11 +108,11 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")
 
 		case cli.ModeLogin:
-			ctx.PrintPrimaryOutput("ffsclient login <email> <password> [--service-name]")
+			ctx.PrintPrimaryOutput("ffsclient login <email> <password> [--device-name] [--device-type]")
 			ctx.PrintPrimaryOutput("")
 			ctx.PrintPrimaryOutput("Login to FF-Sync account")
 			ctx.PrintPrimaryOutput("If no config location is provided this uses the default ~/.config/firefox-sync-client.secret")
-			ctx.PrintPrimaryOutput("Specify a service-name to identify the client in the Firefox Account page")
+			ctx.PrintPrimaryOutput("Specify a Device-name to identify the client in the Firefox Account page")
 
 		case cli.ModeListCollections:
 			ctx.PrintPrimaryOutput("ffsclient collections [--usage]")

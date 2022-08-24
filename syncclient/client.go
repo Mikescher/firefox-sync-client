@@ -35,7 +35,7 @@ func NewFxAClient(serverurl string) *FxAClient {
 	}
 }
 
-func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, serviceName string) (LoginSession, error) {
+func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, error) {
 	stretchpwd := stretchPassword(email, password)
 
 	ctx.PrintVerboseKV("StretchPW", stretchpwd)
@@ -124,6 +124,25 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string, ser
 	}, nil
 }
 
+func (f FxAClient) RegisterDevice(ctx *cli.FFSContext, session LoginSession, deviceName string) error {
+
+	ctx.PrintVerbose("Register device-name '" + deviceName + "'")
+
+	body := registerDeviceRequestSchema{
+		Name: deviceName,
+		Type: "cli",
+	}
+
+	_, _, err := f.requestWithHawkToken(ctx, "POST", "/account/device", body, session.SessionToken, "sessionToken")
+	if err != nil {
+		return errorx.Decorate(err, "Failed to register device")
+	}
+
+	ctx.PrintVerbose("Device registered as '" + deviceName + "'")
+
+	return nil
+}
+
 func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session LoginSession) ([]byte, []byte, error) {
 
 	ctx.PrintVerbose("Request keys from " + "/account/keys")
@@ -172,87 +191,71 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session LoginSession) ([]byte,
 	return keyA, keyB, nil
 }
 
-func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionInfo, error) {
-	binResp, err := f.request(ctx, session, "GET", "/info/collections", nil)
-	if err != nil {
-		return nil, errorx.Decorate(err, "API request failed")
-	}
-
-	var resp collectionsInfoResponseSchema
-	err = json.Unmarshal(binResp, &resp)
-	if err != nil {
-		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
-	}
-
-	result := make([]models.CollectionInfo, 0, len(resp))
-	for k, v := range resp {
-		sec, dec := math.Modf(v)
-		result = append(result, models.CollectionInfo{
-			Name:         k,
-			LastModified: time.Unix(int64(sec), int64(dec*(1e9))),
-		})
-	}
-
-	return result, nil
-}
-
-func (f FxAClient) GetCollectionsCounts(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionCount, error) {
-	binResp, err := f.request(ctx, session, "GET", "/info/collection_counts", nil)
-	if err != nil {
-		return nil, errorx.Decorate(err, "API request failed")
-	}
-
-	var resp collectionsCountResponseSchema
-	err = json.Unmarshal(binResp, &resp)
-	if err != nil {
-		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
-	}
-
-	result := make([]models.CollectionCount, 0, len(resp))
-	for k, v := range resp {
-		result = append(result, models.CollectionCount{
-			Name:  k,
-			Count: v,
-		})
-	}
-
-	return result, nil
-}
-
-func (f FxAClient) GetCollectionsUsage(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionUsage, error) {
-	binResp, err := f.request(ctx, session, "GET", "/info/collection_usage", nil)
-	if err != nil {
-		return nil, errorx.Decorate(err, "API request failed")
-	}
-
-	var resp collectionsUsageResponseSchema
-	err = json.Unmarshal(binResp, &resp)
-	if err != nil {
-		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
-	}
-
-	result := make([]models.CollectionUsage, 0, len(resp))
-	for k, v := range resp {
-		result = append(result, models.CollectionUsage{
-			Name:  k,
-			Usage: int64(v * 1024),
-		})
-	}
-
-	return result, nil
-}
-
 func (f FxAClient) AssertBrowserID(ctx *cli.FFSContext, session KeyedSession) (BrowserIdSession, error) {
 	ctx.PrintVerbose("Create & Sign Certificate")
 
-	bid, t0, dur, err := f.getBrowserIDAssertion(ctx, session)
+	duration := time.Second * consts.DefaultBIDAssertionDuration
+
+	params := dsa.Parameters{}
+	err := dsa.GenerateParameters(&params, rand.Reader, dsa.L1024N160)
 	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "Failed to assert BID")
+		return BrowserIdSession{}, errorx.Decorate(err, "Failed to generate DSA params")
 	}
+
+	var privateKey dsa.PrivateKey
+	privateKey.PublicKey.Parameters = params
+
+	err = dsa.GenerateKey(&privateKey, rand.Reader)
+	if err != nil {
+		return BrowserIdSession{}, errorx.Decorate(err, "Failed to generate DSA key-pair")
+	}
+
+	body := signCertRequestSchema{
+		PublicKey: signCertRequestSchemaPKey{
+			Algorithm: "DS",
+			P:         privateKey.P.Text(16),
+			Q:         privateKey.Q.Text(16),
+			G:         privateKey.G.Text(16),
+			Y:         privateKey.Y.Text(16),
+		},
+		Duration: duration.Milliseconds(),
+	}
+
+	ctx.PrintVerbose("Sign new certificate via " + "/certificate/sign")
+
+	binResp, _, err := f.requestWithHawkToken(ctx, "POST", "/certificate/sign", body, session.SessionToken, "sessionToken")
+	if err != nil {
+		return BrowserIdSession{}, errorx.Decorate(err, "Failed to sign cert")
+	}
+
+	var resp signCertResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return BrowserIdSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	ctx.PrintVerboseKV("Certificate", resp.Certificate)
+
+	t0 := time.Now()
+	exp := t0.UnixMilli() + duration.Milliseconds()
+
+	token := jwt.NewWithClaims(&SigningMethodDS128{}, jwt.MapClaims{
+		"exp": exp,
+		"aud": ctx.Opt.TokenServerURL,
+	})
+
+	assertion, err := token.SignedString(&privateKey)
+	if err != nil {
+		return BrowserIdSession{}, errorx.Decorate(err, "failed to generate JWT")
+	}
+
+	ctx.PrintVerboseKV("Assertion:JWT", assertion)
+
+	bid := resp.Certificate + "~" + assertion
 
 	ctx.PrintVerboseKV("BID-Assertion", bid)
 
-	return session.Extend(bid, t0, dur), nil
+	return session.Extend(bid, t0, duration), nil
 }
 
 func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (HawkSession, error) {
@@ -264,9 +267,53 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 
 	ctx.PrintVerboseKV("Session-State", sessionState)
 
-	cred, err := f.getHawkCredentials(ctx, session.BrowserID, sessionState)
+	auth := "BrowserID " + session.BrowserID
+
+	req, err := http.NewRequestWithContext(ctx, "GET", ctx.Opt.TokenServerURL+"/1.0/sync/1.5", nil)
 	if err != nil {
-		return HawkSession{}, errorx.Decorate(err, "Failed to get hawk credentials")
+		return HawkSession{}, errorx.Decorate(err, "failed to create request")
+	}
+
+	req.Header.Add("Authorization", auth)
+	req.Header.Add("X-Client-State", sessionState)
+
+	ctx.PrintVerbose("Query HAWK credentials")
+
+	rawResp, err := f.client.Do(req)
+	if err != nil {
+		return HawkSession{}, errorx.Decorate(err, "failed to do request")
+	}
+
+	respBodyRaw, err := io.ReadAll(rawResp.Body)
+	if err != nil {
+		return HawkSession{}, errorx.Decorate(err, "failed to read response-body request")
+	}
+
+	if rawResp.StatusCode != 200 {
+		return HawkSession{}, errorx.InternalError.New(fmt.Sprintf("api call returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
+	}
+
+	var resp hawkCredResponseSchema
+	err = json.Unmarshal(respBodyRaw, &resp)
+	if err != nil {
+		return HawkSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+	}
+
+	ctx.PrintVerboseKV("HAWK-ID", resp.ID)
+	ctx.PrintVerboseKV("HAWK-Key", resp.Key)
+	ctx.PrintVerboseKV("HAWK-UserID", resp.UID)
+	ctx.PrintVerboseKV("HAWK-Endpoint", resp.APIEndpoint)
+	ctx.PrintVerboseKV("HAWK-Duration", resp.Duration)
+	ctx.PrintVerboseKV("HAWK-HashAlgo", resp.HashAlgorithm)
+	ctx.PrintVerboseKV("HAWK-FxA-Uid", resp.HashedFxAUID)
+	ctx.PrintVerboseKV("HAWK-NodeType", resp.NodeType)
+
+	cred := HawkCredentials{
+		HawkID:            resp.ID,
+		HawkKey:           resp.Key,
+		APIEndpoint:       resp.APIEndpoint,
+		HawkDuration:      resp.Duration,
+		HawkHashAlgorithm: resp.HashAlgorithm,
 	}
 
 	return session.Extend(cred), nil
@@ -360,116 +407,74 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	return session.Extend(result), nil
 }
 
-func (f FxAClient) getBrowserIDAssertion(ctx *cli.FFSContext, session KeyedSession) (string, time.Time, time.Duration, error) {
-
-	duration := time.Second * consts.DefaultBIDAssertionDuration
-
-	params := dsa.Parameters{}
-	err := dsa.GenerateParameters(&params, rand.Reader, dsa.L1024N160)
+func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionInfo, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/collections", nil)
 	if err != nil {
-		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to generate DSA params")
+		return nil, errorx.Decorate(err, "API request failed")
 	}
 
-	var privateKey dsa.PrivateKey
-	privateKey.PublicKey.Parameters = params
-
-	err = dsa.GenerateKey(&privateKey, rand.Reader)
-	if err != nil {
-		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to generate DSA key-pair")
-	}
-
-	body := signCertRequestSchema{
-		PublicKey: signCertRequestSchemaPKey{
-			Algorithm: "DS",
-			P:         privateKey.P.Text(16),
-			Q:         privateKey.Q.Text(16),
-			G:         privateKey.G.Text(16),
-			Y:         privateKey.Y.Text(16),
-		},
-		Duration: duration.Milliseconds(),
-	}
-
-	ctx.PrintVerbose("Sign new certificate via " + "/certificate/sign")
-
-	binResp, _, err := f.requestWithHawkToken(ctx, "POST", "/certificate/sign", body, session.SessionToken, "sessionToken")
-	if err != nil {
-		return "", time.Time{}, 0, errorx.Decorate(err, "Failed to sign cert")
-	}
-
-	var resp signCertResponseSchema
+	var resp collectionsInfoResponseSchema
 	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
-		return "", time.Time{}, 0, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	ctx.PrintVerboseKV("Certificate", resp.Certificate)
-
-	t0 := time.Now()
-	exp := t0.UnixMilli() + duration.Milliseconds()
-
-	token := jwt.NewWithClaims(&SigningMethodDS128{}, jwt.MapClaims{
-		"exp": exp,
-		"aud": ctx.Opt.TokenServerURL,
-	})
-
-	assertion, err := token.SignedString(&privateKey)
-	if err != nil {
-		return "", time.Time{}, 0, errorx.Decorate(err, "failed to generate JWT")
+	result := make([]models.CollectionInfo, 0, len(resp))
+	for k, v := range resp {
+		sec, dec := math.Modf(v)
+		result = append(result, models.CollectionInfo{
+			Name:         k,
+			LastModified: time.Unix(int64(sec), int64(dec*(1e9))),
+		})
 	}
 
-	ctx.PrintVerboseKV("Assertion:JWT", assertion)
-
-	return resp.Certificate + "~" + assertion, t0, duration, nil
+	return result, nil
 }
 
-func (f FxAClient) getHawkCredentials(ctx *cli.FFSContext, bid string, clientState string) (HawkCredentials, error) {
-	auth := "BrowserID " + bid
-
-	req, err := http.NewRequestWithContext(ctx, "GET", ctx.Opt.TokenServerURL+"/1.0/sync/1.5", nil)
+func (f FxAClient) GetCollectionsCounts(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionCount, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/collection_counts", nil)
 	if err != nil {
-		return HawkCredentials{}, errorx.Decorate(err, "failed to create request")
+		return nil, errorx.Decorate(err, "API request failed")
 	}
-	req.Header.Add("Authorization", auth)
-	req.Header.Add("X-Client-State", clientState)
 
-	ctx.PrintVerbose("Query HAWK credentials")
-
-	rawResp, err := f.client.Do(req)
+	var resp collectionsCountResponseSchema
+	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
-		return HawkCredentials{}, errorx.Decorate(err, "failed to do request")
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	respBodyRaw, err := io.ReadAll(rawResp.Body)
+	result := make([]models.CollectionCount, 0, len(resp))
+	for k, v := range resp {
+		result = append(result, models.CollectionCount{
+			Name:  k,
+			Count: v,
+		})
+	}
+
+	return result, nil
+}
+
+func (f FxAClient) GetCollectionsUsage(ctx *cli.FFSContext, session FFSyncSession) ([]models.CollectionUsage, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/collection_usage", nil)
 	if err != nil {
-		return HawkCredentials{}, errorx.Decorate(err, "failed to read response-body request")
+		return nil, errorx.Decorate(err, "API request failed")
 	}
 
-	if rawResp.StatusCode != 200 {
-		return HawkCredentials{}, errorx.InternalError.New(fmt.Sprintf("api call returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
-	}
-
-	var resp hawkCredResponseSchema
-	err = json.Unmarshal(respBodyRaw, &resp)
+	var resp collectionsUsageResponseSchema
+	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
-		return HawkCredentials{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 	}
 
-	ctx.PrintVerboseKV("HAWK-ID", resp.ID)
-	ctx.PrintVerboseKV("HAWK-Key", resp.Key)
-	ctx.PrintVerboseKV("HAWK-UserID", resp.UID)
-	ctx.PrintVerboseKV("HAWK-Endpoint", resp.APIEndpoint)
-	ctx.PrintVerboseKV("HAWK-Duration", resp.Duration)
-	ctx.PrintVerboseKV("HAWK-HashAlgo", resp.HashAlgorithm)
-	ctx.PrintVerboseKV("HAWK-FxA-Uid", resp.HashedFxAUID)
-	ctx.PrintVerboseKV("HAWK-NodeType", resp.NodeType)
+	result := make([]models.CollectionUsage, 0, len(resp))
+	for k, v := range resp {
+		result = append(result, models.CollectionUsage{
+			Name:  k,
+			Usage: int64(v * 1024),
+		})
+	}
 
-	return HawkCredentials{
-		HawkID:            resp.ID,
-		HawkKey:           resp.Key,
-		APIEndpoint:       resp.APIEndpoint,
-		HawkDuration:      resp.Duration,
-		HawkHashAlgorithm: resp.HashAlgorithm,
-	}, nil
+	return result, nil
 }
 
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {

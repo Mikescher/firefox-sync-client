@@ -5,22 +5,26 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
-	"regexp"
+	"os"
 )
 
-var rexServiceName = regexp.MustCompile(`^[a-zA-Z0-9\-]*$`)
-
 type CLIArgumentsLogin struct {
-	Email       string
-	Password    string
-	ServiceName string
+	Email      string
+	Password   string
+	DeviceName string
+	DeviceType string
 }
 
 func NewCLIArgumentsLogin() *CLIArgumentsLogin {
+	hostname, err := os.Hostname()
+	deviceName := "Firefox-Sync-Client"
+	if err == nil {
+		deviceName = "Firefox-Sync-Client on " + hostname
+	}
 	return &CLIArgumentsLogin{
-		Email:       "",
-		Password:    "",
-		ServiceName: consts.DefaultServiceName,
+		Email:      "",
+		Password:   "",
+		DeviceName: deviceName,
 	}
 }
 
@@ -40,10 +44,17 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 	a.Password = positionalArgs[1]
 
 	for _, arg := range optionArgs {
-		if arg.Key == "service-name" && arg.Value != nil {
-			a.ServiceName = *arg.Value
-			if err := validateServiceName(a.ServiceName); err != nil {
-				return errorx.Decorate(err, "invalid service-name")
+		if arg.Key == "device-name" && arg.Value != nil {
+			a.DeviceName = *arg.Value
+			if err := validateDeviceName(a.DeviceName); err != nil {
+				return errorx.Decorate(err, "invalid device-name")
+			}
+			continue
+		}
+		if arg.Key == "device-type" && arg.Value != nil {
+			a.DeviceType = *arg.Value
+			if err := validateDeviceType(a.DeviceType); err != nil {
+				return errorx.Decorate(err, "invalid device-type")
 			}
 			continue
 		}
@@ -74,9 +85,9 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	ctx.PrintVerbose("[1] Login to account")
+	ctx.PrintVerboseHeader("[1] Login to Sync Account")
 
-	session, err := client.Login(ctx, a.Email, a.Password, a.ServiceName)
+	session, err := client.Login(ctx, a.Email, a.Password)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -84,7 +95,17 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	ctx.PrintVerbose("[2] Fetch session keys")
+	ctx.PrintVerboseHeader("[2] Register Device-Name")
+
+	err = client.RegisterDevice(ctx, session, a.DeviceName)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	// ========================================================================
+
+	ctx.PrintVerboseHeader("[3] Fetch session keys")
 
 	keyA, keyB, err := client.FetchKeys(ctx, session)
 	if err != nil {
@@ -99,7 +120,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	ctx.PrintVerbose("[3] Assert BrowserID")
+	ctx.PrintVerboseHeader("[4] Assert BrowserID")
 
 	sessionBID, err := client.AssertBrowserID(ctx, extsession)
 	if err != nil {
@@ -109,7 +130,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	ctx.PrintVerbose("[4] Get HAWK Credentials")
+	ctx.PrintVerboseHeader("[5] Get HAWK Credentials")
 
 	sessionHawk, err := client.HawkAuth(ctx, sessionBID)
 	if err != nil {
@@ -119,7 +140,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	ctx.PrintVerbose("[4] Get Crypto Keys")
+	ctx.PrintVerboseHeader("[6] Get Crypto Keys")
 
 	sessionCrypto, err := client.GetCryptoKeys(ctx, sessionHawk)
 	if err != nil {
@@ -128,6 +149,8 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	}
 
 	// ========================================================================
+
+	ctx.PrintVerboseHeader("[7] Save Session")
 
 	ffsyncSession := sessionCrypto.Reduce()
 
@@ -146,15 +169,22 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	return 0
 }
 
-func validateServiceName(name string) error {
+func validateDeviceName(name string) error {
 	if name == "" {
-		return errorx.InternalError.New("Service-name cannot be empty")
+		return errorx.InternalError.New("Device-name cannot be empty")
+	}
+	if len(name) > 255 {
+		return errorx.InternalError.New("Device-name can be at most 16 characters")
+	}
+	return nil
+}
+
+func validateDeviceType(name string) error {
+	if name == "" {
+		return errorx.InternalError.New("Device-type cannot be empty")
 	}
 	if len(name) > 16 {
-		return errorx.InternalError.New("Service-name can be at most 16 characters")
-	}
-	if !rexServiceName.MatchString(name) {
-		return errorx.InternalError.New("Service-name can only contain the characters [A-Z], [a-z], [0-9]")
+		return errorx.InternalError.New("Device-type can be at most 16 characters")
 	}
 	return nil
 }
