@@ -7,16 +7,16 @@ const (
 	ModeVersion          Mode = "version"
 	ModeLogin            Mode = "login"
 	ModeTokenRefresh     Mode = "refresh"
-	ModeDeleteAll        Mode = "delete-all"
-	ModeDeleteSingle     Mode = "delete"
-	ModeListCollections  Mode = "collections"
-	ModeGetRawRecord     Mode = "raw"
-	ModeGetDecodedRecord Mode = "get"
-	ModeCreateRecord     Mode = "create"
-	ModeUpdateRecord     Mode = "update"
 	ModeGetQuota         Mode = "quota"
-	ModeGetAllRaw        Mode = "list-raw"
-	ModeGetAllDecoded    Mode = "list"
+	ModeListCollections  Mode = "collections"
+	ModeDeleteAll        Mode = "delete-all" // TODO
+	ModeDeleteSingle     Mode = "delete"     // TODO
+	ModeGetRawRecord     Mode = "raw"        // TODO
+	ModeGetDecodedRecord Mode = "get"        // TODO
+	ModeCreateRecord     Mode = "create"     // TODO
+	ModeUpdateRecord     Mode = "update"     // TODO
+	ModeGetAllRaw        Mode = "list-raw"   // TODO
+	ModeGetAllDecoded    Mode = "list"       // TODO
 )
 
 func (m Mode) String() string {

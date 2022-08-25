@@ -55,11 +55,11 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  ffsclient refresh                           Refresh the current session (BID Assertion)")
 		ctx.PrintPrimaryOutput("  ffsclient collections                       List all available collections")
 		ctx.PrintPrimaryOutput("                  [--usage]                     # Include usage (storage space)")
-		ctx.PrintPrimaryOutput("  ffsclient quota <collection>                (TODO)")
-		ctx.PrintPrimaryOutput("  ffsclient raw <collection> <record-id>      get a single record (not decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient get <collection> <record-id>      get a single record (decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient list-raw <collection>             get a whole collection (not decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient list <collection>                 get a whole record (decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient quota                             Query the storage quota of the current user")
+		ctx.PrintPrimaryOutput("  ffsclient raw <collection> <record-id>      Get a single record (not decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient get <collection> <record-id>      Get a single record (decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient list-raw <collection>             Get a whole collection (not decoded)")
+		ctx.PrintPrimaryOutput("  ffsclient list <collection>                 Get a whole record (decoded)")
 		ctx.PrintPrimaryOutput("  ffsclient create <collection>               (TODO)")
 		ctx.PrintPrimaryOutput("  ffsclient update <collection>               (TODO)")
 		ctx.PrintPrimaryOutput("  ffsclient delete <record-id>                Delete the specified record")
@@ -121,6 +121,12 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("Optionally includes the storage-space usage (Note: This request may be very expensive)")
 			return a.ExitCode
 
+		case cli.ModeGetQuota:
+			ctx.PrintPrimaryOutput("ffsclient quota")
+			ctx.PrintPrimaryOutput("")
+			ctx.PrintPrimaryOutput("Get the storage quota of the current user (used / max)")
+			return a.ExitCode
+
 		case cli.ModeDeleteAll: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
@@ -142,10 +148,6 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			return a.ExitCode
 
 		case cli.ModeUpdateRecord: //TODO
-			ctx.PrintPrimaryOutput("")
-			return a.ExitCode
-
-		case cli.ModeGetQuota: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
 

@@ -226,7 +226,7 @@ func (s FFSyncSession) Save(path string) error {
 }
 
 func (s FFSyncSession) Expired() bool {
-	return s.Timeout.After(time.Now().Add(15 * time.Minute))
+	return s.Timeout.Before(time.Now().Add(15 * time.Minute))
 }
 
 func (s FFSyncSession) ToKeyed() KeyedSession {

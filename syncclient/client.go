@@ -83,7 +83,11 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	//TODO statuscode [429, 500, 503] means retry-after
 
 	if rawResp.StatusCode != 200 {
-		return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		if len(string(respBodyRaw)) > 1 {
+			return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v", rawResp.StatusCode))
+		}
 	}
 
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
@@ -289,7 +293,11 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 	}
 
 	if rawResp.StatusCode != 200 {
-		return HawkSession{}, errorx.InternalError.New(fmt.Sprintf("api call returned statuscode %v\n\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		if len(string(respBodyRaw)) > 1 {
+			return HawkSession{}, errorx.InternalError.New(fmt.Sprintf("api call returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return HawkSession{}, errorx.InternalError.New(fmt.Sprintf("api call returned statuscode %v", rawResp.StatusCode))
+		}
 	}
 
 	var resp hawkCredResponseSchema
@@ -451,7 +459,7 @@ func (f FxAClient) RefreshSession(ctx *cli.FFSContext, session FFSyncSession, fo
 
 	} else {
 
-		ctx.PrintVerbose("Saved session is not expired - nothing to do")
+		ctx.PrintVerbose("Saved session is not expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ") - nothing to do")
 
 		return session, false, nil
 	}
@@ -543,6 +551,47 @@ func (f FxAClient) GetCollectionsUsage(ctx *cli.FFSContext, session FFSyncSessio
 	}
 
 	return result, nil
+}
+
+func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, *int64, error) {
+	binResp, err := f.request(ctx, session, "GET", "/info/quota", nil)
+	if err != nil {
+		return 0, nil, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp []any
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return 0, nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	if len(resp) != 2 {
+		return 0, nil, errorx.InternalError.New("info/quota returned invali data (array.len)")
+	}
+
+	ctx.PrintVerboseKV("quota[0]", resp[0])
+	ctx.PrintVerboseKV("quota[1]", resp[1])
+
+	var used int64
+
+	switch v := resp[0].(type) {
+	case float64:
+		used = int64(v * 1024)
+	default:
+		return 0, nil, errorx.InternalError.New("info/quota returned invali data (array[0].type)")
+	}
+
+	var total *int64 = nil
+	if resp[1] != nil {
+		switch v := resp[1].(type) {
+		case float64:
+			total = langext.Ptr(int64(v * 1024))
+		default:
+			return 0, nil, errorx.InternalError.New("info/quota returned invali data (array[1].type)")
+		}
+	}
+
+	return used, total, nil
 }
 
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
