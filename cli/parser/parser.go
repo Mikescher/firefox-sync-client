@@ -52,7 +52,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 	verb := unprocessedArgs[0]
 	unprocessedArgs = unprocessedArgs[1:]
 
-	verbArg, found := getVerb(verb)
+	verbArg, found := impl.ParseVerb(verb)
 	if !found {
 		return nil, cli.Options{}, errorx.InternalError.New("Unknown command: " + verb)
 	}
@@ -178,7 +178,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
-		if (arg.Key == "sessionfile" || arg.Key == "sessionfile") && arg.Value != nil {
+		if (arg.Key == "sessionfile" || arg.Key == "session-file") && arg.Value != nil {
 			opt.SessionFilePath = *arg.Value
 			continue
 		}
@@ -234,6 +234,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if arg.Key == "no-autosave-session" && arg.Value == nil {
 			opt.SaveRefreshedSession = false
+			continue
+		}
+
+		if arg.Key == "force-refresh-session" && arg.Value == nil {
+			opt.ForceRefreshSession = false
 			continue
 		}
 

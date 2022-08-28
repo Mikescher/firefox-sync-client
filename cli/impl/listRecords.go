@@ -12,31 +12,59 @@ import (
 )
 
 type CLIArgumentsListRecords struct {
-	Collection string
-	Raw        bool
-	Decoded    bool
-	IDOnly     bool
-	Sort       *string
-	Limit      *int
-	Offset     *int
-	After      *time.Time
+	Collection  string
+	Raw         bool
+	Decoded     bool
+	IDOnly      bool
+	PrettyPrint bool
+	Sort        *string
+	Limit       *int
+	Offset      *int
+	After       *time.Time
 }
 
 func NewCLIArgumentsListRecords() *CLIArgumentsListRecords {
 	return &CLIArgumentsListRecords{
-		Collection: "",
-		Raw:        false,
-		Decoded:    false,
-		IDOnly:     false,
-		Sort:       nil,
-		Limit:      nil,
-		Offset:     nil,
-		After:      nil,
+		Collection:  "",
+		Raw:         false,
+		Decoded:     false,
+		IDOnly:      false,
+		PrettyPrint: false,
+		Sort:        nil,
+		Limit:       nil,
+		Offset:      nil,
+		After:       nil,
 	}
 }
 
 func (a *CLIArgumentsListRecords) Mode() cli.Mode {
 	return cli.ModeListRecords
+}
+
+func (a *CLIArgumentsListRecords) ShortHelp() [][]string {
+	return [][]string{
+		{"ffsclient list <collection>", "Get a all records in a collection (use --format to define the format)"},
+		{"          (--raw | --decoded | --ids)", "Return raw data, decoded payload, or only IDs"},
+		{"          [--after <rfc3339>]", "Return only fields updated after this date"},
+		{"          [--sort <sort>]", "Sort the result by (newest|index|oldest)"},
+		{"          [--limit <n>]", "Return max <n> elements"},
+		{"          [--offset <o>]", "Skip the first <n> elements"},
+		{"          [--pretty-print]", "Pretty-Print json in decoded data / payload (if possible)"},
+	}
+}
+
+func (a *CLIArgumentsListRecords) FullHelp() []string {
+	return []string{
+		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print-data] [--pretty-print-payload]",
+		"",
+		"List all records in a collection",
+		"",
+		"Either --raw or --decoded or --ids must be specified",
+		"If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned",
+		"If --sort is specified the resulting records are sorted by ( newest | index | oldest )",
+		"The global --format option is used to control the output format",
+		"The --pretty-print-data and --pretty-print-payload try to pretty-print the payload/data, only works if the data is in JSON format and if it is being printed (--raw / --decoded)",
+	}
 }
 
 func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
@@ -97,6 +125,10 @@ func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli
 				continue
 			}
 			return errorx.InternalError.New("Failed to parse number argument '--offset': '" + *arg.Value + "'")
+		}
+		if arg.Key == "pretty-print" && arg.Value == nil {
+			a.PrettyPrint = true
+			continue
 		}
 		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}
@@ -226,7 +258,7 @@ func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 			ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-			ctx.PrintPrimaryOutput(v.Payload)
+			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, v.Payload))
 			ctx.PrintPrimaryOutput("")
 		}
 		return 0
@@ -261,7 +293,7 @@ func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),
-				Payload:      v.Payload,
+				Payload:      a.prettyPrint(ctx, v.Payload),
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
@@ -295,7 +327,7 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 			ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-			ctx.PrintPrimaryOutput(string(v.DecodedData))
+			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, string(v.DecodedData)))
 			ctx.PrintPrimaryOutput("")
 		}
 		return 0
@@ -330,7 +362,7 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),
-				Data:         string(v.DecodedData),
+				Data:         a.prettyPrint(ctx, string(v.DecodedData)),
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
@@ -354,5 +386,13 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return 0
 
+	}
+}
+
+func (a *CLIArgumentsListRecords) prettyPrint(ctx *cli.FFSContext, v string) string {
+	if a.PrettyPrint {
+		return langext.TryPrettyPrintJson(v)
+	} else {
+		return v
 	}
 }

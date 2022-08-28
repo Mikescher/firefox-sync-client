@@ -32,6 +32,25 @@ func (a *CLIArgumentsLogin) Mode() cli.Mode {
 	return cli.ModeLogin
 }
 
+func (a *CLIArgumentsLogin) ShortHelp() [][]string {
+	return [][]string{
+		{"ffsclient login <login> <password>", "Login to FF-Sync account, uses ~/.config as default session location"},
+		{"          [--device-name=<name>]", ""},
+		{"          [--device-type=<type>]", ""},
+	}
+}
+
+func (a *CLIArgumentsLogin) FullHelp() []string {
+	return []string{
+		"$> ffsclient login <email> <password> [--device-name] [--device-type]",
+		"",
+		"Login to FF-Sync account",
+		"",
+		"If no sesionfile location is provided this uses the default ~/.config/firefox-sync-client.secret",
+		"Specify a Device-name to identify the client in the Firefox Account page",
+	}
+}
+
 func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) < 2 {
 		return errorx.InternalError.New("Not enough arguments for <login>")

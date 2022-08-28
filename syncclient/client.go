@@ -407,9 +407,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 }
 
 func (f FxAClient) AutoRefreshSession(ctx *cli.FFSContext, session FFSyncSession) (FFSyncSession, error) {
-	//TODO session/status ??
-
-	session, changed, err := f.RefreshSession(ctx, session, false)
+	session, changed, err := f.RefreshSession(ctx, session, ctx.Opt.ForceRefreshSession)
 	if err != nil {
 		return FFSyncSession{}, errorx.Decorate(err, "failed to refresh session")
 	}

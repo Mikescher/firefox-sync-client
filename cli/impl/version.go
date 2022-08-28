@@ -18,6 +18,18 @@ func (a *CLIArgumentsVersion) Mode() cli.Mode {
 	return cli.ModeVersion
 }
 
+func (a *CLIArgumentsVersion) ShortHelp() [][]string {
+	return nil
+}
+
+func (a *CLIArgumentsVersion) FullHelp() []string {
+	return []string{
+		"$> ffsclient --version",
+		"",
+		"Output the application version",
+	}
+}
+
 func (a *CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])

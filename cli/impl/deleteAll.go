@@ -16,6 +16,16 @@ func (a *CLIArgumentsDeleteAll) Mode() cli.Mode {
 	return cli.ModeDeleteAll
 }
 
+func (a *CLIArgumentsDeleteAll) ShortHelp() [][]string {
+	return [][]string{
+		{"ffsclient delete-all", "Delete all (!) records in the server"},
+	}
+}
+
+func (a *CLIArgumentsDeleteAll) FullHelp() []string {
+	return nil // TODO
+}
+
 func (a *CLIArgumentsDeleteAll) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])

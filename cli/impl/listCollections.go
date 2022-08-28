@@ -25,6 +25,23 @@ func (a *CLIArgumentsListCollections) Mode() cli.Mode {
 	return cli.ModeListCollections
 }
 
+func (a *CLIArgumentsListCollections) ShortHelp() [][]string {
+	return [][]string{
+		{"ffsclient collections", "List all available collections"},
+		{"          [--usage]", "Include usage (storage space)"},
+	}
+}
+
+func (a *CLIArgumentsListCollections) FullHelp() []string {
+	return []string{
+		"$> ffsclient collections [--usage]",
+		"",
+		"List all available collections together with their last-modified-time and entry-count",
+		"",
+		"Optionally includes the storage-space usage (Note: This request may be very expensive)",
+	}
+}
+
 func (a *CLIArgumentsListCollections) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])

@@ -20,6 +20,20 @@ func (a *CLIArgumentsGetQuota) Mode() cli.Mode {
 	return cli.ModeGetQuota
 }
 
+func (a *CLIArgumentsGetQuota) ShortHelp() [][]string {
+	return [][]string{
+		{"ffsclient quota", "Query the storage quota of the current user"},
+	}
+}
+
+func (a *CLIArgumentsGetQuota) FullHelp() []string {
+	return []string{
+		"$> ffsclient quota",
+		"",
+		"Get the storage quota of the current user (used / max)",
+	}
+}
+
 func (a *CLIArgumentsGetQuota) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
