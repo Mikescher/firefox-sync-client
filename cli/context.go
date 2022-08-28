@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"ffsyncclient/langext"
-	"ffsyncclient/utils/term"
+	"ffsyncclient/langext/term"
 	"fmt"
 	"github.com/joomcode/errorx"
 	"os"

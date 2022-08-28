@@ -69,12 +69,17 @@ func calcHawkAuth(requestMethod string, requestURI string, body string, contentT
 		uport = _v[strings.Index(_v, "=")+1:]
 	}
 
+	rpath := requrl.Path
+	if requrl.RawQuery != "" {
+		rpath += "?" + requrl.RawQuery
+	}
+
 	sigbits := make([]string, 0, 10)
 	sigbits = append(sigbits, "hawk.1.header")
 	sigbits = append(sigbits, ts)
 	sigbits = append(sigbits, nonce)
 	sigbits = append(sigbits, requestMethod)
-	sigbits = append(sigbits, requrl.Path)
+	sigbits = append(sigbits, rpath)
 	sigbits = append(sigbits, strings.ToLower(uhost))
 	sigbits = append(sigbits, strings.ToLower(uport))
 	sigbits = append(sigbits, hash)

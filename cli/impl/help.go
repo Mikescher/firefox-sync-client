@@ -52,18 +52,21 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  ffsclient login <login> <password>          Login to FF-Sync account, uses ~/.config as default session location")
 		ctx.PrintPrimaryOutput("                  [--device-name=<name>]")
 		ctx.PrintPrimaryOutput("                  [--device-type=<type>]")
-		ctx.PrintPrimaryOutput("  ffsclient refresh                           Refresh the current session (BID Assertion)")
+		ctx.PrintPrimaryOutput("  ffsclient refresh [--force]                 Refresh the current session (BID Assertion)")
 		ctx.PrintPrimaryOutput("  ffsclient collections                       List all available collections")
 		ctx.PrintPrimaryOutput("                  [--usage]                     # Include usage (storage space)")
 		ctx.PrintPrimaryOutput("  ffsclient quota                             Query the storage quota of the current user")
-		ctx.PrintPrimaryOutput("  ffsclient raw <collection> <record-id>      Get a single record (not decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient get <collection> <record-id>      Get a single record (decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient list-raw <collection>             Get a whole collection (not decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient list <collection>                 Get a whole record (decoded)")
-		ctx.PrintPrimaryOutput("  ffsclient create <collection>               (TODO)")
-		ctx.PrintPrimaryOutput("  ffsclient update <collection>               (TODO)")
+		ctx.PrintPrimaryOutput("  ffsclient list <collection>                 Get a all records in a collection (use --format to define the format)")
+		ctx.PrintPrimaryOutput("                  (--raw | --decoded | --ids) Return raw data, decoded payload, or only IDs")
+		ctx.PrintPrimaryOutput("                  [--after <rfc3339>]         Return only fields updated after this date")
+		ctx.PrintPrimaryOutput("                  [--sort <sort>]             Sort the result by (newest|index|oldest)")
+		ctx.PrintPrimaryOutput("                  [--limit <n>]               Return max <n> elements")
+		ctx.PrintPrimaryOutput("                  [--offset <o>]              Skip the first <n> elements")
+		ctx.PrintPrimaryOutput("  ffsclient get <collection> <record-id>      Get a single record")
+		ctx.PrintPrimaryOutput("                  (--raw | --decoded)         Return raw data or decoded payload")
 		ctx.PrintPrimaryOutput("  ffsclient delete <record-id>                Delete the specified record")
 		ctx.PrintPrimaryOutput("  ffsclient delete-all                        Delete all (!) records in the server")
+		ctx.PrintPrimaryOutput("  ffsclient <verb> --help                     Output specific help for a single action/verb")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Options:")
 		ctx.PrintPrimaryOutput("  -h, --help                                  Show this screen.")
@@ -127,6 +130,23 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("Get the storage quota of the current user (used / max)")
 			return a.ExitCode
 
+		case cli.ModeTokenRefresh:
+			ctx.PrintPrimaryOutput("ffsclient refresh [--force]")
+			ctx.PrintPrimaryOutput("")
+			ctx.PrintPrimaryOutput("Refresh the current session token")
+			ctx.PrintPrimaryOutput("Use --force to force a new session, even if the old is still valid")
+			return a.ExitCode
+
+		case cli.ModeListRecords:
+			ctx.PrintPrimaryOutput("  ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>]")
+			ctx.PrintPrimaryOutput("")
+			ctx.PrintPrimaryOutput("List all records in a collection")
+			ctx.PrintPrimaryOutput("Either --raw or --decoded or --ids must be specified")
+			ctx.PrintPrimaryOutput("If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned")
+			ctx.PrintPrimaryOutput("If --sort is specified the resulting records are sorted by ( newest | index | oldest )")
+			ctx.PrintPrimaryOutput("The global --format option is used to control the output format")
+			return a.ExitCode
+
 		case cli.ModeDeleteAll: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
@@ -135,11 +155,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
 
-		case cli.ModeGetRawRecord: //TODO
-			ctx.PrintPrimaryOutput("")
-			return a.ExitCode
-
-		case cli.ModeGetDecodedRecord: //TODO
+		case cli.ModeGetRecord: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
 
@@ -148,18 +164,6 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			return a.ExitCode
 
 		case cli.ModeUpdateRecord: //TODO
-			ctx.PrintPrimaryOutput("")
-			return a.ExitCode
-
-		case cli.ModeTokenRefresh: //TODO
-			ctx.PrintPrimaryOutput("")
-			return a.ExitCode
-
-		case cli.ModeGetAllRaw: //TODO
-			ctx.PrintPrimaryOutput("")
-			return a.ExitCode
-
-		case cli.ModeGetAllDecoded: //TODO
 			ctx.PrintPrimaryOutput("")
 			return a.ExitCode
 

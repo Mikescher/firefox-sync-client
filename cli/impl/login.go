@@ -71,6 +71,7 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Login]")
 	ctx.PrintVerbose("")
+
 	ctx.PrintVerboseKV("Auth-Server", ctx.Opt.AuthServerURL)
 	ctx.PrintVerboseKV("Token-Server", ctx.Opt.TokenServerURL)
 	ctx.PrintVerboseKV("Email", a.Email)

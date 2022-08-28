@@ -7,6 +7,8 @@ import (
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
+	"encoding/hex"
 	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
 	"golang.org/x/crypto/hkdf"
@@ -72,7 +74,21 @@ func verifyHMAC(key []byte, data []byte, insig []byte) bool {
 	return bytes.Equal(rsig, insig)
 }
 
-func decryptPayload(rawciphertext string, ciphertext []byte, iv []byte, hmacval []byte, key KeyBundle) ([]byte, error) {
+func decryptPayload(rawciphertext string, rawiv string, rawhmac string, key KeyBundle) ([]byte, error) {
+	iv, err := base64.StdEncoding.DecodeString(rawiv)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to b64-decode iv")
+	}
+
+	hmacval, err := hex.DecodeString(rawhmac)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to hex-decode hmac")
+	}
+
+	ciphertext, err := base64.StdEncoding.DecodeString(rawciphertext)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to b64-decode ciphertext")
+	}
 
 	hmacBuilder := hmac.New(sha256.New, key.HMACKey)
 	hmacBuilder.Write([]byte(rawciphertext))

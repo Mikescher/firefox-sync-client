@@ -6,7 +6,6 @@ import (
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
-	"ffsyncclient/utils"
 	"fmt"
 	"github.com/joomcode/errorx"
 	"strconv"
@@ -46,8 +45,7 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[List collections]")
 	ctx.PrintVerbose("")
 
-	ctx.PrintVerboseKV("Auth-Server", ctx.Opt.AuthServerURL)
-	ctx.PrintVerboseKV("Token-Server", ctx.Opt.TokenServerURL)
+	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
@@ -60,6 +58,8 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
 		return consts.ExitcodeNoLogin
 	}
+
+	// ========================================================================
 
 	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
 
@@ -75,6 +75,8 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
 	}
+
+	// ========================================================================
 
 	search := func(arr []models.Collection, needle string) (int, error) {
 		for i, v := range arr {
@@ -129,11 +131,17 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 		}
 	}
 
+	// ========================================================================
+
+	return a.printOutput(ctx, collections)
+}
+
+func (a *CLIArgumentsListCollections) printOutput(ctx *cli.FFSContext, collections []models.Collection) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 	case cli.OutputFormatText:
 		for _, v := range collections {
 			if a.ShowUsage {
-				ctx.PrintPrimaryOutput(fmt.Sprintf("%v %v %v %v", v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), v.Count, utils.FormatBytes(v.Usage)))
+				ctx.PrintPrimaryOutput(fmt.Sprintf("%v %v %v %v", v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), v.Count, langext.FormatBytes(v.Usage)))
 			} else {
 				ctx.PrintPrimaryOutput(fmt.Sprintf("%v %v %v", v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), v.Count))
 			}
@@ -150,7 +158,7 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 				"count":             v.Count,
 			}
 			if a.ShowUsage {
-				obj["usage"] = utils.FormatBytes(v.Usage)
+				obj["usage"] = langext.FormatBytes(v.Usage)
 				obj["usage_bytes"] = v.Usage
 			}
 			json = append(json, obj)
@@ -181,7 +189,7 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 				Count:    fmt.Sprintf("%d", v.Count),
 			}
 			if a.ShowUsage {
-				obj.Usage = utils.FormatBytes(v.Usage)
+				obj.Usage = langext.FormatBytes(v.Usage)
 				obj.UsageBytes = fmt.Sprintf("%d", v.Usage)
 			}
 			node.Collections = append(node.Collections, obj)
@@ -198,7 +206,7 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 		}
 		for _, v := range collections {
 			if a.ShowUsage {
-				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count), utils.FormatBytes(v.Usage)})
+				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count), langext.FormatBytes(v.Usage)})
 			} else {
 				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count)})
 			}

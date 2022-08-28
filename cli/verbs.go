@@ -3,20 +3,22 @@ package cli
 type Mode string
 
 const (
-	ModeHelp             Mode = "help"
-	ModeVersion          Mode = "version"
-	ModeLogin            Mode = "login"
-	ModeTokenRefresh     Mode = "refresh"
-	ModeGetQuota         Mode = "quota"
-	ModeListCollections  Mode = "collections"
-	ModeDeleteAll        Mode = "delete-all" // TODO
-	ModeDeleteSingle     Mode = "delete"     // TODO
-	ModeGetRawRecord     Mode = "raw"        // TODO
-	ModeGetDecodedRecord Mode = "get"        // TODO
-	ModeCreateRecord     Mode = "create"     // TODO
-	ModeUpdateRecord     Mode = "update"     // TODO
-	ModeGetAllRaw        Mode = "list-raw"   // TODO
-	ModeGetAllDecoded    Mode = "list"       // TODO
+	ModeHelp            Mode = "help"
+	ModeVersion         Mode = "version"
+	ModeLogin           Mode = "login"
+	ModeTokenRefresh    Mode = "refresh"
+	ModeGetQuota        Mode = "quota"
+	ModeListCollections Mode = "collections"
+	ModeDeleteAll       Mode = "delete-all" // TODO
+	ModeDeleteSingle    Mode = "delete"     // TODO
+	ModeGetRecord       Mode = "get"        // TODO
+	ModeCreateRecord    Mode = "create"     // TODO
+	ModeUpdateRecord    Mode = "update"     // TODO
+	ModeListRecords     Mode = "list"       // TODO
+	ModeBookmarks       Mode = "bookmarks"  // TODO
+	ModePasswords       Mode = "passwords"  // TODO
+	ModeForms           Mode = "forms"      // TODO
+	ModeHistory         Mode = "history"    // TODO
 )
 
 func (m Mode) String() string {

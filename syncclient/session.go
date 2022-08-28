@@ -268,11 +268,26 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 
 	bulkkeys := make(map[string]KeyBundle, len(sj.Hawk.BulkKeys))
 	for k, v := range sj.Hawk.BulkKeys {
-		kb, err := keyBundleFromB64Array(v)
+
+		if len(v) != 2 {
+			return FFSyncSession{}, errorx.InternalError.New("failed to decode bulkKeys['" + k + "']: must be an array with two values")
+		}
+
+		ec, err := hex.DecodeString(v[0])
+		if err != nil {
+			return FFSyncSession{}, errorx.Decorate(err, "failed to decode bulkKeys['"+k+"'][0]")
+		}
+
+		hc, err := hex.DecodeString(v[1])
+		if err != nil {
+			return FFSyncSession{}, errorx.Decorate(err, "failed to decode bulkKeys['"+k+"'][1]")
+		}
+
 		if err != nil {
 			return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (BulkKeys)")
 		}
-		bulkkeys[k] = kb
+
+		bulkkeys[k] = KeyBundle{EncryptionKey: ec, HMACKey: hc}
 	}
 
 	return FFSyncSession{

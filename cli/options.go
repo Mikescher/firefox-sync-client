@@ -2,7 +2,7 @@ package cli
 
 import (
 	"ffsyncclient/consts"
-	"ffsyncclient/utils/term"
+	"ffsyncclient/langext/term"
 	"time"
 )
 

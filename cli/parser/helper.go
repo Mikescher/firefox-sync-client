@@ -27,11 +27,8 @@ func getVerb(v string) (cli.Verb, bool) {
 	case strings.ToLower(string(cli.ModeListCollections)):
 		return impl.NewCLIArgumentsListCollections(), true
 
-	case strings.ToLower(string(cli.ModeGetRawRecord)):
-		return impl.NewCLIArgumentsGetRawRecord(), true
-
-	case strings.ToLower(string(cli.ModeGetDecodedRecord)):
-		return impl.NewCLIArgumentsGetDecodedRecord(), true
+	case strings.ToLower(string(cli.ModeGetRecord)):
+		return impl.NewCLIArgumentsGetRecords(), true
 
 	case strings.ToLower(string(cli.ModeCreateRecord)):
 		return impl.NewCLIArgumentsCreateRecord(), true
@@ -45,11 +42,8 @@ func getVerb(v string) (cli.Verb, bool) {
 	case strings.ToLower(string(cli.ModeTokenRefresh)):
 		return impl.NewCLIArgumentsTokenRefresh(), true
 
-	case strings.ToLower(string(cli.ModeGetAllRaw)):
-		return impl.NewCLIArgumentsGetAllRaw(), true
-
-	case strings.ToLower(string(cli.ModeGetAllDecoded)):
-		return impl.NewCLIArgumentsGetAllDecoded(), true
+	case strings.ToLower(string(cli.ModeListRecords)):
+		return impl.NewCLIArgumentsListRecords(), true
 
 	}
 

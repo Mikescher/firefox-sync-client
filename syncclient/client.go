@@ -5,7 +5,6 @@ import (
 	"crypto/dsa"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -17,6 +16,8 @@ import (
 	"github.com/joomcode/errorx"
 	"io"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -368,22 +369,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	ctx.PrintVerboseKV("payload.HMAC", payload.HMAC)
 	ctx.PrintVerboseKV("payload.Ciphertext", payload.Ciphertext)
 
-	ciphertext, err := base64.StdEncoding.DecodeString(payload.Ciphertext)
-	if err != nil {
-		return CryptoSession{}, errorx.Decorate(err, "failed to b64-decode payload.ciphertext")
-	}
-
-	iv, err := base64.StdEncoding.DecodeString(payload.IV)
-	if err != nil {
-		return CryptoSession{}, errorx.Decorate(err, "failed to b64-decode payload.iv")
-	}
-
-	hmac, err := hex.DecodeString(payload.HMAC)
-	if err != nil {
-		return CryptoSession{}, errorx.Decorate(err, "failed to hex-decode payload.hmac")
-	}
-
-	dplBin, err := decryptPayload(payload.Ciphertext, ciphertext, iv, hmac, syncKeys)
+	dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, syncKeys)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "failed to decrypt payload")
 	}
@@ -421,6 +407,8 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 }
 
 func (f FxAClient) AutoRefreshSession(ctx *cli.FFSContext, session FFSyncSession) (FFSyncSession, error) {
+	//TODO session/status ??
+
 	session, changed, err := f.RefreshSession(ctx, session, false)
 	if err != nil {
 		return FFSyncSession{}, errorx.Decorate(err, "failed to refresh session")
@@ -450,17 +438,13 @@ func (f FxAClient) AutoRefreshSession(ctx *cli.FFSContext, session FFSyncSession
 func (f FxAClient) RefreshSession(ctx *cli.FFSContext, session FFSyncSession, force bool) (FFSyncSession, bool, error) {
 
 	if session.Expired() {
-
-		ctx.PrintVerbose("Saved session is expired - refreshing")
-
+		ctx.PrintVerbose("Saved session is expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
+		ctx.PrintVerbose("Refreshing session (AssertBrowserID + HawkAuth)")
 	} else if force {
-
-		ctx.PrintVerbose("Saved session is not expired - still refreshing (force)")
-
+		ctx.PrintVerbose("Saved session is not expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
+		ctx.PrintVerbose("Refreshing session by force (AssertBrowserID + HawkAuth)")
 	} else {
-
-		ctx.PrintVerbose("Saved session is not expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ") - nothing to do")
-
+		ctx.PrintVerbose("Saved session is valid (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
 		return session, false, nil
 	}
 
@@ -594,6 +578,104 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 	return used, total, nil
 }
 
+func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, collection string, after *time.Time, sort *string, idOnly bool, decode bool, limit *int, offset *int) ([]models.DecodedRecord, error) {
+	url := fmt.Sprintf("/storage/%s", collection)
+
+	params := make([]string, 0, 8)
+
+	if after != nil {
+		params = append(params, "newer="+strconv.FormatInt(after.Unix(), 10))
+	}
+	if sort != nil {
+		params = append(params, "sort="+*sort)
+	}
+	if !idOnly {
+		params = append(params, "full=true")
+	}
+	if limit != nil {
+		params = append(params, "limit="+strconv.Itoa(*limit))
+	}
+	if offset != nil {
+		params = append(params, "offset="+strconv.Itoa(*offset))
+	}
+
+	if len(params) > 0 {
+		url = url + "?" + strings.Join(params, "&")
+	}
+
+	binResp, err := f.request(ctx, session, "GET", url, nil)
+	if err != nil {
+		return nil, errorx.Decorate(err, "API request failed")
+	}
+
+	if idOnly {
+		var resp listRecordsIDsResponseSchema
+		err = json.Unmarshal(binResp, &resp)
+		if err != nil {
+			return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+		}
+
+		result := make([]models.DecodedRecord, 0, len(binResp))
+
+		for _, v := range resp {
+			result = append(result, models.DecodedRecord{ID: v})
+		}
+		return result, nil
+	}
+
+	var resp listRecordsResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	ctx.PrintVerbose(fmt.Sprintf("API Call returned %d records", len(resp)))
+
+	result := make([]models.DecodedRecord, 0, len(binResp))
+
+	for _, v := range resp {
+		result = append(result, models.DecodedRecord{
+			ID:       v.ID,
+			Payload:  v.Payload,
+			Modified: langext.UnixFloatSeconds(v.Modified),
+		})
+	}
+
+	if decode {
+		bulkKeys := session.BulkKeys[""]
+
+		if v, ok := session.BulkKeys[collection]; ok {
+			ctx.PrintVerbose("Use collection-specific bulk-keys")
+
+			bulkKeys = v
+		} else {
+			ctx.PrintVerbose("Use global bulk-keys")
+		}
+		ctx.PrintVerboseKV("EncryptionKey", bulkKeys.EncryptionKey)
+		ctx.PrintVerboseKV("HMACKey", bulkKeys.HMACKey)
+
+		for i, v := range result {
+
+			var payload payloadSchema
+			err = json.Unmarshal([]byte(v.Payload), &payload)
+			if err != nil {
+				return nil, errorx.Decorate(err, "failed to unmarshal payload of record <"+v.ID+">:\n"+v.Payload)
+			}
+
+			ctx.PrintVerbose("Decrypt payload of " + v.ID)
+
+			dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
+			if err != nil {
+				return nil, errorx.Decorate(err, "failed to decrypt payload of record <"+v.ID+">")
+			}
+
+			result[i].DecodedData = dplBin
+		}
+	}
+
+	return result, nil
+}
+
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
 	requestURL := f.authURL + relurl
 
@@ -689,7 +771,12 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 	}
 
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
-	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%v", string(respBodyRaw)))
+	for k, va := range rawResp.Header {
+		for _, v := range va {
+			ctx.PrintVerbose(fmt.Sprintf("Request returned Header [%s] := '%s'", k, v))
+		}
+	}
+	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%s", string(respBodyRaw)))
 
 	return respBodyRaw, nil
 }

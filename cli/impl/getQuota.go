@@ -5,7 +5,6 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
-	"ffsyncclient/utils"
 	"fmt"
 	"github.com/joomcode/errorx"
 )
@@ -40,6 +39,8 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerboseKV("Auth-Server", ctx.Opt.AuthServerURL)
 	ctx.PrintVerboseKV("Token-Server", ctx.Opt.TokenServerURL)
 
+	// ========================================================================
+
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
 		ctx.PrintFatalError(err)
@@ -51,6 +52,8 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
 		return consts.ExitcodeNoLogin
 	}
+
+	// ========================================================================
 
 	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
 
@@ -67,43 +70,51 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
+	// ========================================================================
+
 	used, total, err := client.GetQuota(ctx, session)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
 	}
 
+	// ========================================================================
+
+	return a.printOutput(ctx, total, used)
+}
+
+func (a *CLIArgumentsGetQuota) printOutput(ctx *cli.FFSContext, total *int64, used int64) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
 		if total == nil {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", utils.FormatBytes(used), "INF"))
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), "INF"))
 		} else {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", utils.FormatBytes(used), utils.FormatBytes(*total)))
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
 		}
 		return 0
 
 	case cli.OutputFormatTable:
 		if total == nil {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", utils.FormatBytes(used), "INF"))
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", langext.FormatBytes(used), "INF"))
 		} else {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", utils.FormatBytes(used), utils.FormatBytes(*total)))
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
 		}
 		return 0
 
 	case cli.OutputFormatJson:
 		if total == nil {
 			ctx.PrintPrimaryOutputJSON(langext.H{
-				"used":        utils.FormatBytes(used),
+				"used":        langext.FormatBytes(used),
 				"used_bytes":  used,
 				"total":       nil,
 				"total_bytes": nil,
 			})
 		} else {
 			ctx.PrintPrimaryOutputJSON(langext.H{
-				"used":        utils.FormatBytes(used),
+				"used":        langext.FormatBytes(used),
 				"used_bytes":  used,
-				"total":       utils.FormatBytes(*total),
+				"total":       langext.FormatBytes(*total),
 				"total_bytes": *total,
 			})
 		}
@@ -117,7 +128,7 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 				XMLName   struct{} `xml:"Quota"`
 			}
 			ctx.PrintPrimaryOutputXML(xmlcoll{
-				Used:      utils.FormatBytes(used),
+				Used:      langext.FormatBytes(used),
 				UsedBytes: used,
 			})
 		} else {
@@ -129,9 +140,9 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 				XMLName    struct{} `xml:"Quota"`
 			}
 			ctx.PrintPrimaryOutputXML(xmlcoll{
-				Used:       utils.FormatBytes(used),
+				Used:       langext.FormatBytes(used),
 				UsedBytes:  used,
-				Total:      utils.FormatBytes(*total),
+				Total:      langext.FormatBytes(*total),
 				TotalBytes: *total,
 			})
 		}

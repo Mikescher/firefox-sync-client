@@ -76,3 +76,14 @@ type cryptoKeysSchema struct {
 	Collections map[string][]string `json:"collections"`
 	Collection  string              `json:"collection"`
 }
+
+type listRecordsIDsResponseSchema []string
+
+type listRecordsResponseSchema []recordsResponseSchema
+
+type recordsResponseSchema struct {
+	ID        string  `json:"id"`
+	Modified  float64 `json:"modified"`
+	Payload   string  `json:"payload"`
+	SortIndex int64   `json:"sortIndex"`
+}
