@@ -153,7 +153,7 @@ func (c FFSContext) PrintVerboseKV(key string, vval any) {
 	}
 
 	termlen := 236
-	keylen := 21
+	keylen := 28
 
 	var val = ""
 	switch v := vval.(type) {

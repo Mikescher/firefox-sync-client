@@ -24,7 +24,7 @@ func (a *CLIArgumentsTokenRefresh) Mode() cli.Mode {
 
 func (a *CLIArgumentsTokenRefresh) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient refresh [--force]", "Refresh the current session (BID Assertion)"},
+		{"ffsclient refresh [--force]", "Refresh the current session token (BID Assertion)"},
 	}
 }
 

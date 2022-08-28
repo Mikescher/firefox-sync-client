@@ -87,3 +87,8 @@ type recordsResponseSchema struct {
 	Payload   string  `json:"payload"`
 	SortIndex int64   `json:"sortIndex"`
 }
+
+type sessionStatusResponseSchema struct {
+	State  string `json:"state"`
+	UserID string `json:"uid"`
+}

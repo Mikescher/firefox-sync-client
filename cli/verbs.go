@@ -3,15 +3,15 @@ package cli
 type Mode string
 
 const (
-	ModeHelp         Mode = "help"
-	ModeVersion      Mode = "version"
-	ModeLogin        Mode = "login"
-	ModeTokenRefresh Mode = "refresh"
-	//ModeCheckSession    Mode = "check-session" // TODO
+	ModeHelp            Mode = "help"
+	ModeVersion         Mode = "version"
+	ModeLogin           Mode = "login"
+	ModeTokenRefresh    Mode = "refresh"
+	ModeCheckSession    Mode = "check-session"
 	ModeGetQuota        Mode = "quota"
 	ModeListCollections Mode = "collections"
 	ModeListRecords     Mode = "list"
-	ModeGetRecord       Mode = "get"        // TODO
+	ModeGetRecord       Mode = "get"
 	ModeDeleteAll       Mode = "delete-all" // TODO
 	ModeDeleteSingle    Mode = "delete"     // TODO
 	ModeCreateRecord    Mode = "create"     // TODO
@@ -25,7 +25,7 @@ const (
 var Modes = []Mode{
 	ModeLogin,
 	ModeTokenRefresh,
-	//ModeCheckSession,
+	ModeCheckSession,
 
 	ModeListCollections,
 	ModeGetQuota,

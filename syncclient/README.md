@@ -6,6 +6,7 @@ Primary Source(s):
  - https://mozilla-services.readthedocs.io/en/latest/sync/index.html
  - https://mozilla-services.readthedocs.io/en/latest/storage/apis-1.5.html
  - https://mozilla.github.io/ecosystem-platform/api#tag/Account/operation/postAccountLogin
+ - https://mozilla-services.readthedocs.io/en/latest/sync/objectformats.html#sync-objectformats
 
 Additional Info:
 

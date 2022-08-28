@@ -724,6 +724,29 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	return record, nil
 }
 
+func (f FxAClient) CheckSession(ctx *cli.FFSContext, session FFSyncSession) (bool, error) {
+	binResp, _, err := f.requestWithHawkToken(ctx, "GET", "/session/status", nil, session.SessionToken, "sessionToken")
+	if err != nil {
+		return false, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp sessionStatusResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return false, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	if resp.State != "verified" {
+		return false, nil
+	}
+
+	if resp.UserID != session.UserId {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
 	requestURL := f.authURL + relurl
 
@@ -810,14 +833,6 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 
 	//TODO statuscode [429, 500, 503] means retry-after
 
-	if rawResp.StatusCode != 200 {
-		if len(string(respBodyRaw)) > 1 {
-			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v\nBody:\n%v", requestURL, rawResp.StatusCode, string(respBodyRaw)))
-		} else {
-			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
-		}
-	}
-
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
 	for k, va := range rawResp.Header {
 		for _, v := range va {
@@ -825,6 +840,14 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		}
 	}
 	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%s", string(respBodyRaw)))
+
+	if rawResp.StatusCode != 200 {
+		if len(string(respBodyRaw)) > 1 {
+			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v\nBody:\n%v", requestURL, rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return nil, errorx.InternalError.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
+		}
+	}
 
 	return respBodyRaw, nil
 }

@@ -290,6 +290,20 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 		bulkkeys[k] = KeyBundle{EncryptionKey: ec, HMACKey: hc}
 	}
 
+	ctx.PrintVerboseKV("SessionToken", sessionToken)
+	ctx.PrintVerboseKV("KeyA", keya)
+	ctx.PrintVerboseKV("KeyB", keyb)
+	ctx.PrintVerboseKV("UserId", sj.UserId)
+	ctx.PrintVerboseKV("HawkAPIEndpoint", sj.Hawk.APIEndpoint)
+	ctx.PrintVerboseKV("HawkID", sj.Hawk.ID)
+	ctx.PrintVerboseKV("HawkKey", sj.Hawk.Key)
+	ctx.PrintVerboseKV("HawkHashAlgorithm", sj.Hawk.HashAlgorithm)
+	ctx.PrintVerboseKV("Timeout", time.UnixMicro(sj.Timeout))
+	for k, v := range bulkkeys {
+		ctx.PrintVerboseKV("BulkKeys['"+k+"'].HMACKey", v.HMACKey)
+		ctx.PrintVerboseKV("BulkKeys['"+k+"'].EncryptionKey", v.EncryptionKey)
+	}
+
 	return FFSyncSession{
 		SessionToken:      sessionToken,
 		KeyA:              keya,
