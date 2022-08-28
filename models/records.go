@@ -2,7 +2,7 @@ package models
 
 import "time"
 
-type DecodedRecord struct {
+type Record struct {
 	ID          string
 	Payload     string
 	Modified    time.Time

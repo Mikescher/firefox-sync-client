@@ -164,6 +164,6 @@ func (a *CLIArgumentsGetQuota) printOutput(ctx *cli.FFSContext, total *int64, us
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 	}
 }

@@ -46,6 +46,7 @@ func (a *CLIArgumentsLogin) FullHelp() []string {
 		"",
 		"Login to FF-Sync account",
 		"",
+		"This needs to be doe before all other commands that need a valid FirefoxSync connection",
 		"If no sesionfile location is provided this uses the default ~/.config/firefox-sync-client.secret",
 		"Specify a Device-name to identify the client in the Firefox Account page",
 	}

@@ -65,13 +65,16 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 	if a.Verb == nil {
 
 		leftlen := 0
+
 		verbhelp := make([][]string, 0, 128)
+		opthelp := make([][]string, 0, 128)
+
 		for _, mode := range cli.Modes {
 			verb := GetModeImpl(mode)
 			for _, line := range verb.ShortHelp() {
 				left := line[0]
 				right := line[1]
-				if !strings.HasPrefix(left, "ffsclient") && strings.HasPrefix(left, "  ") && right != "" {
+				if !strings.HasPrefix(left, "ffsclient") && (strings.HasPrefix(left, "  ") || left == "") && right != "" {
 					right = "  # " + right
 				}
 				verbhelp = append(verbhelp, []string{left, right})
@@ -79,6 +82,17 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			}
 		}
 
+		for _, line := range a.globalOptions() {
+			left := line[0]
+			right := line[1]
+			if !strings.HasPrefix(left, "-") && (strings.HasPrefix(left, "  ") || left == "") && right != "" {
+				right = "  # " + right
+			}
+			opthelp = append(opthelp, []string{left, right})
+			leftlen = langext.Max(leftlen, len(left))
+		}
+
+		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("firefox-sync-client.")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
@@ -87,30 +101,10 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		}
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Options:")
-		ctx.PrintPrimaryOutput("  -h, --help                                  Show this screen.")
-		ctx.PrintPrimaryOutput("  -version                                    Show version.")
-		ctx.PrintPrimaryOutput("  -v, --verbose                               Output more intermediate information")
-		ctx.PrintPrimaryOutput("  -q, --quiet                                 Do not print anything")
-		ctx.PrintPrimaryOutput("  --sessionfile <cfg>, --sessionfile=<cfg>    Specify the location of the saved session")
-		ctx.PrintPrimaryOutput("  -f <fmt>, --format <fmt>, --format=<fmt>    Specify the output format")
-		ctx.PrintPrimaryOutput("                                                # - 'text'")
-		ctx.PrintPrimaryOutput("                                                # - 'json'")
-		ctx.PrintPrimaryOutput("                                                # - 'netscape'   (default firefox bookmarks format)")
-		ctx.PrintPrimaryOutput("                                                # - 'xml'")
-		ctx.PrintPrimaryOutput("                                                # - 'table'")
-		ctx.PrintPrimaryOutput("  --auth-server <url>, --auth-server=<url>    Specify the (authentication) server-url")
-		ctx.PrintPrimaryOutput("  --token-server <url>, --token-server=<url>  Specify the (token) server-url")
-		ctx.PrintPrimaryOutput("  --color                                     Enforce colored output")
-		ctx.PrintPrimaryOutput("  --no-color                                  Disable colored output")
-		ctx.PrintPrimaryOutput("  --timezone <url>, --timezone=<url>          Specify the output timezone")
-		ctx.PrintPrimaryOutput("                                                # Can be either:")
-		ctx.PrintPrimaryOutput("                                                #   - UTC")
-		ctx.PrintPrimaryOutput("                                                #   - Local (default)")
-		ctx.PrintPrimaryOutput("                                                #   - IANA Time Zone, e.g. 'America/New_York'")
-		ctx.PrintPrimaryOutput("  --timeformat <url>, --timeformat=<url>      Specify the output timeformat (golang syntax)") //TODO use yyyy-MM-dd syntax and convert
-		ctx.PrintPrimaryOutput("  -o <f>, --output <f>, --output=<f>          Write the output to a file")
-		ctx.PrintPrimaryOutput("  --no-autosave-session                       Do not update the sessionfile if the session was auto-refreshed")
-		ctx.PrintPrimaryOutput("  --force-refresh-session                     Always auto-refresh the session, even if its not expired")
+		for _, row := range opthelp {
+			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
+		}
+		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 
 	} else {
@@ -127,4 +121,33 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 
 	}
 
+}
+
+func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd syntax and convert
+	return [][]string{
+		{"-h, --help", "Show this screen."},
+		{"-version", "Show version."},
+		{"-v, --verbose", "Output more intermediate information"},
+		{"-q, --quiet", "Do not print anything"},
+		{"--sessionfile <cfg>, --sessionfile=<cfg>", "Specify the location of the saved session"},
+		{"-f <fmt>, --format <fmt>, --format=<fmt>", "Specify the output format"},
+		{"", "- 'text'"},
+		{"", "- 'json'"},
+		{"", "- 'netscape'   (default firefox bookmarks format)"},
+		{"", "- 'xml'"},
+		{"", "- 'table'"},
+		{"--auth-server <url>, --auth-server=<url>", "Specify the (authentication) server-url"},
+		{"--token-server <url>, --token-server=<url>", "Specify the (token) server-url"},
+		{"--color", "Enforce colored output"},
+		{"--no-color", "Disable colored output"},
+		{"--timezone <tz>, --timezone=<tz>", "Specify the output timezone"},
+		{"", "Can be either:"},
+		{"", "  - UTC"},
+		{"", "  - Local (default)"},
+		{"", "  - IANA Time Zone, e.g. 'America/New_York'"},
+		{"--timeformat <url>, --timeformat=<url>", "Specify the output timeformat (golang syntax)"},
+		{"-o <f>, --output <f>, --output=<f>", "Write the output to a file"},
+		{"--no-autosave-session", "Do not update the sessionfile if the session was auto-refreshed"},
+		{"--force-refresh-session", "Always auto-refresh the session, even if its not expired"},
+	}
 }

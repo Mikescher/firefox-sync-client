@@ -576,7 +576,7 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 	return used, total, nil
 }
 
-func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, collection string, after *time.Time, sort *string, idOnly bool, decode bool, limit *int, offset *int) ([]models.DecodedRecord, error) {
+func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, collection string, after *time.Time, sort *string, idOnly bool, decode bool, limit *int, offset *int) ([]models.Record, error) {
 	url := fmt.Sprintf("/storage/%s", collection)
 
 	params := make([]string, 0, 8)
@@ -613,10 +613,10 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 			return nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
 		}
 
-		result := make([]models.DecodedRecord, 0, len(binResp))
+		result := make([]models.Record, 0, len(binResp))
 
 		for _, v := range resp {
-			result = append(result, models.DecodedRecord{ID: v})
+			result = append(result, models.Record{ID: v})
 		}
 		return result, nil
 	}
@@ -629,10 +629,10 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 
 	ctx.PrintVerbose(fmt.Sprintf("API Call returned %d records", len(resp)))
 
-	result := make([]models.DecodedRecord, 0, len(binResp))
+	result := make([]models.Record, 0, len(binResp))
 
 	for _, v := range resp {
-		result = append(result, models.DecodedRecord{
+		result = append(result, models.Record{
 			ID:       v.ID,
 			Payload:  v.Payload,
 			Modified: langext.UnixFloatSeconds(v.Modified),
@@ -660,7 +660,7 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 				return nil, errorx.Decorate(err, "failed to unmarshal payload of record <"+v.ID+">:\n"+v.Payload)
 			}
 
-			ctx.PrintVerbose("Decrypt payload of " + v.ID)
+			ctx.PrintVerbose("Decrypting payload of " + v.ID)
 
 			dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
 			if err != nil {
@@ -672,6 +672,56 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 	}
 
 	return result, nil
+}
+
+func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string, decode bool) (models.Record, error) {
+	binResp, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", collection, recordid), nil)
+	if err != nil {
+		return models.Record{}, errorx.Decorate(err, "API request failed")
+	}
+
+	var resp recordsResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return models.Record{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	record := models.Record{
+		ID:       resp.ID,
+		Payload:  resp.Payload,
+		Modified: langext.UnixFloatSeconds(resp.Modified),
+	}
+
+	if decode {
+		bulkKeys := session.BulkKeys[""]
+
+		if v, ok := session.BulkKeys[collection]; ok {
+			ctx.PrintVerbose("Use collection-specific bulk-keys")
+
+			bulkKeys = v
+		} else {
+			ctx.PrintVerbose("Use global bulk-keys")
+		}
+		ctx.PrintVerboseKV("EncryptionKey", bulkKeys.EncryptionKey)
+		ctx.PrintVerboseKV("HMACKey", bulkKeys.HMACKey)
+
+		var payload payloadSchema
+		err = json.Unmarshal([]byte(record.Payload), &payload)
+		if err != nil {
+			return models.Record{}, errorx.Decorate(err, "failed to unmarshal payload of record:\n"+record.Payload)
+		}
+
+		ctx.PrintVerbose("Decrypting payload")
+
+		dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
+		if err != nil {
+			return models.Record{}, errorx.Decorate(err, "failed to decrypt payload of record")
+		}
+
+		record.DecodedData = dplBin
+	}
+
+	return record, nil
 }
 
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {

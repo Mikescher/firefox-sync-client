@@ -30,7 +30,7 @@ var Modes = []Mode{
 	ModeListCollections,
 	ModeGetQuota,
 	ModeListRecords,
-	//ModeGetRecord,
+	ModeGetRecord,
 	//ModeDeleteSingle,
 	//ModeDeleteAll,
 	//ModeCreateRecord,

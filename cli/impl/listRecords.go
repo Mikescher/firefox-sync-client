@@ -25,7 +25,6 @@ type CLIArgumentsListRecords struct {
 
 func NewCLIArgumentsListRecords() *CLIArgumentsListRecords {
 	return &CLIArgumentsListRecords{
-		Collection:  "",
 		Raw:         false,
 		Decoded:     false,
 		IDOnly:      false,
@@ -55,7 +54,7 @@ func (a *CLIArgumentsListRecords) ShortHelp() [][]string {
 
 func (a *CLIArgumentsListRecords) FullHelp() []string {
 	return []string{
-		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print-data] [--pretty-print-payload]",
+		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print]",
 		"",
 		"List all records in a collection",
 		"",
@@ -63,7 +62,7 @@ func (a *CLIArgumentsListRecords) FullHelp() []string {
 		"If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned",
 		"If --sort is specified the resulting records are sorted by ( newest | index | oldest )",
 		"The global --format option is used to control the output format",
-		"The --pretty-print-data and --pretty-print-payload try to pretty-print the payload/data, only works if the data is in JSON format and if it is being printed (--raw / --decoded)",
+		"If --pretty-print is specified we try to pretty-print the payload/data, only works if it is in JSON format",
 	}
 }
 
@@ -137,7 +136,7 @@ func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli
 }
 
 func (a *CLIArgumentsListRecords) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[List]")
+	ctx.PrintVerbose("[List_Records]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 	ctx.PrintVerboseKV("RawData", a.Raw)
@@ -206,7 +205,7 @@ func (a *CLIArgumentsListRecords) Execute(ctx *cli.FFSContext) int {
 	}
 }
 
-func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []models.DecodedRecord) int {
+func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -246,12 +245,12 @@ func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []mod
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 
 	}
 }
 
-func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models.DecodedRecord) int {
+func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -315,12 +314,12 @@ func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 
 	}
 }
 
-func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []models.DecodedRecord) int {
+func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -384,7 +383,7 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 
 	}
 }

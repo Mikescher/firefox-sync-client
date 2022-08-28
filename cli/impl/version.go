@@ -63,6 +63,6 @@ func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
 		return 0
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 	}
 }

@@ -234,6 +234,6 @@ func (a *CLIArgumentsListCollections) printOutput(ctx *cli.FFSContext, collectio
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return 0
+		return consts.ExitcodeUnsupportedOutputFormat
 	}
 }
