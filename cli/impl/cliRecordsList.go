@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-type CLIArgumentsListRecords struct {
+type CLIArgumentsRecordsList struct {
 	Collection  string
 	Raw         bool
 	Decoded     bool
@@ -23,8 +23,8 @@ type CLIArgumentsListRecords struct {
 	After       *time.Time
 }
 
-func NewCLIArgumentsListRecords() *CLIArgumentsListRecords {
-	return &CLIArgumentsListRecords{
+func NewCLIArgumentsRecordsList() *CLIArgumentsRecordsList {
+	return &CLIArgumentsRecordsList{
 		Raw:         false,
 		Decoded:     false,
 		IDOnly:      false,
@@ -36,11 +36,11 @@ func NewCLIArgumentsListRecords() *CLIArgumentsListRecords {
 	}
 }
 
-func (a *CLIArgumentsListRecords) Mode() cli.Mode {
-	return cli.ModeListRecords
+func (a *CLIArgumentsRecordsList) Mode() cli.Mode {
+	return cli.ModeRecordsList
 }
 
-func (a *CLIArgumentsListRecords) ShortHelp() [][]string {
+func (a *CLIArgumentsRecordsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient list <collection>", "Get a all records in a collection (use --format to define the format)"},
 		{"          (--raw | --decoded | --ids)", "Return raw data, decoded payload, or only IDs"},
@@ -52,7 +52,7 @@ func (a *CLIArgumentsListRecords) ShortHelp() [][]string {
 	}
 }
 
-func (a *CLIArgumentsListRecords) FullHelp() []string {
+func (a *CLIArgumentsRecordsList) FullHelp() []string {
 	return []string{
 		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print]",
 		"",
@@ -67,7 +67,7 @@ func (a *CLIArgumentsListRecords) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) < 1 {
 		return errorx.InternalError.New("Not enough arguments for <list> (must be exactly 1)")
 	}
@@ -136,7 +136,7 @@ func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli
 	return nil
 }
 
-func (a *CLIArgumentsListRecords) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[List Records]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
@@ -206,7 +206,7 @@ func (a *CLIArgumentsListRecords) Execute(ctx *cli.FFSContext) int {
 	}
 }
 
-func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -251,7 +251,7 @@ func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []mod
 	}
 }
 
-func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -320,7 +320,7 @@ func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models
 	}
 }
 
-func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -389,7 +389,7 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 	}
 }
 
-func (a *CLIArgumentsListRecords) prettyPrint(ctx *cli.FFSContext, v string) string {
+func (a *CLIArgumentsRecordsList) prettyPrint(ctx *cli.FFSContext, v string) string {
 	if a.PrettyPrint {
 		return langext.TryPrettyPrintJson(v)
 	} else {

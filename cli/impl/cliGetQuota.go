@@ -9,24 +9,24 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-type CLIArgumentsGetQuota struct {
+type CLIArgumentsQuotaGet struct {
 }
 
-func NewCLIArgumentsGetQuota() *CLIArgumentsGetQuota {
-	return &CLIArgumentsGetQuota{}
+func NewCLIArgumentsQuotaGet() *CLIArgumentsQuotaGet {
+	return &CLIArgumentsQuotaGet{}
 }
 
-func (a *CLIArgumentsGetQuota) Mode() cli.Mode {
-	return cli.ModeGetQuota
+func (a *CLIArgumentsQuotaGet) Mode() cli.Mode {
+	return cli.ModeQuotaGet
 }
 
-func (a *CLIArgumentsGetQuota) ShortHelp() [][]string {
+func (a *CLIArgumentsQuotaGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient quota", "Query the storage quota of the current user"},
 	}
 }
 
-func (a *CLIArgumentsGetQuota) FullHelp() []string {
+func (a *CLIArgumentsQuotaGet) FullHelp() []string {
 	return []string{
 		"$> ffsclient quota",
 		"",
@@ -34,7 +34,7 @@ func (a *CLIArgumentsGetQuota) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsGetQuota) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsQuotaGet) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
 	}
@@ -46,7 +46,7 @@ func (a *CLIArgumentsGetQuota) Init(positionalArgs []string, optionArgs []cli.Ar
 	return nil
 }
 
-func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Get Quota]")
 	ctx.PrintVerbose("")
 
@@ -97,7 +97,7 @@ func (a *CLIArgumentsGetQuota) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, total, used)
 }
 
-func (a *CLIArgumentsGetQuota) printOutput(ctx *cli.FFSContext, total *int64, used int64) int {
+func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, used int64) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:

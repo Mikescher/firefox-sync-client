@@ -8,12 +8,12 @@ import (
 type CLIArgumentsUpdateRecord struct {
 }
 
-func NewCLIArgumentsUpdateRecord() *CLIArgumentsUpdateRecord {
+func NewCLIArgumentsRecordsUpdate() *CLIArgumentsUpdateRecord {
 	return &CLIArgumentsUpdateRecord{}
 }
 
 func (a *CLIArgumentsUpdateRecord) Mode() cli.Mode {
-	return cli.ModeUpdateRecord
+	return cli.ModeRecordsUpdate
 }
 
 func (a *CLIArgumentsUpdateRecord) ShortHelp() [][]string {

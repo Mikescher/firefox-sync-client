@@ -54,26 +54,26 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 		return NewCLIArgumentsTokenRefresh()
 	case cli.ModeCheckSession:
 		return NewCLIArgumentsCheckSession()
-	case cli.ModeGetQuota:
-		return NewCLIArgumentsGetQuota()
-	case cli.ModeListCollections:
-		return NewCLIArgumentsListCollections()
-	case cli.ModeListRecords:
-		return NewCLIArgumentsListRecords()
-	case cli.ModeGetRecord:
-		return NewCLIArgumentsGetRecord()
-	case cli.ModeDeleteRecord:
-		return NewCLIArgumentsDeleteRecord()
-	case cli.ModeDeleteCollection:
-		return NewCLIArgumentsDeleteCollection()
+	case cli.ModeQuotaGet:
+		return NewCLIArgumentsQuotaGet()
+	case cli.ModeCollectionsList:
+		return NewCLIArgumentsCollectionsList()
+	case cli.ModeRecordsList:
+		return NewCLIArgumentsRecordsList()
+	case cli.ModeRecordsGet:
+		return NewCLIArgumentsRecordsGet()
+	case cli.ModeRecordsDelete:
+		return NewCLIArgumentsRecordsDelete()
+	case cli.ModeCollectionsDelete:
+		return NewCLIArgumentsCollectionsDelete()
 	case cli.ModeDeleteAll:
 		return NewCLIArgumentsDeleteAll()
-	case cli.ModeCreateRecord:
-		return NewCLIArgumentsCreateRecord()
-	case cli.ModeUpdateRecord:
-		return NewCLIArgumentsUpdateRecord()
-	case cli.ModeMeta:
-		return NewCLIArgumentsMeta()
+	case cli.ModeRecordsCreate:
+		return NewCLIArgumentsRecordsCreate()
+	case cli.ModeRecordsUpdate:
+		return NewCLIArgumentsRecordsUpdate()
+	case cli.ModeMetaGet:
+		return NewCLIArgumentsMetaGet()
 	case cli.ModeBookmarksBase:
 		return NewCLIArgumentsBookmarksBase()
 	case cli.ModeBookmarksList:

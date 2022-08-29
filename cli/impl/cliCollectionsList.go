@@ -11,28 +11,28 @@ import (
 	"strconv"
 )
 
-type CLIArgumentsListCollections struct {
+type CLIArgumentsCollectionsList struct {
 	ShowUsage bool
 }
 
-func NewCLIArgumentsListCollections() *CLIArgumentsListCollections {
-	return &CLIArgumentsListCollections{
+func NewCLIArgumentsCollectionsList() *CLIArgumentsCollectionsList {
+	return &CLIArgumentsCollectionsList{
 		ShowUsage: false,
 	}
 }
 
-func (a *CLIArgumentsListCollections) Mode() cli.Mode {
-	return cli.ModeListCollections
+func (a *CLIArgumentsCollectionsList) Mode() cli.Mode {
+	return cli.ModeCollectionsList
 }
 
-func (a *CLIArgumentsListCollections) ShortHelp() [][]string {
+func (a *CLIArgumentsCollectionsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient collections", "List all available collections"},
 		{"          [--usage]", "Include usage (storage space)"},
 	}
 }
 
-func (a *CLIArgumentsListCollections) FullHelp() []string {
+func (a *CLIArgumentsCollectionsList) FullHelp() []string {
 	return []string{
 		"$> ffsclient collections [--usage]",
 		"",
@@ -42,7 +42,7 @@ func (a *CLIArgumentsListCollections) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsListCollections) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsCollectionsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
 	}
@@ -58,7 +58,7 @@ func (a *CLIArgumentsListCollections) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[List collections]")
 	ctx.PrintVerbose("")
 
@@ -153,7 +153,7 @@ func (a *CLIArgumentsListCollections) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, collections)
 }
 
-func (a *CLIArgumentsListCollections) printOutput(ctx *cli.FFSContext, collections []models.Collection) int {
+func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collections []models.Collection) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 	case cli.OutputFormatText:
 		for _, v := range collections {

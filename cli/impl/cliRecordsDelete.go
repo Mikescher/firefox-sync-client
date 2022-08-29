@@ -8,26 +8,26 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-type CLIArgumentsDeleteSingle struct {
+type CLIArgumentsRecordsDelete struct {
 	Collection string
 	RecordID   string
 }
 
-func NewCLIArgumentsDeleteRecord() *CLIArgumentsDeleteSingle {
-	return &CLIArgumentsDeleteSingle{}
+func NewCLIArgumentsRecordsDelete() *CLIArgumentsRecordsDelete {
+	return &CLIArgumentsRecordsDelete{}
 }
 
-func (a *CLIArgumentsDeleteSingle) Mode() cli.Mode {
-	return cli.ModeDeleteRecord
+func (a *CLIArgumentsRecordsDelete) Mode() cli.Mode {
+	return cli.ModeRecordsDelete
 }
 
-func (a *CLIArgumentsDeleteSingle) ShortHelp() [][]string {
+func (a *CLIArgumentsRecordsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete <collection> <record-id>", "Delete the specified record"},
 	}
 }
 
-func (a *CLIArgumentsDeleteSingle) FullHelp() []string {
+func (a *CLIArgumentsRecordsDelete) FullHelp() []string {
 	return []string{
 		"$> ffsclient delete <collection> <record-id>",
 		"",
@@ -35,7 +35,7 @@ func (a *CLIArgumentsDeleteSingle) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsDeleteSingle) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsRecordsDelete) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) < 2 {
 		return errorx.InternalError.New("Not enough arguments for <delete> (must be exactly 2)")
 	}
@@ -53,7 +53,7 @@ func (a *CLIArgumentsDeleteSingle) Init(positionalArgs []string, optionArgs []cl
 	return nil
 }
 
-func (a *CLIArgumentsDeleteSingle) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Delete-Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)

@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-type CLIArgumentsGetRecord struct {
+type CLIArgumentsRecordsGet struct {
 	Collection  string
 	RecordID    string
 	Raw         bool
@@ -18,19 +18,19 @@ type CLIArgumentsGetRecord struct {
 	PrettyPrint bool
 }
 
-func NewCLIArgumentsGetRecord() *CLIArgumentsGetRecord {
-	return &CLIArgumentsGetRecord{
+func NewCLIArgumentsRecordsGet() *CLIArgumentsRecordsGet {
+	return &CLIArgumentsRecordsGet{
 		Raw:         false,
 		Decoded:     false,
 		PrettyPrint: false,
 	}
 }
 
-func (a *CLIArgumentsGetRecord) Mode() cli.Mode {
-	return cli.ModeGetRecord
+func (a *CLIArgumentsRecordsGet) Mode() cli.Mode {
+	return cli.ModeRecordsGet
 }
 
-func (a *CLIArgumentsGetRecord) ShortHelp() [][]string {
+func (a *CLIArgumentsRecordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient get <collection> <record-id>", "Get a single record"},
 		{"          (--raw | --decoded)", "Return raw data or decoded payload"},
@@ -38,7 +38,7 @@ func (a *CLIArgumentsGetRecord) ShortHelp() [][]string {
 	}
 }
 
-func (a *CLIArgumentsGetRecord) FullHelp() []string {
+func (a *CLIArgumentsRecordsGet) FullHelp() []string {
 	return []string{
 		"$> ffsclient get <collection> <record-id> (--raw | --decoded) [--pretty-print]",
 		"",
@@ -49,7 +49,7 @@ func (a *CLIArgumentsGetRecord) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsGetRecord) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) < 2 {
 		return errorx.InternalError.New("Not enough arguments for <get> (must be exactly 2)")
 	}
@@ -79,7 +79,7 @@ func (a *CLIArgumentsGetRecord) Init(positionalArgs []string, optionArgs []cli.A
 	return nil
 }
 
-func (a *CLIArgumentsGetRecord) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Get-Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
@@ -147,7 +147,7 @@ func (a *CLIArgumentsGetRecord) Execute(ctx *cli.FFSContext) int {
 	}
 }
 
-func (a *CLIArgumentsGetRecord) printRaw(ctx *cli.FFSContext, v models.Record) int {
+func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -189,7 +189,7 @@ func (a *CLIArgumentsGetRecord) printRaw(ctx *cli.FFSContext, v models.Record) i
 	}
 }
 
-func (a *CLIArgumentsGetRecord) printDecoded(ctx *cli.FFSContext, v models.Record) int {
+func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -231,7 +231,7 @@ func (a *CLIArgumentsGetRecord) printDecoded(ctx *cli.FFSContext, v models.Recor
 	}
 }
 
-func (a *CLIArgumentsGetRecord) prettyPrint(ctx *cli.FFSContext, v string) string {
+func (a *CLIArgumentsRecordsGet) prettyPrint(ctx *cli.FFSContext, v string) string {
 	if a.PrettyPrint {
 		return langext.TryPrettyPrintJson(v)
 	} else {
