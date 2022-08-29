@@ -12,8 +12,8 @@ const (
 	ModeListCollections Mode = "collections"
 	ModeListRecords     Mode = "list"
 	ModeGetRecord       Mode = "get"
+	ModeDeleteRecord    Mode = "delete"
 	ModeDeleteAll       Mode = "delete-all" // TODO
-	ModeDeleteSingle    Mode = "delete"     // TODO
 	ModeCreateRecord    Mode = "create"     // TODO
 	ModeUpdateRecord    Mode = "update"     // TODO
 	//ModeBookmarks       Mode = "bookmarks"  // TODO
@@ -31,7 +31,7 @@ var Modes = []Mode{
 	ModeGetQuota,
 	ModeListRecords,
 	ModeGetRecord,
-	//ModeDeleteSingle,
+	ModeDeleteRecord,
 	//ModeDeleteAll,
 	//ModeCreateRecord,
 	//ModeUpdateRecord,

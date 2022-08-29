@@ -30,7 +30,7 @@ func GetModeImpl(v cli.Mode) cli.Verb {
 	case cli.ModeDeleteAll:
 		return NewCLIArgumentsDeleteAll()
 
-	case cli.ModeDeleteSingle:
+	case cli.ModeDeleteRecord:
 		return NewCLIArgumentsDeleteSingle()
 
 	case cli.ModeListCollections:
