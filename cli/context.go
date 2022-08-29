@@ -120,8 +120,10 @@ func (c FFSContext) PrintFatalError(e error) {
 	}
 
 	if c.Opt.Verbose {
+		//TODO handle directOutputError
 		c.printErrorRaw(fmt.Sprintf("%+v", e) + "\n")
 	} else {
+		//TODO handle directOutputError
 		c.printErrorRaw(e.Error() + "\n")
 	}
 
@@ -274,6 +276,14 @@ func NewContext(opt Options) (*FFSContext, error) {
 		Opt:        opt,
 		FileHandle: fileHandle,
 	}, nil
+}
+
+func NewEarlyContext() *FFSContext {
+	return &FFSContext{
+		Context:    context.Background(),
+		Opt:        DefaultCLIOptions(),
+		FileHandle: nil,
+	}
 }
 
 func (c FFSContext) Finish() {

@@ -5,18 +5,19 @@ import (
 	"ffsyncclient/cli/impl"
 	"ffsyncclient/consts"
 	"ffsyncclient/langext"
+	"fmt"
 	"github.com/joomcode/errorx"
 	"os"
 	"strings"
 	"time"
 )
 
-func ParseCommandline() (cli.Verb, cli.Options) {
+func ParseCommandline() (cli.Verb, cli.Options, error) {
 	v, o, err := parseCommandlineInternal()
 	if err != nil {
-		return &impl.CLIArgumentsHelp{Extra: err.Error(), ExitCode: consts.ExitcodeCLIParse}, cli.Options{}
+		return nil, cli.Options{}, errorx.Decorate(err, "failed to parse commandline")
 	}
-	return v, o
+	return v, o, nil
 }
 
 func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
@@ -49,13 +50,12 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	// Get verb (sub_routine)
 
-	verb := unprocessedArgs[0]
-	unprocessedArgs = unprocessedArgs[1:]
-
-	verbArg, found := impl.ParseVerb(verb)
+	verbArg, rawVerb, verbLen, found := impl.ParseSubcommand(unprocessedArgs)
 	if !found {
-		return nil, cli.Options{}, errorx.InternalError.New("Unknown command: " + verb)
+		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Unknown Subcommand '%s'", rawVerb))
 	}
+
+	unprocessedArgs = unprocessedArgs[verbLen:]
 
 	positionalArguments := make([]string, 0)
 	allOptionArguments := make([]cli.ArgumentTuple, 0)
@@ -170,11 +170,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		}
 
 		if (arg.Key == "f" || arg.Key == "format") && arg.Value != nil {
-			fmt, found := cli.GetOutputFormat(*arg.Value)
+			ofmt, found := cli.GetOutputFormat(*arg.Value)
 			if !found {
 				return nil, cli.Options{}, errorx.InternalError.New("Unknown format: " + *arg.Value)
 			}
-			opt.Format = langext.Ptr(fmt)
+			opt.Format = langext.Ptr(ofmt)
 			continue
 		}
 

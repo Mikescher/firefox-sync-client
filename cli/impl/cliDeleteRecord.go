@@ -13,7 +13,7 @@ type CLIArgumentsDeleteSingle struct {
 	RecordID   string
 }
 
-func NewCLIArgumentsDeleteSingle() *CLIArgumentsDeleteSingle {
+func NewCLIArgumentsDeleteRecord() *CLIArgumentsDeleteSingle {
 	return &CLIArgumentsDeleteSingle{}
 }
 

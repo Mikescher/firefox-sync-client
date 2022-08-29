@@ -29,7 +29,7 @@ func DefaultCLIOptions() Options {
 		SessionFilePath:      "~/.config/firefox-sync-client.secret",
 		AuthServerURL:        consts.ServerURLProduction,
 		TokenServerURL:       consts.TokenServerURL,
-		OutputColor:          term.TermSupportsColors(),
+		OutputColor:          term.SupportsColors(),
 		TimeZone:             time.Local,
 		TimeFormat:           "2006-01-02 15:04:05Z07:00",
 		OutputFile:           nil,

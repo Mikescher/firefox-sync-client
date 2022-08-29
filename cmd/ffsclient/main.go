@@ -8,7 +8,13 @@ import (
 )
 
 func main() {
-	verb, opt := parser.ParseCommandline()
+	verb, opt, err := parser.ParseCommandline()
+	if err != nil {
+		ctx := cli.NewEarlyContext()
+		ctx.PrintFatalError(err)
+		os.Exit(consts.ExitcodeError)
+		return
+	}
 
 	ctx, err := cli.NewContext(opt)
 	if err != nil {

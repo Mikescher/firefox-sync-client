@@ -10,7 +10,7 @@ import (
 
 // -> partly copied from [ https://github.com/jwalton/go-supportscolor/tree/master ]
 
-func TermSupportsColors() bool {
+func SupportsColors() bool {
 
 	if isatty := term.IsTerminal(int(os.Stdout.Fd())); !isatty {
 		return false

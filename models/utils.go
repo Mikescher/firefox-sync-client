@@ -23,6 +23,8 @@ func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 		}
 
 		result = append(result, jsonschema.ToModel())
+
+		ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", v.ID, jsonschema.Hostname))
 	}
 
 	return result, nil

@@ -14,7 +14,7 @@ import (
 
 var urlSchemaRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]+://`)
 
-type CLIArgumentsPasswords struct {
+type CLIArgumentsPasswordsList struct {
 	ShowPasswords      bool
 	IgnoreSchemaErrors bool
 	Sort               *string
@@ -23,8 +23,8 @@ type CLIArgumentsPasswords struct {
 	After              *time.Time
 }
 
-func NewCLIArgumentsPasswords() *CLIArgumentsPasswords {
-	return &CLIArgumentsPasswords{
+func NewCLIArgumentsPasswordsList() *CLIArgumentsPasswordsList {
+	return &CLIArgumentsPasswordsList{
 		ShowPasswords: false,
 		Sort:          nil,
 		Limit:         nil,
@@ -33,13 +33,13 @@ func NewCLIArgumentsPasswords() *CLIArgumentsPasswords {
 	}
 }
 
-func (a *CLIArgumentsPasswords) Mode() cli.Mode {
-	return cli.ModePasswords
+func (a *CLIArgumentsPasswordsList) Mode() cli.Mode {
+	return cli.ModePasswordsList
 }
 
-func (a *CLIArgumentsPasswords) ShortHelp() [][]string {
+func (a *CLIArgumentsPasswordsList) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient passwords ", "List passwords"},
+		{"ffsclient passwords list", "List passwords"},
 		{"          [--show-passwords]", "Show the actual passwords"},
 		{"          [--ignore-schema-errors]", "Skip records that cannot be decoded into a password schema"},
 		{"          [--after <rfc3339>]", "Return only fields updated after this date"},
@@ -49,9 +49,9 @@ func (a *CLIArgumentsPasswords) ShortHelp() [][]string {
 	}
 }
 
-func (a *CLIArgumentsPasswords) FullHelp() []string {
+func (a *CLIArgumentsPasswordsList) FullHelp() []string {
 	return []string{
-		"$> ffsclient passwords [--show-passwords] [--ignore-schema-errors] [--after <rfc3339>] [--sort <sort>] [--limit <n>] [--offset <o>]",
+		"$> ffsclient passwords list [--show-passwords] [--ignore-schema-errors] [--after <rfc3339>] [--sort <sort>] [--limit <n>] [--offset <o>]",
 		"",
 		"List passwords",
 		"",
@@ -63,7 +63,7 @@ func (a *CLIArgumentsPasswords) FullHelp() []string {
 	}
 }
 
-func (a *CLIArgumentsPasswords) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+func (a *CLIArgumentsPasswordsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(positionalArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
 	}
@@ -119,7 +119,7 @@ func (a *CLIArgumentsPasswords) Init(positionalArgs []string, optionArgs []cli.A
 	return nil
 }
 
-func (a *CLIArgumentsPasswords) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[List-Passwords]")
 	ctx.PrintVerbose("")
 
@@ -173,7 +173,7 @@ func (a *CLIArgumentsPasswords) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, passwords)
 }
 
-func (a *CLIArgumentsPasswords) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) int {
+func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 
 	case cli.OutputFormatTable:
@@ -276,7 +276,7 @@ func (a *CLIArgumentsPasswords) printOutput(ctx *cli.FFSContext, passwords []mod
 	}
 }
 
-func (a *CLIArgumentsPasswords) fmtPass(ctx *cli.FFSContext, pw string) string {
+func (a *CLIArgumentsPasswordsList) fmtPass(ctx *cli.FFSContext, pw string) string {
 	if a.ShowPasswords {
 		return pw
 	} else {
@@ -284,21 +284,21 @@ func (a *CLIArgumentsPasswords) fmtPass(ctx *cli.FFSContext, pw string) string {
 	}
 }
 
-func (a *CLIArgumentsPasswords) fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
+func (a *CLIArgumentsPasswordsList) fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
 	if d == nil {
 		return ""
 	}
 	return d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
 }
 
-func (a *CLIArgumentsPasswords) fmOptDateToNullable(ctx *cli.FFSContext, d *time.Time) *string {
+func (a *CLIArgumentsPasswordsList) fmOptDateToNullable(ctx *cli.FFSContext, d *time.Time) *string {
 	if d == nil {
 		return nil
 	}
 	return langext.Ptr(d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat))
 }
 
-func (a *CLIArgumentsPasswords) fmOptDateToNullableUnix(ctx *cli.FFSContext, d *time.Time) *int64 {
+func (a *CLIArgumentsPasswordsList) fmOptDateToNullableUnix(ctx *cli.FFSContext, d *time.Time) *int64 {
 	if d == nil {
 		return nil
 	}

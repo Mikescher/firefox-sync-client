@@ -5,7 +5,33 @@ import (
 	"strings"
 )
 
-func ParseVerb(v string) (cli.Verb, bool) {
+func ParseSubcommand(v []string) (cli.Verb, string, int, bool) {
+
+	idx := 0
+
+	if len(v) == 0 || strings.HasPrefix(v[0], "-") {
+		return nil, "", 0, false
+	}
+
+	for idx < len(v) && !strings.HasPrefix(v[idx], "-") {
+		idx++
+	}
+
+	for i := idx; i > 0; i-- {
+
+		verb := strings.Join(v[:i], " ")
+
+		if sc, ok := GetSubcommand(verb); ok {
+			return sc, verb, i, true
+		}
+
+	}
+
+	return nil, v[0], 1, false
+
+}
+
+func GetSubcommand(v string) (cli.Verb, bool) {
 	for _, verb := range cli.Modes {
 		if strings.ToLower(v) == strings.ToLower(string(verb)) {
 			return GetModeImpl(verb), true
@@ -15,55 +41,97 @@ func ParseVerb(v string) (cli.Verb, bool) {
 	return nil, false
 }
 
-func GetModeImpl(v cli.Mode) cli.Verb {
-	switch v {
+func GetModeImpl(m cli.Mode) cli.Verb {
+	switch m {
 
 	case cli.ModeHelp:
 		return NewCLIArgumentsHelp()
-
 	case cli.ModeVersion:
 		return NewCLIArgumentsVersion()
-
 	case cli.ModeLogin:
 		return NewCLIArgumentsLogin()
-
-	case cli.ModeDeleteAll:
-		return NewCLIArgumentsDeleteAll()
-
-	case cli.ModeDeleteRecord:
-		return NewCLIArgumentsDeleteSingle()
-
-	case cli.ModeDeleteCollection:
-		return NewCLIArgumentsDeleteCollection()
-
-	case cli.ModeListCollections:
-		return NewCLIArgumentsListCollections()
-
-	case cli.ModeGetRecord:
-		return NewCLIArgumentsGetRecords()
-
-	case cli.ModeCreateRecord:
-		return NewCLIArgumentsCreateRecord()
-
-	case cli.ModeUpdateRecord:
-		return NewCLIArgumentsUpdateRecord()
-
-	case cli.ModeGetQuota:
-		return NewCLIArgumentsGetQuota()
-
 	case cli.ModeTokenRefresh:
 		return NewCLIArgumentsTokenRefresh()
-
-	case cli.ModeListRecords:
-		return NewCLIArgumentsListRecords()
-
 	case cli.ModeCheckSession:
 		return NewCLIArgumentsCheckSession()
-
-	case cli.ModePasswords:
-		return NewCLIArgumentsPasswords()
+	case cli.ModeGetQuota:
+		return NewCLIArgumentsGetQuota()
+	case cli.ModeListCollections:
+		return NewCLIArgumentsListCollections()
+	case cli.ModeListRecords:
+		return NewCLIArgumentsListRecords()
+	case cli.ModeGetRecord:
+		return NewCLIArgumentsGetRecord()
+	case cli.ModeDeleteRecord:
+		return NewCLIArgumentsDeleteRecord()
+	case cli.ModeDeleteCollection:
+		return NewCLIArgumentsDeleteCollection()
+	case cli.ModeDeleteAll:
+		return NewCLIArgumentsDeleteAll()
+	case cli.ModeCreateRecord:
+		return NewCLIArgumentsCreateRecord()
+	case cli.ModeUpdateRecord:
+		return NewCLIArgumentsUpdateRecord()
+	case cli.ModeMeta:
+		return NewCLIArgumentsMeta()
+	case cli.ModeBookmarksBase:
+		return NewCLIArgumentsBookmarksBase()
+	case cli.ModeBookmarksList:
+		return NewCLIArgumentsBookmarksList()
+	case cli.ModeBookmarksDelete:
+		return NewCLIArgumentsBookmarksDelete()
+	case cli.ModeBookmarksCreate:
+		return NewCLIArgumentsBookmarksCreate()
+	case cli.ModeBookmarksUpdate:
+		return NewCLIArgumentsBookmarksUpdate()
+	case cli.ModePasswordsBase:
+		return NewCLIArgumentsPasswordsBase()
+	case cli.ModePasswordsList:
+		return NewCLIArgumentsPasswordsList()
+	case cli.ModePasswordsDelete:
+		return NewCLIArgumentsPasswordsDelete()
+	case cli.ModePasswordsCreate:
+		return NewCLIArgumentsPasswordsCreate()
+	case cli.ModePasswordsUpdate:
+		return NewCLIArgumentsPasswordsUpdate()
+	case cli.ModePasswordsGet:
+		return NewCLIArgumentsPasswordsGet()
+	case cli.ModeFormsBase:
+		return NewCLIArgumentsFormsBase()
+	case cli.ModeFormsList:
+		return NewCLIArgumentsFormsList()
+	case cli.ModeFormsGet:
+		return NewCLIArgumentsFormsGet()
+	case cli.ModeFormsCreate:
+		return NewCLIArgumentsFormsCreate()
+	case cli.ModeFormsUpdate:
+		return NewCLIArgumentsFormsUpdate()
+	case cli.ModeFormsDelete:
+		return NewCLIArgumentsFormsDelete()
+	case cli.ModeHistoryBase:
+		return NewCLIArgumentsHistoryBase()
+	case cli.ModeHistoryList:
+		return NewCLIArgumentsHistoryList()
+	case cli.ModeHistoryCreate:
+		return NewCLIArgumentsHistoryCreate()
+	case cli.ModeHistoryUpdate:
+		return NewCLIArgumentsHistoryUpdate()
+	case cli.ModeHistoryDelete:
+		return NewCLIArgumentsHistoryDelete()
 
 	default:
-		panic("Unknown Mode: " + v)
+		panic("Unknown Mode: " + m)
 	}
+}
+
+func ListSubcommands(m cli.Mode) []cli.Mode {
+	r := make([]cli.Mode, 0)
+
+	for _, v := range cli.Modes {
+		if strings.HasPrefix(string(v), string(m)+" ") {
+			r = append(r, v)
+		}
+	}
+
+	return r
 }

@@ -17,7 +17,7 @@ func NewCLIArgumentsDeleteCollection() *CLIArgumentsDeleteCollection {
 }
 
 func (a *CLIArgumentsDeleteCollection) Mode() cli.Mode {
-	return cli.ModeDeleteRecord
+	return cli.ModeDeleteCollection
 }
 
 func (a *CLIArgumentsDeleteCollection) ShortHelp() [][]string {

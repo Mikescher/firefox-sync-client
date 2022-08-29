@@ -18,7 +18,7 @@ type CLIArgumentsGetRecord struct {
 	PrettyPrint bool
 }
 
-func NewCLIArgumentsGetRecords() *CLIArgumentsGetRecord {
+func NewCLIArgumentsGetRecord() *CLIArgumentsGetRecord {
 	return &CLIArgumentsGetRecord{
 		Raw:         false,
 		Decoded:     false,
