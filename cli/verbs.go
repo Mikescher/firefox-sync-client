@@ -34,7 +34,7 @@ var Modes = []Mode{
 	ModeGetRecord,
 	ModeDeleteRecord,
 	ModeDeleteCollection,
-	//ModeDeleteAll,
+	ModeDeleteAll,
 	//ModeCreateRecord,
 	//ModeUpdateRecord,
 
