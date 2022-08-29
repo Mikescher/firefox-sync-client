@@ -116,11 +116,11 @@ func (a *CLIArgumentsCheckSession) printOutput(ctx *cli.FFSContext, okay bool) i
 		return ec
 
 	case cli.OutputFormatXML:
-		type xmlcoll struct {
+		type xml struct {
 			Valid   bool     `xml:",innerxml"`
 			XMLName struct{} `xml:"Valid"`
 		}
-		ctx.PrintPrimaryOutputXML(xmlcoll{Valid: okay})
+		ctx.PrintPrimaryOutputXML(xml{Valid: okay})
 		return ec
 
 	default:

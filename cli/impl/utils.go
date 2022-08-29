@@ -60,6 +60,9 @@ func GetModeImpl(v cli.Mode) cli.Verb {
 	case cli.ModeCheckSession:
 		return NewCLIArgumentsCheckSession()
 
+	case cli.ModePasswords:
+		return NewCLIArgumentsPasswords()
+
 	default:
 		panic("Unknown Mode: " + v)
 	}

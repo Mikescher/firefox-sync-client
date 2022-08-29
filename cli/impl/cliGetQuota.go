@@ -136,24 +136,24 @@ func (a *CLIArgumentsGetQuota) printOutput(ctx *cli.FFSContext, total *int64, us
 
 	case cli.OutputFormatXML:
 		if total == nil {
-			type xmlcoll struct {
+			type xml struct {
 				Used      string   `xml:"Used,omitempty,attr"`
 				UsedBytes int64    `xml:"UsedBytes,omitempty,attr"`
 				XMLName   struct{} `xml:"Quota"`
 			}
-			ctx.PrintPrimaryOutputXML(xmlcoll{
+			ctx.PrintPrimaryOutputXML(xml{
 				Used:      langext.FormatBytes(used),
 				UsedBytes: used,
 			})
 		} else {
-			type xmlcoll struct {
+			type xml struct {
 				Used       string   `xml:"Used,omitempty,attr"`
 				UsedBytes  int64    `xml:"UsedBytes,omitempty,attr"`
 				Total      string   `xml:"Total,omitempty,attr"`
 				TotalBytes int64    `xml:"TotalBytes,omitempty,attr"`
 				XMLName    struct{} `xml:"Quota"`
 			}
-			ctx.PrintPrimaryOutputXML(xmlcoll{
+			ctx.PrintPrimaryOutputXML(xml{
 				Used:       langext.FormatBytes(used),
 				UsedBytes:  used,
 				Total:      langext.FormatBytes(*total),

@@ -184,7 +184,7 @@ func (a *CLIArgumentsListCollections) printOutput(ctx *cli.FFSContext, collectio
 		return 0
 	case cli.OutputFormatXML:
 
-		type xmlcoll struct {
+		type xmlentry struct {
 			Name       string `xml:"Name,attr"`
 			Time       string `xml:"LastModified,attr"`
 			TimeUnix   string `xml:"LastModifiedUnix,attr"`
@@ -193,13 +193,13 @@ func (a *CLIArgumentsListCollections) printOutput(ctx *cli.FFSContext, collectio
 			UsageBytes string `xml:"UsageBytes,omitempty,attr"`
 		}
 		type xml struct {
-			Collections []xmlcoll `xml:"Collection"`
-			XMLName     struct{}  `xml:"Collections"`
+			Collections []xmlentry `xml:"Collection"`
+			XMLName     struct{}   `xml:"Collections"`
 		}
 
-		node := xml{}
+		node := xml{Collections: make([]xmlentry, 0, len(collections))}
 		for _, v := range collections {
-			obj := xmlcoll{
+			obj := xmlentry{
 				Name:     v.Name,
 				Time:     v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat),
 				TimeUnix: fmt.Sprintf("%d", v.LastModified.Unix()),

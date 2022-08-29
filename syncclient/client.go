@@ -344,7 +344,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	ctx.PrintVerboseKV("syncKeys.EncryptionKey", syncKeys.EncryptionKey)
 	ctx.PrintVerboseKV("syncKeys.HMACKey", syncKeys.HMACKey)
 
-	binResp, err := f.request(ctx, session.ToKeylessSession(), "GET", "/storage/crypto/keys", nil)
+	binResp, err := f.request(ctx, session.ToKeylessSession(), "GET", fmt.Sprintf("/storage/%s/%s", consts.CollectionCrypto, consts.RecordCryptoKeys), nil)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "API request failed")
 	}

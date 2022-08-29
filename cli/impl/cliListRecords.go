@@ -61,6 +61,7 @@ func (a *CLIArgumentsListRecords) FullHelp() []string {
 		"Either --raw or --decoded or --ids must be specified",
 		"If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned",
 		"If --sort is specified the resulting records are sorted by ( newest | index | oldest )",
+		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
 		"The global --format option is used to control the output format",
 		"If --pretty-print is specified we try to pretty-print the payload/data, only works if it is in JSON format",
 	}
@@ -136,7 +137,7 @@ func (a *CLIArgumentsListRecords) Init(positionalArgs []string, optionArgs []cli
 }
 
 func (a *CLIArgumentsListRecords) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[List_Records]")
+	ctx.PrintVerbose("[List Records]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 	ctx.PrintVerboseKV("RawData", a.Raw)
@@ -227,12 +228,12 @@ func (a *CLIArgumentsListRecords) printIDOnly(ctx *cli.FFSContext, records []mod
 			ID string `xml:",innerxml"`
 		}
 		type xml struct {
-			Collections []xmlentry `xml:"Record"`
-			XMLName     struct{}   `xml:"Records"`
+			Records []xmlentry `xml:"Record"`
+			XMLName struct{}   `xml:"Records"`
 		}
-		data := xml{Collections: make([]xmlentry, 0)}
+		data := xml{Records: make([]xmlentry, 0)}
 		for _, v := range records {
-			data.Collections = append(data.Collections, xmlentry{ID: v.ID})
+			data.Records = append(data.Records, xmlentry{ID: v.ID})
 		}
 		ctx.PrintPrimaryOutputXML(data)
 		return 0
@@ -283,12 +284,12 @@ func (a *CLIArgumentsListRecords) printRaw(ctx *cli.FFSContext, records []models
 			Payload      string `xml:",innerxml"`
 		}
 		type xml struct {
-			Collections []xmlentry `xml:"Record"`
-			XMLName     struct{}   `xml:"Records"`
+			Records []xmlentry `xml:"Record"`
+			XMLName struct{}   `xml:"Records"`
 		}
-		data := xml{Collections: make([]xmlentry, 0)}
+		data := xml{Records: make([]xmlentry, 0)}
 		for _, v := range records {
-			data.Collections = append(data.Collections, xmlentry{
+			data.Records = append(data.Records, xmlentry{
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),
@@ -352,12 +353,12 @@ func (a *CLIArgumentsListRecords) printDecoded(ctx *cli.FFSContext, records []mo
 			Data         string `xml:",innerxml"`
 		}
 		type xml struct {
-			Collections []xmlentry `xml:"Record"`
-			XMLName     struct{}   `xml:"Records"`
+			Records []xmlentry `xml:"Record"`
+			XMLName struct{}   `xml:"Records"`
 		}
-		data := xml{Collections: make([]xmlentry, 0)}
+		data := xml{Records: make([]xmlentry, 0)}
 		for _, v := range records {
-			data.Collections = append(data.Collections, xmlentry{
+			data.Records = append(data.Records, xmlentry{
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),

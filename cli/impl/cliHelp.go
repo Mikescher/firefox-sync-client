@@ -28,7 +28,7 @@ func (a *CLIArgumentsHelp) Mode() cli.Mode {
 
 func (a *CLIArgumentsHelp) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient <mode> --help", "Output specific help for a single action/verb"},
+		{"ffsclient <sub> --help", "Output specific help for a single subcommand"},
 	}
 }
 
@@ -38,7 +38,7 @@ func (a *CLIArgumentsHelp) FullHelp() []string {
 		"",
 		"Show this help output.",
 		"",
-		"Can also be used as `ffsclient <mode> --help`",
+		"Can also be used as `ffsclient <sub> --help`",
 	}
 }
 
@@ -126,11 +126,11 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd syntax and convert
 	return [][]string{
 		{"-h, --help", "Show this screen."},
-		{"-version", "Show version."},
+		{"--version", "Show version."},
 		{"-v, --verbose", "Output more intermediate information"},
 		{"-q, --quiet", "Do not print anything"},
 		{"--sessionfile <cfg>, --sessionfile=<cfg>", "Specify the location of the saved session"},
-		{"-f <fmt>, --format <fmt>, --format=<fmt>", "Specify the output format"},
+		{"-f <fmt>, --format <fmt>, --format=<fmt>", "Specify the output format (not all subcommands support all output-formats)"},
 		{"", "- 'text'"},
 		{"", "- 'json'"},
 		{"", "- 'netscape'   (default firefox bookmarks format)"},

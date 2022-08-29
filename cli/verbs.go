@@ -18,9 +18,10 @@ const (
 	ModeCreateRecord     Mode = "create"            // TODO
 	ModeUpdateRecord     Mode = "update"            // TODO
 	//ModeBookmarks       Mode = "bookmarks"  // TODO
-	//ModePasswords       Mode = "passwords"  // TODO
+	ModePasswords Mode = "passwords" // TODO
 	//ModeForms           Mode = "forms"      // TODO
 	//ModeHistory         Mode = "history"    // TODO
+	//ModeMeta         Mode = "meta"    // TODO
 )
 
 var Modes = []Mode{
@@ -39,7 +40,7 @@ var Modes = []Mode{
 	//ModeUpdateRecord,
 
 	//ModeBookmarks,
-	//ModePasswords,
+	ModePasswords,
 	//ModeForms,
 	//ModeHistory,
 
