@@ -2,6 +2,7 @@ package impl
 
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
 )
 
@@ -16,6 +17,10 @@ func (a *CLIArgumentsBookmarksDelete) Mode() cli.Mode {
 	return cli.ModeBookmarksDelete
 }
 
+func (a *CLIArgumentsBookmarksDelete) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0) //TODO
+}
+
 func (a *CLIArgumentsBookmarksDelete) ShortHelp() [][]string {
 	return nil //TODO
 }
@@ -25,10 +30,6 @@ func (a *CLIArgumentsBookmarksDelete) FullHelp() []string {
 }
 
 func (a *CLIArgumentsBookmarksDelete) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	for _, arg := range optionArgs {
 		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}

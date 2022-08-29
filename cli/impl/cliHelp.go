@@ -26,6 +26,10 @@ func (a *CLIArgumentsHelp) Mode() cli.Mode {
 	return cli.ModeHelp
 }
 
+func (a *CLIArgumentsHelp) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0)
+}
+
 func (a *CLIArgumentsHelp) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient <sub> --help", "Output specific help for a single subcommand"},
@@ -43,10 +47,6 @@ func (a *CLIArgumentsHelp) FullHelp() []string {
 }
 
 func (a *CLIArgumentsHelp) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	if len(optionArgs) > 0 {
 		return errorx.InternalError.New("Unknown argument: " + optionArgs[0].Key)
 	}

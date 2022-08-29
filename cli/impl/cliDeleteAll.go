@@ -20,6 +20,10 @@ func (a *CLIArgumentsDeleteAll) Mode() cli.Mode {
 	return cli.ModeDeleteAll
 }
 
+func (a *CLIArgumentsDeleteAll) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0)
+}
+
 func (a *CLIArgumentsDeleteAll) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete-all --force", "Delete all (!) records in the server"},
@@ -38,10 +42,6 @@ func (a *CLIArgumentsDeleteAll) FullHelp() []string {
 }
 
 func (a *CLIArgumentsDeleteAll) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	for _, arg := range optionArgs {
 		if arg.Key == "force" && arg.Value == nil {
 			a.Force = true

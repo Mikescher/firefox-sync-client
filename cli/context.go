@@ -9,6 +9,7 @@ import (
 	"ffsyncclient/langext/term"
 	"fmt"
 	"github.com/joomcode/errorx"
+	"io"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -293,4 +294,12 @@ func (c FFSContext) Finish() {
 			c.PrintFatalError(err)
 		}
 	}
+}
+
+func (c FFSContext) ReadStdIn() (string, error) {
+	bytes, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return "", errorx.Decorate(err, "failed to read from stdin")
+	}
+	return string(bytes), nil
 }

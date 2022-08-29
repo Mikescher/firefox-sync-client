@@ -245,6 +245,26 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		optionArguments = append(optionArguments, arg)
 	}
 
+	posArgLenMin, posArgLenMax := verbArg.PositionArgCount()
+	if posArgLenMin != nil && posArgLenMax != nil && *posArgLenMin == *posArgLenMax {
+		if len(positionalArguments) < *posArgLenMin {
+			return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMin))
+		}
+		if len(positionalArguments) > *posArgLenMax {
+			if *posArgLenMax == 0 {
+				return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Command `ffsclient %s` does not have any subcommands", verbArg.Mode()))
+			} else {
+				return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMax))
+			}
+		}
+	}
+	if posArgLenMin != nil && len(positionalArguments) < *posArgLenMin {
+		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be at least %d)", verbArg.Mode(), *posArgLenMin))
+	}
+	if posArgLenMax != nil && len(positionalArguments) > *posArgLenMax {
+		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be at most %d)", verbArg.Mode(), *posArgLenMax))
+	}
+
 	err = verbArg.Init(positionalArguments, optionArguments)
 	if err != nil {
 		return nil, cli.Options{}, errorx.Decorate(err, "failed to init "+verbArg.Mode().String())

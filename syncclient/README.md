@@ -19,3 +19,5 @@ Additional Info:
  - https://github.com/iivvoo/Firefox-sync-example
  - https://stackoverflow.com/questions/6088817/how-to-access-firefox-sync-bookmarks-without-firefox
  - https://superuser.com/questions/195583/where-does-mozilla-sync-weave-save-its-passphrase
+ - https://github.com/mozilla-services/syncclient
+ - https://github.com/mozilla-services/syncclient/issues/30

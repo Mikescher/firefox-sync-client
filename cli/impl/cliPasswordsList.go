@@ -37,6 +37,10 @@ func (a *CLIArgumentsPasswordsList) Mode() cli.Mode {
 	return cli.ModePasswordsList
 }
 
+func (a *CLIArgumentsPasswordsList) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0)
+}
+
 func (a *CLIArgumentsPasswordsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords list", "List passwords"},
@@ -64,10 +68,6 @@ func (a *CLIArgumentsPasswordsList) FullHelp() []string {
 }
 
 func (a *CLIArgumentsPasswordsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	for _, arg := range optionArgs {
 		if arg.Key == "show-passwords" && arg.Value == nil {
 			a.ShowPasswords = true

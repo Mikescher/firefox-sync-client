@@ -7,4 +7,5 @@ type Record struct {
 	Payload     string
 	Modified    time.Time
 	DecodedData []byte
+	SortIndex   int64
 }

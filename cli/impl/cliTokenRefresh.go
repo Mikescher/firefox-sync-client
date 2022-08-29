@@ -22,6 +22,10 @@ func (a *CLIArgumentsTokenRefresh) Mode() cli.Mode {
 	return cli.ModeTokenRefresh
 }
 
+func (a *CLIArgumentsTokenRefresh) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0)
+}
+
 func (a *CLIArgumentsTokenRefresh) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient refresh [--force]", "Refresh the current session token (BID Assertion)"},
@@ -39,10 +43,6 @@ func (a *CLIArgumentsTokenRefresh) FullHelp() []string {
 }
 
 func (a *CLIArgumentsTokenRefresh) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	for _, arg := range optionArgs {
 		if arg.Key == "force" && arg.Value == nil {
 			a.Force = true

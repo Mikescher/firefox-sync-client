@@ -17,6 +17,10 @@ func (a *CLIArgumentsHistoryBase) Mode() cli.Mode {
 	return cli.ModeHistoryBase
 }
 
+func (a *CLIArgumentsHistoryBase) PositionArgCount() (*int, *int) {
+	return nil, nil
+}
+
 func (a *CLIArgumentsHistoryBase) ShortHelp() [][]string {
 	return nil
 }

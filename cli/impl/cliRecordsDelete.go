@@ -21,6 +21,10 @@ func (a *CLIArgumentsRecordsDelete) Mode() cli.Mode {
 	return cli.ModeRecordsDelete
 }
 
+func (a *CLIArgumentsRecordsDelete) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0) //TODO
+}
+
 func (a *CLIArgumentsRecordsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete <collection> <record-id>", "Delete the specified record"},
@@ -36,13 +40,6 @@ func (a *CLIArgumentsRecordsDelete) FullHelp() []string {
 }
 
 func (a *CLIArgumentsRecordsDelete) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) < 2 {
-		return errorx.InternalError.New("Not enough arguments for <delete> (must be exactly 2)")
-	}
-	if len(positionalArgs) > 2 {
-		return errorx.InternalError.New("Too many arguments for <delete> (must be exactly 2)")
-	}
-
 	a.Collection = positionalArgs[0]
 	a.RecordID = positionalArgs[1]
 

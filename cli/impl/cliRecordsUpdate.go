@@ -2,33 +2,34 @@ package impl
 
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
 )
 
-type CLIArgumentsUpdateRecord struct {
+type CLIArgumentsRecordsUpdate struct {
 }
 
-func NewCLIArgumentsRecordsUpdate() *CLIArgumentsUpdateRecord {
-	return &CLIArgumentsUpdateRecord{}
+func NewCLIArgumentsRecordsUpdate() *CLIArgumentsRecordsUpdate {
+	return &CLIArgumentsRecordsUpdate{}
 }
 
-func (a *CLIArgumentsUpdateRecord) Mode() cli.Mode {
+func (a *CLIArgumentsRecordsUpdate) Mode() cli.Mode {
 	return cli.ModeRecordsUpdate
 }
 
-func (a *CLIArgumentsUpdateRecord) ShortHelp() [][]string {
+func (a *CLIArgumentsRecordsUpdate) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0) //TODO
+}
+
+func (a *CLIArgumentsRecordsUpdate) ShortHelp() [][]string {
 	return nil //TODO
 }
 
-func (a *CLIArgumentsUpdateRecord) FullHelp() []string {
+func (a *CLIArgumentsRecordsUpdate) FullHelp() []string {
 	return nil //TODO
 }
 
-func (a *CLIArgumentsUpdateRecord) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
+func (a *CLIArgumentsRecordsUpdate) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	for _, arg := range optionArgs {
 		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}
@@ -36,7 +37,7 @@ func (a *CLIArgumentsUpdateRecord) Init(positionalArgs []string, optionArgs []cl
 	return nil
 }
 
-func (a *CLIArgumentsUpdateRecord) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsUpdate) Execute(ctx *cli.FFSContext) int {
 	//TODO implement me
 	panic("implement me")
 }

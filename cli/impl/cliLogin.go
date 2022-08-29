@@ -3,6 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
 	"os"
@@ -32,6 +33,10 @@ func (a *CLIArgumentsLogin) Mode() cli.Mode {
 	return cli.ModeLogin
 }
 
+func (a *CLIArgumentsLogin) PositionArgCount() (*int, *int) {
+	return langext.Ptr(2), langext.Ptr(2) //TODO
+}
+
 func (a *CLIArgumentsLogin) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient login <login> <password>", "Login to FF-Sync account, uses ~/.config as default session location"},
@@ -53,13 +58,6 @@ func (a *CLIArgumentsLogin) FullHelp() []string {
 }
 
 func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) < 2 {
-		return errorx.InternalError.New("Not enough arguments for <login>")
-	}
-	if len(positionalArgs) > 2 {
-		return errorx.InternalError.New("Too many arguments for <login>")
-	}
-
 	a.Email = positionalArgs[0]
 	a.Password = positionalArgs[1]
 

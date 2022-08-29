@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"fmt"
@@ -349,7 +350,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 		return CryptoSession{}, errorx.Decorate(err, "API request failed")
 	}
 
-	var resp getRecordSchema
+	var resp recordSchema
 	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
@@ -369,7 +370,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	ctx.PrintVerboseKV("payload.HMAC", payload.HMAC)
 	ctx.PrintVerboseKV("payload.Ciphertext", payload.Ciphertext)
 
-	dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, syncKeys)
+	dplBin, err := decryptPayload(ctx, payload.Ciphertext, payload.IV, payload.HMAC, syncKeys)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "failed to decrypt payload")
 	}
@@ -633,9 +634,10 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 
 	for _, v := range resp {
 		result = append(result, models.Record{
-			ID:       v.ID,
-			Payload:  v.Payload,
-			Modified: langext.UnixFloatSeconds(v.Modified),
+			ID:        v.ID,
+			Payload:   v.Payload,
+			SortIndex: v.SortIndex,
+			Modified:  langext.UnixFloatSeconds(v.Modified),
 		})
 	}
 
@@ -662,7 +664,7 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 
 			ctx.PrintVerbose("Decrypting payload of " + v.ID)
 
-			dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
+			dplBin, err := decryptPayload(ctx, payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
 			if err != nil {
 				return nil, errorx.Decorate(err, "failed to decrypt payload of record <"+v.ID+">")
 			}
@@ -713,7 +715,7 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 
 		ctx.PrintVerbose("Decrypting payload")
 
-		dplBin, err := decryptPayload(payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
+		dplBin, err := decryptPayload(ctx, payload.Ciphertext, payload.IV, payload.HMAC, bulkKeys)
 		if err != nil {
 			return models.Record{}, errorx.Decorate(err, "failed to decrypt payload of record")
 		}
@@ -722,6 +724,17 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	return record, nil
+}
+
+func (f FxAClient) RecordExists(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) (bool, error) {
+	_, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", collection, recordid), nil)
+	if err == nil {
+		return true, nil
+	}
+	if errorx.IsOfType(err, fferr.Request404) {
+		return false, nil
+	}
+	return false, errorx.Decorate(err, "API request failed")
 }
 
 func (f FxAClient) DeleteRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) error {
@@ -772,6 +785,79 @@ func (f FxAClient) CheckSession(ctx *cli.FFSContext, session FFSyncSession) (boo
 	}
 
 	return true, nil
+}
+
+func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string, payload string, forceCreateNew bool, forceUpdateExisting bool) error {
+
+	if forceCreateNew {
+		exists, err := f.RecordExists(ctx, session, collection, recordid)
+		if err != nil {
+			return errorx.Decorate(err, "failed to check record-exists")
+		}
+		if exists {
+			return errorx.InternalError.New("Cannot create record, an record with this ID already exists")
+		}
+	}
+
+	if forceUpdateExisting {
+		exists, err := f.RecordExists(ctx, session, collection, recordid)
+		if err != nil {
+			return errorx.Decorate(err, "failed to check record-exists")
+		}
+		if !exists {
+			return errorx.InternalError.New("Cannot update record, an record with this ID does not exists")
+		}
+	}
+
+	bso := recordsRequestSchema{
+		ID:      recordid,
+		Payload: payload,
+	}
+
+	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", collection, recordid), bso)
+	if err != nil {
+		return errorx.Decorate(err, "API request failed")
+	}
+
+	return nil
+}
+
+func (f FxAClient) EncryptPayload(ctx *cli.FFSContext, session FFSyncSession, collection string, rawpayload string) (string, error) {
+
+	bulkKeys := session.BulkKeys[""]
+
+	if v, ok := session.BulkKeys[collection]; ok {
+		ctx.PrintVerbose("Use collection-specific bulk-keys")
+
+		bulkKeys = v
+	} else {
+		ctx.PrintVerbose("Use global bulk-keys")
+	}
+	ctx.PrintVerboseKV("EncryptionKey", bulkKeys.EncryptionKey)
+	ctx.PrintVerboseKV("HMACKey", bulkKeys.HMACKey)
+
+	ctx.PrintVerbose("Encrypting payload")
+
+	ciphertext, iv, hmac, err := encryptPayload(ctx, rawpayload, bulkKeys)
+	if err != nil {
+		return "", errorx.Decorate(err, "failed to decrypt payload of record")
+	}
+
+	ctx.PrintVerboseKV("Ciphertext", ciphertext)
+	ctx.PrintVerboseKV("IV", iv)
+	ctx.PrintVerboseKV("HMAC", hmac)
+
+	payload := payloadSchema{
+		Ciphertext: ciphertext,
+		IV:         iv,
+		HMAC:       hmac,
+	}
+	payloadbin, err := json.Marshal(payload)
+	if err != nil {
+		return "", errorx.Decorate(err, "failed to marshal new payload")
+	}
+
+	return string(payloadbin), nil
 }
 
 func (f FxAClient) requestWithHawkToken(ctx *cli.FFSContext, method string, relurl string, body any, token []byte, tokenType string) ([]byte, []byte, error) {
@@ -858,8 +944,6 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		return nil, errorx.Decorate(err, "failed to read response-body request")
 	}
 
-	//TODO statuscode [429, 500, 503] means retry-after
-
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
 	for k, va := range rawResp.Header {
 		for _, v := range va {
@@ -867,6 +951,16 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		}
 	}
 	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%s", string(respBodyRaw)))
+
+	//TODO statuscode [429, 500, 503] means retry-after
+
+	if rawResp.StatusCode == 404 {
+		if len(string(respBodyRaw)) > 1 {
+			return nil, fferr.Request404.New(fmt.Sprintf("call to %v returned statuscode %v\nBody:\n%v", requestURL, rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return nil, fferr.Request404.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
+		}
+	}
 
 	if rawResp.StatusCode != 200 {
 		if len(string(respBodyRaw)) > 1 {

@@ -40,6 +40,10 @@ func (a *CLIArgumentsRecordsList) Mode() cli.Mode {
 	return cli.ModeRecordsList
 }
 
+func (a *CLIArgumentsRecordsList) PositionArgCount() (*int, *int) {
+	return langext.Ptr(1), langext.Ptr(1)
+}
+
 func (a *CLIArgumentsRecordsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient list <collection>", "Get a all records in a collection (use --format to define the format)"},
@@ -68,13 +72,6 @@ func (a *CLIArgumentsRecordsList) FullHelp() []string {
 }
 
 func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) < 1 {
-		return errorx.InternalError.New("Not enough arguments for <list> (must be exactly 1)")
-	}
-	if len(positionalArgs) > 1 {
-		return errorx.InternalError.New("Too many arguments for <list> (must be exactly 1)")
-	}
-
 	a.Collection = positionalArgs[0]
 
 	for _, arg := range optionArgs {

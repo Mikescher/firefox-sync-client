@@ -30,6 +30,10 @@ func (a *CLIArgumentsRecordsGet) Mode() cli.Mode {
 	return cli.ModeRecordsGet
 }
 
+func (a *CLIArgumentsRecordsGet) PositionArgCount() (*int, *int) {
+	return langext.Ptr(2), langext.Ptr(2)
+}
+
 func (a *CLIArgumentsRecordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient get <collection> <record-id>", "Get a single record"},
@@ -50,13 +54,6 @@ func (a *CLIArgumentsRecordsGet) FullHelp() []string {
 }
 
 func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) < 2 {
-		return errorx.InternalError.New("Not enough arguments for <get> (must be exactly 2)")
-	}
-	if len(positionalArgs) > 2 {
-		return errorx.InternalError.New("Too many arguments for <get> (must be exactly 2)")
-	}
-
 	a.Collection = positionalArgs[0]
 	a.RecordID = positionalArgs[1]
 

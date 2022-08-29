@@ -98,4 +98,5 @@ type Verb interface {
 	Execute(ctx *FFSContext) int
 	ShortHelp() [][]string
 	FullHelp() []string
+	PositionArgCount() (*int, *int)
 }

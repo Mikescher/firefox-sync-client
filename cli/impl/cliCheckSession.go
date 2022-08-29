@@ -19,6 +19,10 @@ func (a *CLIArgumentsCheckSession) Mode() cli.Mode {
 	return cli.ModeCheckSession
 }
 
+func (a *CLIArgumentsCheckSession) PositionArgCount() (*int, *int) {
+	return langext.Ptr(0), langext.Ptr(0) //TODO
+}
+
 func (a *CLIArgumentsCheckSession) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient check-session", "Verify that the current session is valid"},
@@ -38,10 +42,6 @@ func (a *CLIArgumentsCheckSession) FullHelp() []string {
 }
 
 func (a *CLIArgumentsCheckSession) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + positionalArgs[0])
-	}
-
 	for _, arg := range optionArgs {
 		return errorx.InternalError.New("Unknown argument: " + arg.Key)
 	}

@@ -17,6 +17,10 @@ func (a *CLIArgumentsBookmarksBase) Mode() cli.Mode {
 	return cli.ModeBookmarksBase
 }
 
+func (a *CLIArgumentsBookmarksBase) PositionArgCount() (*int, *int) {
+	return nil, nil
+}
+
 func (a *CLIArgumentsBookmarksBase) ShortHelp() [][]string {
 	return nil
 }

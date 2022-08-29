@@ -30,6 +30,10 @@ func (a *CLIArgumentsPasswordsBase) Mode() cli.Mode {
 	return cli.ModePasswordsBase
 }
 
+func (a *CLIArgumentsPasswordsBase) PositionArgCount() (*int, *int) {
+	return nil, nil
+}
+
 func (a *CLIArgumentsPasswordsBase) ShortHelp() [][]string {
 	return nil
 }
