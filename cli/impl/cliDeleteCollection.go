@@ -8,43 +8,41 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-type CLIArgumentsDeleteSingle struct {
+type CLIArgumentsDeleteCollection struct {
 	Collection string
-	RecordID   string
 }
 
-func NewCLIArgumentsDeleteSingle() *CLIArgumentsDeleteSingle {
-	return &CLIArgumentsDeleteSingle{}
+func NewCLIArgumentsDeleteCollection() *CLIArgumentsDeleteCollection {
+	return &CLIArgumentsDeleteCollection{}
 }
 
-func (a *CLIArgumentsDeleteSingle) Mode() cli.Mode {
+func (a *CLIArgumentsDeleteCollection) Mode() cli.Mode {
 	return cli.ModeDeleteRecord
 }
 
-func (a *CLIArgumentsDeleteSingle) ShortHelp() [][]string {
+func (a *CLIArgumentsDeleteCollection) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient delete <collection> <record-id>", "Delete the specified record"},
+		{"ffsclient delete <collection>", "Delete the all records in a collection"},
 	}
 }
 
-func (a *CLIArgumentsDeleteSingle) FullHelp() []string {
+func (a *CLIArgumentsDeleteCollection) FullHelp() []string {
 	return []string{
-		"$> ffsclient delete <collection> <record-id>",
+		"$> ffsclient delete <collection>",
 		"",
-		"Delete the specific record from the server",
+		"Delete the all records in a collection",
 	}
 }
 
-func (a *CLIArgumentsDeleteSingle) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	if len(positionalArgs) < 2 {
+func (a *CLIArgumentsDeleteCollection) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+	if len(positionalArgs) < 1 {
 		return errorx.InternalError.New("Not enough arguments for <delete> (must be exactly 2)")
 	}
-	if len(positionalArgs) > 2 {
+	if len(positionalArgs) > 1 {
 		return errorx.InternalError.New("Too many arguments for <delete> (must be exactly 2)")
 	}
 
 	a.Collection = positionalArgs[0]
-	a.RecordID = positionalArgs[1]
 
 	for _, arg := range optionArgs {
 		return errorx.InternalError.New("Unknown argument: " + arg.Key)
@@ -53,11 +51,10 @@ func (a *CLIArgumentsDeleteSingle) Init(positionalArgs []string, optionArgs []cl
 	return nil
 }
 
-func (a *CLIArgumentsDeleteSingle) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Delete-Record]")
+func (a *CLIArgumentsDeleteCollection) Execute(ctx *cli.FFSContext) int {
+	ctx.PrintVerbose("[Delete-Collection]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
-	ctx.PrintVerboseKV("RecordID", a.RecordID)
 
 	// ========================================================================
 
@@ -92,7 +89,7 @@ func (a *CLIArgumentsDeleteSingle) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	err = client.DeleteRecord(ctx, session, a.Collection, a.RecordID)
+	err = client.DeleteCollection(ctx, session, a.Collection)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -105,6 +102,6 @@ func (a *CLIArgumentsDeleteSingle) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeUnsupportedOutputFormat
 	}
 
-	ctx.PrintPrimaryOutput("Record " + a.RecordID + " deleted")
+	ctx.PrintPrimaryOutput("Collection " + a.Collection + " deleted")
 	return 0
 }

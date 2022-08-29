@@ -33,6 +33,9 @@ func GetModeImpl(v cli.Mode) cli.Verb {
 	case cli.ModeDeleteRecord:
 		return NewCLIArgumentsDeleteSingle()
 
+	case cli.ModeDeleteCollection:
+		return NewCLIArgumentsDeleteCollection()
+
 	case cli.ModeListCollections:
 		return NewCLIArgumentsListCollections()
 

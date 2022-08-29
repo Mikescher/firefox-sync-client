@@ -3,19 +3,20 @@ package cli
 type Mode string
 
 const (
-	ModeHelp            Mode = "help"
-	ModeVersion         Mode = "version"
-	ModeLogin           Mode = "login"
-	ModeTokenRefresh    Mode = "refresh"
-	ModeCheckSession    Mode = "check-session"
-	ModeGetQuota        Mode = "quota"
-	ModeListCollections Mode = "collections"
-	ModeListRecords     Mode = "list"
-	ModeGetRecord       Mode = "get"
-	ModeDeleteRecord    Mode = "delete"
-	ModeDeleteAll       Mode = "delete-all" // TODO
-	ModeCreateRecord    Mode = "create"     // TODO
-	ModeUpdateRecord    Mode = "update"     // TODO
+	ModeHelp             Mode = "help"
+	ModeVersion          Mode = "version"
+	ModeLogin            Mode = "login"
+	ModeTokenRefresh     Mode = "refresh"
+	ModeCheckSession     Mode = "check-session"
+	ModeGetQuota         Mode = "quota"
+	ModeListCollections  Mode = "collections"
+	ModeListRecords      Mode = "list"
+	ModeGetRecord        Mode = "get"
+	ModeDeleteRecord     Mode = "delete"
+	ModeDeleteCollection Mode = "delete-collection" // TODO
+	ModeDeleteAll        Mode = "delete-all"        // TODO
+	ModeCreateRecord     Mode = "create"            // TODO
+	ModeUpdateRecord     Mode = "update"            // TODO
 	//ModeBookmarks       Mode = "bookmarks"  // TODO
 	//ModePasswords       Mode = "passwords"  // TODO
 	//ModeForms           Mode = "forms"      // TODO
@@ -32,6 +33,7 @@ var Modes = []Mode{
 	ModeListRecords,
 	ModeGetRecord,
 	ModeDeleteRecord,
+	ModeDeleteCollection,
 	//ModeDeleteAll,
 	//ModeCreateRecord,
 	//ModeUpdateRecord,

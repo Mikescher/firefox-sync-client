@@ -733,6 +733,15 @@ func (f FxAClient) DeleteRecord(ctx *cli.FFSContext, session FFSyncSession, coll
 	return nil
 }
 
+func (f FxAClient) DeleteCollection(ctx *cli.FFSContext, session FFSyncSession, collection string) error {
+	_, err := f.request(ctx, session, "DELETE", fmt.Sprintf("/storage/%s", collection), nil)
+	if err != nil {
+		return errorx.Decorate(err, "API request failed")
+	}
+
+	return nil
+}
+
 func (f FxAClient) CheckSession(ctx *cli.FFSContext, session FFSyncSession) (bool, error) {
 	binResp, _, err := f.requestWithHawkToken(ctx, "GET", "/session/status", nil, session.SessionToken, "sessionToken")
 	if err != nil {
