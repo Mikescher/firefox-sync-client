@@ -18,7 +18,14 @@ type CLIArgumentsRecordsCreate struct {
 }
 
 func NewCLIArgumentsRecordsCreate() *CLIArgumentsRecordsCreate {
-	return &CLIArgumentsRecordsCreate{}
+	return &CLIArgumentsRecordsCreate{
+		Collection:                "",
+		RecordID:                  "",
+		RawPayload:                nil,
+		DecryptedPayload:          nil,
+		RawPayloadFromStdIn:       false,
+		DecryptedPayloadFromStdIn: false,
+	}
 }
 
 func (a *CLIArgumentsRecordsCreate) Mode() cli.Mode {
@@ -43,11 +50,12 @@ func (a *CLIArgumentsRecordsCreate) FullHelp() []string {
 		"Insert a new record",
 		"",
 		"The payload can either be specified:",
-		" - directly with --raw,",
-		" - as unencrypted data with --data (which is then encrypted before written to the server).",
+		" - directly with --raw <...>",
+		" - as unencrypted data with --data <...> (which is then encrypted before written to the server)",
 		" - read as raw data from stdin with --raw-stdin",
-		" - read as unencrypted data from stdin with --data-stdin (which is then encrypted before written to the server).",
+		" - read as unencrypted data from stdin with --data-stdin (which is then encrypted before written to the server)",
 		"The Record ID must be a new unique identifier (use for example `uuidgen`)",
+		"If you want to upsert a record, use `ffsclient update --create` (see `ffsclient update --help`)",
 	}
 }
 
@@ -85,13 +93,15 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerboseKV("RecordID", a.RecordID)
 	ctx.PrintVerboseKV("Data<Raw>", a.RawPayload != nil)
 	ctx.PrintVerboseKV("Data<Data>", a.DecryptedPayload != nil)
+	ctx.PrintVerboseKV("Data<Raw-stdin>", a.RawPayloadFromStdIn)
+	ctx.PrintVerboseKV("Data<Data-stdin>", a.DecryptedPayloadFromStdIn)
 
 	if langext.BoolCount(a.RawPayload != nil, a.DecryptedPayload != nil, a.RawPayloadFromStdIn, a.DecryptedPayloadFromStdIn) == 0 {
-		ctx.PrintFatalMessage("Record Data must be specified one of --raw, --data, --raw-stdin or --data-stdin")
+		ctx.PrintFatalMessage("Must specify one of --raw, --data, --raw-stdin or --data-stdin")
 		return consts.ExitcodeError
 	}
 	if langext.BoolCount(a.RawPayload != nil, a.DecryptedPayload != nil, a.RawPayloadFromStdIn, a.DecryptedPayloadFromStdIn) > 1 {
-		ctx.PrintFatalMessage("Record Data must be specified at most one of --raw, --data, --raw-stdin or --data-stdin")
+		ctx.PrintFatalMessage("Must specify at most one of --raw, --data, --raw-stdin or --data-stdin")
 		return consts.ExitcodeError
 	}
 

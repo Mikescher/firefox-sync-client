@@ -15,8 +15,8 @@ const (
 	ModeRecordsDelete     Mode = "delete"
 	ModeCollectionsDelete Mode = "delete-collection"
 	ModeDeleteAll         Mode = "delete-all"
-	ModeRecordsCreate     Mode = "create" // TODO
-	ModeRecordsUpdate     Mode = "update" // TODO
+	ModeRecordsCreate     Mode = "create"
+	ModeRecordsUpdate     Mode = "update"
 	ModeMetaGet           Mode = "meta"
 	ModeBookmarksBase     Mode = "bookmarks"        // TODO
 	ModeBookmarksList     Mode = "bookmarks list"   // TODO
