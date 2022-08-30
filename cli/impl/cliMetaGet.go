@@ -46,7 +46,7 @@ func (a *CLIArgumentsMetaGet) Init(positionalArgs []string, optionArgs []cli.Arg
 }
 
 func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Get-Meta]")
+	ctx.PrintVerbose("[Get Meta]")
 	ctx.PrintVerbose("")
 
 	// ========================================================================

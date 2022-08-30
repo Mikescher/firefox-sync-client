@@ -54,7 +54,7 @@ func (a *CLIArgumentsDeleteAll) Init(positionalArgs []string, optionArgs []cli.A
 }
 
 func (a *CLIArgumentsDeleteAll) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Delete-Collection]")
+	ctx.PrintVerbose("[Delete Data]")
 	ctx.PrintVerbose("")
 
 	// ========================================================================

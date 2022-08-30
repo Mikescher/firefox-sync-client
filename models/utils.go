@@ -29,3 +29,18 @@ func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 
 	return result, nil
 }
+
+func ParsePassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
+
+	var jsonschema PasswordPayloadSchema
+	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	if err != nil {
+		return PasswordRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema\n%s", record.ID, string(record.DecodedData)))
+	}
+
+	model := jsonschema.ToModel()
+
+	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.Hostname))
+
+	return model, nil
+}

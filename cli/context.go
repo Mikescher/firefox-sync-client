@@ -130,6 +130,14 @@ func (c FFSContext) PrintFatalError(e error) {
 
 }
 
+func (c FFSContext) PrintErrorMessage(msg string) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	c.printErrorRaw(msg + "\n")
+}
+
 func (c FFSContext) PrintVerbose(msg string) {
 	if c.Opt.Quiet || !c.Opt.Verbose {
 		return

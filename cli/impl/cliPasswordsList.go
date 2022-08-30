@@ -7,12 +7,9 @@ import (
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
-	"regexp"
 	"strconv"
 	"time"
 )
-
-var urlSchemaRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]+://`)
 
 type CLIArgumentsPasswordsList struct {
 	ShowPasswords      bool
@@ -120,7 +117,7 @@ func (a *CLIArgumentsPasswordsList) Init(positionalArgs []string, optionArgs []c
 }
 
 func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[List-Passwords]")
+	ctx.PrintVerbose("[List Passwords]")
 	ctx.PrintVerbose("")
 
 	// ========================================================================

@@ -25,21 +25,21 @@ const (
 	ModeBookmarksUpdate   Mode = "bookmarks update" // TODO
 	ModePasswordsBase     Mode = "passwords"
 	ModePasswordsList     Mode = "passwords list"
-	ModePasswordsDelete   Mode = "passwords delete" // TODO
+	ModePasswordsGet      Mode = "passwords get"
 	ModePasswordsCreate   Mode = "passwords create"
 	ModePasswordsUpdate   Mode = "passwords update" // TODO
-	ModePasswordsGet      Mode = "passwords get"    // TODO
-	ModeFormsBase         Mode = "forms"            // TODO
-	ModeFormsList         Mode = "forms list"       // TODO
-	ModeFormsGet          Mode = "forms get"        // TODO
-	ModeFormsCreate       Mode = "forms create"     // TODO
-	ModeFormsUpdate       Mode = "forms update"     // TODO
-	ModeFormsDelete       Mode = "forms delete"     // TODO
-	ModeHistoryBase       Mode = "history"          // TODO
-	ModeHistoryList       Mode = "history list"     // TODO
-	ModeHistoryCreate     Mode = "history create"   // TODO
-	ModeHistoryUpdate     Mode = "history update"   // TODO
-	ModeHistoryDelete     Mode = "history delete"   // TODO
+	ModePasswordsDelete   Mode = "passwords delete"
+	ModeFormsBase         Mode = "forms"          // TODO
+	ModeFormsList         Mode = "forms list"     // TODO
+	ModeFormsGet          Mode = "forms get"      // TODO
+	ModeFormsCreate       Mode = "forms create"   // TODO
+	ModeFormsUpdate       Mode = "forms update"   // TODO
+	ModeFormsDelete       Mode = "forms delete"   // TODO
+	ModeHistoryBase       Mode = "history"        // TODO
+	ModeHistoryList       Mode = "history list"   // TODO
+	ModeHistoryCreate     Mode = "history create" // TODO
+	ModeHistoryUpdate     Mode = "history update" // TODO
+	ModeHistoryDelete     Mode = "history delete" // TODO
 )
 
 var Modes = []Mode{

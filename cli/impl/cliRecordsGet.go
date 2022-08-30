@@ -77,7 +77,7 @@ func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.
 }
 
 func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Get-Record]")
+	ctx.PrintVerbose("[Get Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 	ctx.PrintVerboseKV("RecordID", a.RecordID)

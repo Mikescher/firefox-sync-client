@@ -51,7 +51,7 @@ func (a *CLIArgumentsRecordsDelete) Init(positionalArgs []string, optionArgs []c
 }
 
 func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Delete-Record]")
+	ctx.PrintVerbose("[Delete Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 	ctx.PrintVerboseKV("RecordID", a.RecordID)

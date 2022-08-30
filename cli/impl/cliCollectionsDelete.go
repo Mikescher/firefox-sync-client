@@ -49,7 +49,7 @@ func (a *CLIArgumentsCollectionsDelete) Init(positionalArgs []string, optionArgs
 }
 
 func (a *CLIArgumentsCollectionsDelete) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Delete-Collection]")
+	ctx.PrintVerbose("[Delete Collection]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 

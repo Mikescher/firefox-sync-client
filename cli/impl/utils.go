@@ -2,8 +2,11 @@ package impl
 
 import (
 	"ffsyncclient/cli"
+	"regexp"
 	"strings"
 )
+
+var urlSchemaRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]+://`)
 
 func ParseSubcommand(v []string) (cli.Verb, string, int, bool) {
 

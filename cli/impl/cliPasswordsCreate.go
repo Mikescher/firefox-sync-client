@@ -85,7 +85,7 @@ func (a *CLIArgumentsPasswordsCreate) Init(positionalArgs []string, optionArgs [
 }
 
 func (a *CLIArgumentsPasswordsCreate) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[List-Passwords]")
+	ctx.PrintVerbose("[Create Password]")
 	ctx.PrintVerbose("")
 
 	// ========================================================================
