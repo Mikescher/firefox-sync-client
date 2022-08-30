@@ -1,10 +1,13 @@
 package consts
 
 const (
-	ExitcodeNoArguments             = 16
-	ExitcodeCLIParse                = 32
-	ExitcodeNoLogin                 = 45
-	ExitcodeError                   = 48
-	ExitcodeInvalidSession          = 55
-	ExitcodeUnsupportedOutputFormat = 66
+	ExitcodeError                   = 60
+	ExitcodeNoArguments             = 61
+	ExitcodeCLIParse                = 62
+	ExitcodeNoLogin                 = 63
+	ExitcodeUnsupportedOutputFormat = 65
+)
+
+const (
+	ExitcodeInvalidSession = 81
 )

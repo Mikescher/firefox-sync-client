@@ -12,7 +12,7 @@ func main() {
 	if err != nil {
 		ctx := cli.NewEarlyContext()
 		ctx.PrintFatalError(err)
-		os.Exit(consts.ExitcodeError)
+		os.Exit(consts.ExitcodeCLIParse)
 		return
 	}
 

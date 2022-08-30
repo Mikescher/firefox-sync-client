@@ -105,6 +105,16 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
 		}
 		ctx.PrintPrimaryOutput("")
+		ctx.PrintPrimaryOutput("Exit Codes:")
+		ctx.PrintPrimaryOutput("  0             Program exited successfully")
+		ctx.PrintPrimaryOutput("  60            Program existed with an (unspecified) error")
+		ctx.PrintPrimaryOutput("  61            Program called without arguments")
+		ctx.PrintPrimaryOutput("  62            Failed to parse commandline arguments")
+		ctx.PrintPrimaryOutput("  63            Command needs a valid session/session-file and none was found")
+		ctx.PrintPrimaryOutput("  65            The current subcommand does not support teh specified output format")
+		ctx.PrintPrimaryOutput("")
+		ctx.PrintPrimaryOutput("  81            (check-session): The session is not valid")
+		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 
 	} else {
