@@ -2,9 +2,10 @@ package consts
 
 const (
 	ExitcodeError                   = 60
-	ExitcodeNoArguments             = 61
-	ExitcodeCLIParse                = 62
-	ExitcodeNoLogin                 = 63
+	ExitcodePanic                   = 61
+	ExitcodeNoArguments             = 62
+	ExitcodeCLIParse                = 63
+	ExitcodeNoLogin                 = 64
 	ExitcodeUnsupportedOutputFormat = 65
 )
 

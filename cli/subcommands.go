@@ -23,10 +23,10 @@ const (
 	ModeBookmarksDelete   Mode = "bookmarks delete" // TODO
 	ModeBookmarksCreate   Mode = "bookmarks create" // TODO
 	ModeBookmarksUpdate   Mode = "bookmarks update" // TODO
-	ModePasswordsBase     Mode = "passwords"        // TODO
-	ModePasswordsList     Mode = "passwords list"   // TODO
+	ModePasswordsBase     Mode = "passwords"
+	ModePasswordsList     Mode = "passwords list"
 	ModePasswordsDelete   Mode = "passwords delete" // TODO
-	ModePasswordsCreate   Mode = "passwords create" // TODO
+	ModePasswordsCreate   Mode = "passwords create"
 	ModePasswordsUpdate   Mode = "passwords update" // TODO
 	ModePasswordsGet      Mode = "passwords get"    // TODO
 	ModeFormsBase         Mode = "forms"            // TODO

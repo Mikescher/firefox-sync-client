@@ -4,10 +4,19 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/cli/parser"
 	"ffsyncclient/consts"
+	"fmt"
 	"os"
+	"runtime/debug"
 )
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			_, _ = os.Stderr.WriteString(fmt.Sprintf("%v\n\n%s", err, string(debug.Stack())))
+			os.Exit(consts.ExitcodePanic)
+		}
+	}()
+
 	verb, opt, err := parser.ParseCommandline()
 	if err != nil {
 		ctx := cli.NewEarlyContext()

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type passwordRecordJson struct {
+type PasswordPayloadSchema struct {
 	ID                  string  `json:"id"`
 	Hostname            string  `json:"hostname"`
 	FormSubmitURL       string  `json:"formSubmitURL"`
@@ -14,13 +14,13 @@ type passwordRecordJson struct {
 	Password            string  `json:"password"`
 	UsernameField       string  `json:"usernameField"`
 	PasswordField       string  `json:"passwordField"`
-	TimeCreated         *int64  `json:"timeCreated"`
-	TimePasswordChanged *int64  `json:"timePasswordChanged"`
-	TimeLastUsed        *int64  `json:"timeLastUsed"`
-	TimesUsed           *int64  `json:"timesUsed"`
+	TimeCreated         *int64  `json:"timeCreated,omitempty"`
+	TimePasswordChanged *int64  `json:"timePasswordChanged,omitempty"`
+	TimeLastUsed        *int64  `json:"timeLastUsed,omitempty"`
+	TimesUsed           *int64  `json:"timesUsed,omitempty"`
 }
 
-func (j passwordRecordJson) ToModel() PasswordRecord {
+func (j PasswordPayloadSchema) ToModel() PasswordRecord {
 	return PasswordRecord{
 		ID:              j.ID,
 		Hostname:        j.Hostname,

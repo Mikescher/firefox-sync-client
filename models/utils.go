@@ -11,7 +11,7 @@ func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 	result := make([]PasswordRecord, 0, len(records))
 
 	for _, v := range records {
-		var jsonschema passwordRecordJson
+		var jsonschema PasswordPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		if err != nil {
 			if ignoreSchemaErrors {

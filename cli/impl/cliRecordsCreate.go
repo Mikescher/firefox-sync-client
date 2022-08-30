@@ -167,8 +167,6 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 		}
 	}
 
-	// ========================================================================
-
 	err = client.PutRecord(ctx, session, a.Collection, a.RecordID, payload, true, false)
 	if err != nil {
 		ctx.PrintFatalError(err)

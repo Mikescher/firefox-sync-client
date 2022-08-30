@@ -81,7 +81,15 @@ func (a *CLIArgumentsTokenRefresh) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerbose("Refresh Session Keys")
 
-	_, refreshed, err := client.RefreshSession(ctx, session, a.Force)
+	session, refreshed, err := client.RefreshSession(ctx, session, a.Force)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	ctx.PrintVerbose("Save session to " + ctx.Opt.SessionFilePath)
+
+	err = session.Save(cfp)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

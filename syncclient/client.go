@@ -17,6 +17,7 @@ import (
 	"github.com/joomcode/errorx"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -578,7 +579,7 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 }
 
 func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, collection string, after *time.Time, sort *string, idOnly bool, decode bool, limit *int, offset *int) ([]models.Record, error) {
-	url := fmt.Sprintf("/storage/%s", collection)
+	requrl := fmt.Sprintf("/storage/%s", url.PathEscape(collection))
 
 	params := make([]string, 0, 8)
 
@@ -599,10 +600,10 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 	}
 
 	if len(params) > 0 {
-		url = url + "?" + strings.Join(params, "&")
+		requrl = requrl + "?" + strings.Join(params, "&")
 	}
 
-	binResp, err := f.request(ctx, session, "GET", url, nil)
+	binResp, err := f.request(ctx, session, "GET", requrl, nil)
 	if err != nil {
 		return nil, errorx.Decorate(err, "API request failed")
 	}
@@ -669,6 +670,8 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 				return nil, errorx.Decorate(err, "failed to decrypt payload of record <"+v.ID+">")
 			}
 
+			ctx.PrintVerbose("Decrypted Payload:\n" + string(dplBin))
+
 			result[i].DecodedData = dplBin
 		}
 	}
@@ -677,7 +680,7 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 }
 
 func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string, decode bool) (models.Record, error) {
-	binResp, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", collection, recordid), nil)
+	binResp, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), nil)
 	if err != nil {
 		return models.Record{}, errorx.Decorate(err, "API request failed")
 	}
@@ -727,7 +730,7 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 }
 
 func (f FxAClient) RecordExists(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) (bool, error) {
-	_, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", collection, recordid), nil)
+	_, err := f.request(ctx, session, "GET", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), nil)
 	if err == nil {
 		return true, nil
 	}
@@ -738,7 +741,7 @@ func (f FxAClient) RecordExists(ctx *cli.FFSContext, session FFSyncSession, coll
 }
 
 func (f FxAClient) DeleteRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) error {
-	_, err := f.request(ctx, session, "DELETE", fmt.Sprintf("/storage/%s/%s", collection, recordid), nil)
+	_, err := f.request(ctx, session, "DELETE", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), nil)
 	if err != nil {
 		return errorx.Decorate(err, "API request failed")
 	}
@@ -747,7 +750,7 @@ func (f FxAClient) DeleteRecord(ctx *cli.FFSContext, session FFSyncSession, coll
 }
 
 func (f FxAClient) DeleteCollection(ctx *cli.FFSContext, session FFSyncSession, collection string) error {
-	_, err := f.request(ctx, session, "DELETE", fmt.Sprintf("/storage/%s", collection), nil)
+	_, err := f.request(ctx, session, "DELETE", fmt.Sprintf("/storage/%s", url.PathEscape(collection)), nil)
 	if err != nil {
 		return errorx.Decorate(err, "API request failed")
 	}
@@ -814,7 +817,7 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 		Payload: payload,
 	}
 
-	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", collection, recordid), bso)
+	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), bso)
 	if err != nil {
 		return errorx.Decorate(err, "API request failed")
 	}

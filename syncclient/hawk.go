@@ -69,7 +69,7 @@ func calcHawkAuth(requestMethod string, requestURI string, body string, contentT
 		uport = _v[strings.Index(_v, "=")+1:]
 	}
 
-	rpath := requrl.Path
+	rpath := requrl.EscapedPath()
 	if requrl.RawQuery != "" {
 		rpath += "?" + requrl.RawQuery
 	}

@@ -22,7 +22,7 @@ func (a *CLIArgumentsRecordsDelete) Mode() cli.Mode {
 }
 
 func (a *CLIArgumentsRecordsDelete) PositionArgCount() (*int, *int) {
-	return langext.Ptr(0), langext.Ptr(0) //TODO
+	return langext.Ptr(2), langext.Ptr(2)
 }
 
 func (a *CLIArgumentsRecordsDelete) ShortHelp() [][]string {
