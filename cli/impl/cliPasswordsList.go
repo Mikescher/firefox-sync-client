@@ -22,11 +22,12 @@ type CLIArgumentsPasswordsList struct {
 
 func NewCLIArgumentsPasswordsList() *CLIArgumentsPasswordsList {
 	return &CLIArgumentsPasswordsList{
-		ShowPasswords: false,
-		Sort:          nil,
-		Limit:         nil,
-		Offset:        nil,
-		After:         nil,
+		ShowPasswords:      false,
+		IgnoreSchemaErrors: false,
+		Sort:               nil,
+		Limit:              nil,
+		Offset:             nil,
+		After:              nil,
 	}
 }
 
@@ -181,7 +182,7 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 				v.ID,
 				v.Hostname,
 				v.Username,
-				a.fmtPass(ctx, v.Password),
+				v.FormatPassword(a.ShowPasswords),
 			})
 		}
 
@@ -191,7 +192,7 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 	case cli.OutputFormatText:
 		for _, v := range passwords {
 			if schema := urlSchemaRegex.FindString(v.Hostname); schema != "" {
-				ctx.PrintPrimaryOutput(schema + v.Username + ":" + a.fmtPass(ctx, v.Password) + "@" + v.Hostname[len(schema):])
+				ctx.PrintPrimaryOutput(schema + v.Username + ":" + v.FormatPassword(a.ShowPasswords) + "@" + v.Hostname[len(schema):])
 			} else {
 				ctx.PrintPrimaryOutput(v.Username + ":" + v.Password + "@" + v.Hostname)
 			}
@@ -201,68 +202,19 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 	case cli.OutputFormatJson:
 		arr := langext.A{}
 		for _, v := range passwords {
-			arr = append(arr, langext.H{
-				"id":                   v.ID,
-				"hostname":             v.Hostname,
-				"formSubmitURL":        v.FormSubmitURL,
-				"httpRealm":            v.HTTPRealm,
-				"username":             v.Username,
-				"password":             a.fmtPass(ctx, v.Password),
-				"usernameField":        v.UsernameField,
-				"passwordField":        v.PasswordField,
-				"created":              a.fmOptDateToNullable(ctx, v.Created),
-				"created_unix":         a.fmOptDateToNullableUnix(ctx, v.Created),
-				"passwordChanged":      a.fmOptDateToNullable(ctx, v.PasswordChanged),
-				"passwordChanged_unix": a.fmOptDateToNullableUnix(ctx, v.PasswordChanged),
-				"lastUsed":             a.fmOptDateToNullable(ctx, v.LastUsed),
-				"lastUsed_unix":        a.fmOptDateToNullableUnix(ctx, v.LastUsed),
-				"timesUsed":            v.TimesUsed,
-			})
+			arr = append(arr, v.ToJSON(ctx, a.ShowPasswords))
 		}
 		ctx.PrintPrimaryOutputJSON(arr)
 		return 0
 
 	case cli.OutputFormatXML:
-		type xmlentry struct {
-			ID                  string  `xml:"ID,attr"`
-			Hostname            string  `xml:"Hostname,attr"`
-			FormSubmitURL       string  `xml:"FormSubmitURL,attr"`
-			HTTPRealm           *string `xml:"HTTPRealm,omitempty,attr"`
-			Username            string  `xml:"Username,attr"`
-			Password            string  `xml:"Password,attr"`
-			UsernameField       string  `xml:"UsernameField,attr"`
-			PasswordField       string  `xml:"PasswordField,attr"`
-			Created             *string `xml:"Created,omitempty,attr"`
-			CreatedUnix         *int64  `xml:"CreatedUnix,omitempty,attr"`
-			PasswordChanged     *string `xml:"PasswordChanged,omitempty,attr"`
-			PasswordChangedUnix *int64  `xml:"PasswordChangedUnix,omitempty,attr"`
-			LastUsed            *string `xml:"LastUsed,omitempty,attr"`
-			LastUsedUnix        *int64  `xml:"LastUsedUnix,omitempty,attr"`
-			TimesUsed           *int64  `xml:"TimesUsed,omitempty,attr"`
-		}
 		type xml struct {
-			Entries []xmlentry `xml:"Entry"`
-			XMLName struct{}   `xml:"Passwords"`
+			Entries []any
+			XMLName struct{} `xml:"Passwords"`
 		}
-		node := xml{Entries: make([]xmlentry, 0, len(passwords))}
+		node := xml{Entries: make([]any, 0, len(passwords))}
 		for _, v := range passwords {
-			node.Entries = append(node.Entries, xmlentry{
-				ID:                  v.ID,
-				Hostname:            v.Hostname,
-				FormSubmitURL:       v.FormSubmitURL,
-				HTTPRealm:           v.HTTPRealm,
-				Username:            v.Username,
-				Password:            v.Password,
-				UsernameField:       v.UsernameField,
-				PasswordField:       v.PasswordField,
-				Created:             a.fmOptDateToNullable(ctx, v.Created),
-				CreatedUnix:         a.fmOptDateToNullableUnix(ctx, v.Created),
-				PasswordChanged:     a.fmOptDateToNullable(ctx, v.PasswordChanged),
-				PasswordChangedUnix: a.fmOptDateToNullableUnix(ctx, v.PasswordChanged),
-				LastUsed:            a.fmOptDateToNullable(ctx, v.LastUsed),
-				LastUsedUnix:        a.fmOptDateToNullableUnix(ctx, v.LastUsed),
-				TimesUsed:           v.TimesUsed,
-			})
+			node.Entries = append(node.Entries, v.ToXML(ctx, "Password", a.ShowPasswords))
 		}
 		ctx.PrintPrimaryOutputXML(node)
 		return 0
@@ -271,33 +223,4 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return consts.ExitcodeUnsupportedOutputFormat
 	}
-}
-
-func (a *CLIArgumentsPasswordsList) fmtPass(ctx *cli.FFSContext, pw string) string {
-	if a.ShowPasswords {
-		return pw
-	} else {
-		return "***"
-	}
-}
-
-func (a *CLIArgumentsPasswordsList) fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
-	if d == nil {
-		return ""
-	}
-	return d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
-}
-
-func (a *CLIArgumentsPasswordsList) fmOptDateToNullable(ctx *cli.FFSContext, d *time.Time) *string {
-	if d == nil {
-		return nil
-	}
-	return langext.Ptr(d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat))
-}
-
-func (a *CLIArgumentsPasswordsList) fmOptDateToNullableUnix(ctx *cli.FFSContext, d *time.Time) *int64 {
-	if d == nil {
-		return nil
-	}
-	return langext.Ptr(d.Unix())
 }

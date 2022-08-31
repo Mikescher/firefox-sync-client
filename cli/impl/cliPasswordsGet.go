@@ -132,8 +132,9 @@ func (a *CLIArgumentsPasswordsGet) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodePasswordNotFound
 	}
 
-	ctx.PrintPrimaryOutput(record.Password)
-	return 0
+	// ========================================================================
+
+	return a.printOutput(ctx, record)
 }
 
 func (a *CLIArgumentsPasswordsGet) getRecord(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession) (models.PasswordRecord, bool, error) {
@@ -241,4 +242,25 @@ func (a *CLIArgumentsPasswordsGet) extUrlParse(v string) (*url.URL, error) {
 	}
 
 	return url.Parse(v)
+}
+
+func (a *CLIArgumentsPasswordsGet) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) int {
+	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+
+	case cli.OutputFormatText:
+		ctx.PrintPrimaryOutput(password.Password)
+		return 0
+
+	case cli.OutputFormatJson:
+		ctx.PrintPrimaryOutputJSON(password.ToJSON(ctx, true))
+		return 0
+
+	case cli.OutputFormatXML:
+		ctx.PrintPrimaryOutputXML(password.ToXML(ctx, "Password", true))
+		return 0
+
+	default:
+		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
+		return consts.ExitcodeUnsupportedOutputFormat
+	}
 }
