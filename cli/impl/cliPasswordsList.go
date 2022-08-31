@@ -18,6 +18,8 @@ type CLIArgumentsPasswordsList struct {
 	Limit              *int
 	Offset             *int
 	After              *time.Time
+
+	CLIArgumentsPasswordsUtil
 }
 
 func NewCLIArgumentsPasswordsList() *CLIArgumentsPasswordsList {

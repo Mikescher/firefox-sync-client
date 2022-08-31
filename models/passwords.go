@@ -1,9 +1,11 @@
 package models
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"ffsyncclient/cli"
 	"ffsyncclient/langext"
+	"github.com/joomcode/errorx"
 	"time"
 )
 
@@ -119,6 +121,45 @@ func (pw PasswordRecord) ToXML(ctx *cli.FFSContext, node string, showPW bool) an
 		LastUsedUnix:        fmOptDateToNullableUnix(pw.LastUsed),
 		TimesUsed:           pw.TimesUsed,
 	}
+}
+
+func (pw PasswordRecord) ToPlaintextPayload() (string, error) {
+
+	var created *int64 = nil
+	if pw.Created != nil {
+		created = langext.Ptr(pw.Created.UnixMilli())
+	}
+
+	var passwordChanged *int64 = nil
+	if pw.PasswordChanged != nil {
+		passwordChanged = langext.Ptr(pw.PasswordChanged.UnixMilli())
+	}
+
+	var lastUsed *int64 = nil
+	if pw.LastUsed != nil {
+		lastUsed = langext.Ptr(pw.LastUsed.UnixMilli())
+	}
+
+	obj := PasswordPayloadSchema{
+		ID:                  pw.ID,
+		Hostname:            pw.Hostname,
+		FormSubmitURL:       pw.FormSubmitURL,
+		HTTPRealm:           pw.HTTPRealm,
+		Username:            pw.Username,
+		Password:            pw.Password,
+		UsernameField:       pw.UsernameField,
+		PasswordField:       pw.PasswordField,
+		TimeCreated:         created,
+		TimePasswordChanged: passwordChanged,
+		TimeLastUsed:        lastUsed,
+		TimesUsed:           pw.TimesUsed,
+	}
+
+	pp, err := json.Marshal(obj)
+	if err != nil {
+		return "", errorx.Decorate(err, "failed to marshal password payload")
+	}
+	return string(pp), nil
 }
 
 func (pw PasswordRecord) FormatPassword(showPW bool) string {

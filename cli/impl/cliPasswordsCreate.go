@@ -13,13 +13,15 @@ import (
 )
 
 type CLIArgumentsPasswordsCreate struct {
-	Host              string
-	Username          string
-	Password          string
-	FormSubmissionURL *string
-	HTTPRealm         *string
-	UsernameField     *string
-	PasswordField     *string
+	Host          string
+	Username      string
+	Password      string
+	FormSubmitURL *string
+	HTTPRealm     *string
+	UsernameField *string
+	PasswordField *string
+
+	CLIArgumentsPasswordsUtil
 }
 
 func NewCLIArgumentsPasswordsCreate() *CLIArgumentsPasswordsCreate {
@@ -37,7 +39,7 @@ func (a *CLIArgumentsPasswordsCreate) PositionArgCount() (*int, *int) {
 func (a *CLIArgumentsPasswordsCreate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords create <host> <username> <password>", "Insert a new password"},
-		{"          [--form-submission-url <url>]", "Specify the submission URL (GET/POST url set by <form>)"},
+		{"          [--form-submit-url <url>]", "Specify the submission URL (GET/POST url set by <form>)"},
 		{"          [--http-realm <realm>]", "Specify the HTTP Realm (HTTP Realm for which the login is valid)"},
 		{"          [--username-field <name>]", "Specify the Username field (HTML field name of the username)"},
 		{"          [--password-field <name>]", "Specify the Password field (HTML field name of the password)"},
@@ -46,7 +48,7 @@ func (a *CLIArgumentsPasswordsCreate) ShortHelp() [][]string {
 
 func (a *CLIArgumentsPasswordsCreate) FullHelp() []string {
 	return []string{
-		"$> ffsclient passwords create <host> <username> <password> [--form-submission-url <url>] [--http-realm <realm>] [--username-field <name>] [--password-field <name>]",
+		"$> ffsclient passwords create <host> <username> <password> [--form-submit-url <url>] [--http-realm <realm>] [--username-field <name>] [--password-field <name>]",
 		"",
 		"Insert a new password",
 		"",
@@ -62,8 +64,8 @@ func (a *CLIArgumentsPasswordsCreate) Init(positionalArgs []string, optionArgs [
 	a.Password = positionalArgs[2]
 
 	for _, arg := range optionArgs {
-		if arg.Key == "form-submission-url" && arg.Value != nil {
-			a.FormSubmissionURL = langext.Ptr(*arg.Value)
+		if arg.Key == "form-submit-url" && arg.Value != nil {
+			a.FormSubmitURL = langext.Ptr(*arg.Value)
 			continue
 		}
 		if arg.Key == "http-realm" && arg.Value != nil {
@@ -128,7 +130,7 @@ func (a *CLIArgumentsPasswordsCreate) Execute(ctx *cli.FFSContext) int {
 	bso := models.PasswordPayloadSchema{
 		ID:                  recordID,
 		Hostname:            a.Host,
-		FormSubmitURL:       langext.Coalesce(a.FormSubmissionURL, ""),
+		FormSubmitURL:       langext.Coalesce(a.FormSubmitURL, ""),
 		HTTPRealm:           a.HTTPRealm,
 		Username:            a.Username,
 		Password:            a.Password,

@@ -117,6 +117,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  81            (check-session): The session is not valid")
 		ctx.PrintPrimaryOutput("  82            (passwords get): No matching password found")
 		ctx.PrintPrimaryOutput("  82            (passwords delete): No matching password found")
+		ctx.PrintPrimaryOutput("  82            (passwords update): No matching password found")
 		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 
