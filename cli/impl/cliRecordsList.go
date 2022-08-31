@@ -3,10 +3,10 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 	"strconv"
 	"time"
 )
@@ -93,7 +93,7 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 			} else if t, err := time.Parse(time.RFC3339, *arg.Value); err == nil {
 				a.After = langext.Ptr(t)
 			} else {
-				return errorx.InternalError.New("Failed to decode time argument '" + arg.Key + "' (expected format: RFC3339)")
+				return fferr.DirectOutput.New("Failed to decode time argument '" + arg.Key + "' (expected format: RFC3339)")
 			}
 			continue
 		}
@@ -105,7 +105,7 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 			} else if *arg.Value == "oldest" {
 				a.Sort = langext.Ptr("oldest")
 			} else {
-				return errorx.InternalError.New("Invalid parameter to sort: '" + *arg.Value + "'")
+				return fferr.DirectOutput.New("Invalid parameter for sort: '" + *arg.Value + "'")
 			}
 			continue
 		}
@@ -114,20 +114,20 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 				a.Limit = langext.Ptr(int(v))
 				continue
 			}
-			return errorx.InternalError.New("Failed to parse number argument '--limit': '" + *arg.Value + "'")
+			return fferr.DirectOutput.New("Failed to parse number argument '--limit': '" + *arg.Value + "'")
 		}
 		if arg.Key == "offset" && arg.Value != nil {
 			if v, err := strconv.ParseInt(*arg.Value, 10, 32); err == nil {
 				a.Offset = langext.Ptr(int(v))
 				continue
 			}
-			return errorx.InternalError.New("Failed to parse number argument '--offset': '" + *arg.Value + "'")
+			return fferr.DirectOutput.New("Failed to parse number argument '--offset': '" + *arg.Value + "'")
 		}
 		if arg.Key == "pretty-print" && arg.Value == nil {
 			a.PrettyPrint = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

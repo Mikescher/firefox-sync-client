@@ -3,9 +3,9 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsRecordsUpdate struct {
@@ -88,7 +88,7 @@ func (a *CLIArgumentsRecordsUpdate) Init(positionalArgs []string, optionArgs []c
 			a.CreateIfNotExistant = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

@@ -3,8 +3,8 @@ package impl
 import "C"
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
-	"github.com/joomcode/errorx"
 	"strings"
 )
 
@@ -48,7 +48,7 @@ func (a *CLIArgumentsHelp) FullHelp() []string {
 
 func (a *CLIArgumentsHelp) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	if len(optionArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + optionArgs[0].Key)
+		return fferr.DirectOutput.New("Unknown argument: " + optionArgs[0].Key)
 	}
 
 	return nil

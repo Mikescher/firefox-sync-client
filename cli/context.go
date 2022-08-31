@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/langext/term"
 	"fmt"
@@ -120,14 +121,7 @@ func (c FFSContext) PrintFatalError(e error) {
 		return
 	}
 
-	if c.Opt.Verbose {
-		//TODO handle directOutputError
-		c.printErrorRaw(fmt.Sprintf("%+v", e) + "\n")
-	} else {
-		//TODO handle directOutputError
-		c.printErrorRaw(e.Error() + "\n")
-	}
-
+	c.printErrorRaw(fferr.FormatError(e, c.Opt.Verbose) + "\n")
 }
 
 func (c FFSContext) PrintErrorMessage(msg string) {

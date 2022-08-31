@@ -3,7 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
-	"github.com/joomcode/errorx"
+	"ffsyncclient/fferr"
 )
 
 type CLIArgumentsBookmarksBase struct {
@@ -40,7 +40,7 @@ func (a *CLIArgumentsBookmarksBase) FullHelp() []string {
 }
 
 func (a *CLIArgumentsBookmarksBase) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	return errorx.InternalError.New("ffsclient bookmarks must be called with a subcommand (eg `ffsclient bookmarks list`)")
+	return fferr.DirectOutput.New("ffsclient bookmarks must be called with a subcommand (eg `ffsclient bookmarks list`)")
 }
 
 func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) int {

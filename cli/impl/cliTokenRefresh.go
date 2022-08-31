@@ -3,9 +3,9 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsTokenRefresh struct {
@@ -48,7 +48,7 @@ func (a *CLIArgumentsTokenRefresh) Init(positionalArgs []string, optionArgs []cl
 			a.Force = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

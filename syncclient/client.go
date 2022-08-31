@@ -550,7 +550,7 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 	}
 
 	if len(resp) != 2 {
-		return 0, nil, errorx.InternalError.New("info/quota returned invali data (array.len)")
+		return 0, nil, errorx.InternalError.New("info/quota returned invalid data (array.len)")
 	}
 
 	ctx.PrintVerboseKV("quota[0]", resp[0])
@@ -562,7 +562,7 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 	case float64:
 		used = int64(v * 1024)
 	default:
-		return 0, nil, errorx.InternalError.New("info/quota returned invali data (array[0].type)")
+		return 0, nil, errorx.InternalError.New("info/quota returned invalid data (array[0].type)")
 	}
 
 	var total *int64 = nil
@@ -571,7 +571,7 @@ func (f FxAClient) GetQuota(ctx *cli.FFSContext, session FFSyncSession) (int64, 
 		case float64:
 			total = langext.Ptr(int64(v * 1024))
 		default:
-			return 0, nil, errorx.InternalError.New("info/quota returned invali data (array[1].type)")
+			return 0, nil, errorx.InternalError.New("info/quota returned invalid data (array[1].type)")
 		}
 	}
 
@@ -798,7 +798,7 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 			return errorx.Decorate(err, "failed to check record-exists")
 		}
 		if exists {
-			return errorx.InternalError.New("Cannot create record, an record with this ID already exists")
+			return fferr.DirectOutput.New("Cannot create record, an record with this ID already exists")
 		}
 	}
 
@@ -808,7 +808,7 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 			return errorx.Decorate(err, "failed to check record-exists")
 		}
 		if !exists {
-			return errorx.InternalError.New("Cannot update record, an record with this ID does not exists")
+			return fferr.DirectOutput.New("Cannot update record, an record with this ID does not exists")
 		}
 	}
 

@@ -60,7 +60,7 @@ func (a *CLIArgumentsPasswordsBase) FullHelp() []string {
 }
 
 func (a *CLIArgumentsPasswordsBase) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	return errorx.InternalError.New("ffsclient passwords must be called with a subcommand (eg `ffsclient passwords list`)")
+	return fferr.DirectOutput.New("ffsclient passwords must be called with a subcommand (eg `ffsclient passwords list`)")
 }
 
 func (a *CLIArgumentsPasswordsBase) Execute(ctx *cli.FFSContext) int {

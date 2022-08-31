@@ -2,8 +2,8 @@ package impl
 
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsBookmarksUpdate struct {
@@ -31,7 +31,7 @@ func (a *CLIArgumentsBookmarksUpdate) FullHelp() []string {
 
 func (a *CLIArgumentsBookmarksUpdate) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	for _, arg := range optionArgs {
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

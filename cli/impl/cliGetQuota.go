@@ -3,10 +3,10 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
 	"fmt"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsQuotaGet struct {
@@ -40,7 +40,7 @@ func (a *CLIArgumentsQuotaGet) FullHelp() []string {
 
 func (a *CLIArgumentsQuotaGet) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	for _, arg := range optionArgs {
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

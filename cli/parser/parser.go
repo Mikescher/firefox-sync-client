@@ -4,6 +4,7 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/cli/impl"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"fmt"
 	"github.com/joomcode/errorx"
@@ -52,7 +53,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	verbArg, rawVerb, verbLen, found := impl.ParseSubcommand(unprocessedArgs)
 	if !found {
-		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Unknown Subcommand '%s'", rawVerb))
+		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Unknown Subcommand '%s'", rawVerb))
 	}
 
 	unprocessedArgs = unprocessedArgs[verbLen:]
@@ -69,7 +70,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if !strings.HasPrefix(arg, "-") {
 			if !positional {
-				return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+				return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
 			}
 			positionalArguments = append(positionalArguments, arg)
 			continue
@@ -86,7 +87,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 				val := arg[strings.Index(arg, "=")+1:]
 
 				if len(key) <= 1 {
-					return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+					return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
 				}
 
 				allOptionArguments = append(allOptionArguments, cli.ArgumentTuple{Key: key, Value: langext.Ptr(val)})
@@ -96,7 +97,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 				key := arg
 
 				if len(key) <= 1 {
-					return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+					return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
 				}
 
 				if len(unprocessedArgs) == 0 || strings.HasPrefix(unprocessedArgs[0], "-") {
@@ -125,7 +126,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			key := arg
 
 			if key == "" {
-				return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+				return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
 			}
 
 			if len(unprocessedArgs) == 0 || strings.HasPrefix(unprocessedArgs[0], "-") {
@@ -139,7 +140,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			}
 
 		} else {
-			return nil, cli.Options{}, errorx.InternalError.New("Unknown/Misplaced argument: " + arg)
+			return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
 		}
 	}
 
@@ -172,7 +173,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		if (arg.Key == "f" || arg.Key == "format") && arg.Value != nil {
 			ofmt, found := cli.GetOutputFormat(*arg.Value)
 			if !found {
-				return nil, cli.Options{}, errorx.InternalError.New("Unknown format: " + *arg.Value)
+				return nil, cli.Options{}, fferr.DirectOutput.New("Unknown output-format: " + *arg.Value)
 			}
 			opt.Format = langext.Ptr(ofmt)
 			continue
@@ -196,7 +197,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		if arg.Key == "timezone" && arg.Value != nil {
 			loc, err := time.LoadLocation(*arg.Value)
 			if err != nil {
-				return nil, cli.Options{}, errorx.InternalError.New("Unknown timezone: " + *arg.Value)
+				return nil, cli.Options{}, fferr.DirectOutput.New("Unknown timezone: " + *arg.Value)
 			}
 			opt.TimeZone = loc
 			continue
@@ -248,21 +249,21 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 	posArgLenMin, posArgLenMax := verbArg.PositionArgCount()
 	if posArgLenMin != nil && posArgLenMax != nil && *posArgLenMin == *posArgLenMax {
 		if len(positionalArguments) < *posArgLenMin {
-			return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMin))
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMin))
 		}
 		if len(positionalArguments) > *posArgLenMax {
 			if *posArgLenMax == 0 {
-				return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Command `ffsclient %s` does not have any subcommands", verbArg.Mode()))
+				return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Command `ffsclient %s` does not have any subcommands", verbArg.Mode()))
 			} else {
-				return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMax))
+				return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be exactly %d)", verbArg.Mode(), *posArgLenMax))
 			}
 		}
 	}
 	if posArgLenMin != nil && len(positionalArguments) < *posArgLenMin {
-		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be at least %d)", verbArg.Mode(), *posArgLenMin))
+		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Not enough arguments for `ffsclient %s` (must be at least %d)", verbArg.Mode(), *posArgLenMin))
 	}
 	if posArgLenMax != nil && len(positionalArguments) > *posArgLenMax {
-		return nil, cli.Options{}, errorx.InternalError.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be at most %d)", verbArg.Mode(), *posArgLenMax))
+		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be at most %d)", verbArg.Mode(), *posArgLenMax))
 	}
 
 	err = verbArg.Init(positionalArguments, optionArguments)

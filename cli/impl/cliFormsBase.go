@@ -3,7 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
-	"github.com/joomcode/errorx"
+	"ffsyncclient/fferr"
 )
 
 type CLIArgumentsFormsBase struct {
@@ -40,7 +40,7 @@ func (a *CLIArgumentsFormsBase) FullHelp() []string {
 }
 
 func (a *CLIArgumentsFormsBase) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	return errorx.InternalError.New("ffsclient forms must be called with a subcommand (eg `ffsclient forms list`)")
+	return fferr.DirectOutput.New("ffsclient forms must be called with a subcommand (eg `ffsclient forms list`)")
 }
 
 func (a *CLIArgumentsFormsBase) Execute(ctx *cli.FFSContext) int {

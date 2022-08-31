@@ -3,7 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
-	"github.com/joomcode/errorx"
+	"ffsyncclient/fferr"
 )
 
 type CLIArgumentsHistoryBase struct {
@@ -40,7 +40,7 @@ func (a *CLIArgumentsHistoryBase) FullHelp() []string {
 }
 
 func (a *CLIArgumentsHistoryBase) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	return errorx.InternalError.New("ffsclient history must be called with a subcommand (eg `ffsclient history list`)")
+	return fferr.DirectOutput.New("ffsclient history must be called with a subcommand (eg `ffsclient history list`)")
 }
 
 func (a *CLIArgumentsHistoryBase) Execute(ctx *cli.FFSContext) int {

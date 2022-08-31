@@ -3,10 +3,10 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsPasswordsDelete struct {
@@ -74,7 +74,7 @@ func (a *CLIArgumentsPasswordsDelete) Init(positionalArgs []string, optionArgs [
 			a.QueryIsID = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
@@ -80,7 +81,7 @@ func (a *CLIArgumentsPasswordsCreate) Init(positionalArgs []string, optionArgs [
 			a.PasswordField = langext.Ptr(*arg.Value)
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

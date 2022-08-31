@@ -3,9 +3,9 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsCollectionsDelete struct {
@@ -42,7 +42,7 @@ func (a *CLIArgumentsCollectionsDelete) Init(positionalArgs []string, optionArgs
 	a.Collection = positionalArgs[0]
 
 	for _, arg := range optionArgs {
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

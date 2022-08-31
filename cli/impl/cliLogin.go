@@ -3,6 +3,7 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
@@ -34,7 +35,7 @@ func (a *CLIArgumentsLogin) Mode() cli.Mode {
 }
 
 func (a *CLIArgumentsLogin) PositionArgCount() (*int, *int) {
-	return langext.Ptr(2), langext.Ptr(2) //TODO
+	return langext.Ptr(2), langext.Ptr(2)
 }
 
 func (a *CLIArgumentsLogin) ShortHelp() [][]string {
@@ -76,11 +77,11 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 			}
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	if len(optionArgs) > 0 {
-		return errorx.InternalError.New("Unknown argument: " + optionArgs[0].Key)
+		return fferr.DirectOutput.New("Unknown argument: " + optionArgs[0].Key)
 	}
 
 	return nil
@@ -191,20 +192,20 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 func validateDeviceName(name string) error {
 	if name == "" {
-		return errorx.InternalError.New("Device-name cannot be empty")
+		return fferr.DirectOutput.New("Device-name cannot be empty")
 	}
 	if len(name) > 255 {
-		return errorx.InternalError.New("Device-name can be at most 16 characters")
+		return fferr.DirectOutput.New("Device-name can be at most 16 characters")
 	}
 	return nil
 }
 
 func validateDeviceType(name string) error {
 	if name == "" {
-		return errorx.InternalError.New("Device-type cannot be empty")
+		return fferr.DirectOutput.New("Device-type cannot be empty")
 	}
 	if len(name) > 16 {
-		return errorx.InternalError.New("Device-type can be at most 16 characters")
+		return fferr.DirectOutput.New("Device-type can be at most 16 characters")
 	}
 	return nil
 }

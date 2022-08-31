@@ -7,5 +7,6 @@ var (
 )
 
 var (
-	Request404 = FFSyncErrors.NewType("http_404")
+	Request404   = FFSyncErrors.NewType("http_404")
+	DirectOutput = FFSyncErrors.NewType("direct_out")
 )

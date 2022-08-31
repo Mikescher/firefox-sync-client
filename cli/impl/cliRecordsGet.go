@@ -3,10 +3,10 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
-	"github.com/joomcode/errorx"
 	"time"
 )
 
@@ -70,7 +70,7 @@ func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.
 			a.PrettyPrint = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil

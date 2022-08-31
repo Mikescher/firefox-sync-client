@@ -3,11 +3,11 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 	"fmt"
-	"github.com/joomcode/errorx"
 	"strconv"
 )
 
@@ -52,7 +52,7 @@ func (a *CLIArgumentsCollectionsList) Init(positionalArgs []string, optionArgs [
 			a.ShowUsage = true
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil
@@ -101,7 +101,7 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 				return i, nil
 			}
 		}
-		return -1, errorx.InternalError.New("collection '" + needle + "' not found")
+		return -1, fferr.DirectOutput.New("Collection '" + needle + "' not found")
 	}
 
 	collectionInfos, err := client.GetCollectionsInfo(ctx, session)

@@ -3,11 +3,11 @@ package impl
 import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 	"fmt"
-	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsPasswordsUpdate struct {
@@ -133,7 +133,7 @@ func (a *CLIArgumentsPasswordsUpdate) Init(positionalArgs []string, optionArgs [
 			a.NewPasswordField = langext.Ptr(*arg.Value)
 			continue
 		}
-		return errorx.InternalError.New("Unknown argument: " + arg.Key)
+		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
 	return nil
