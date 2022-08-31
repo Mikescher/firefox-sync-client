@@ -39,7 +39,7 @@ func (a *CLIArgumentsPasswordsGet) PositionArgCount() (*int, *int) {
 func (a *CLIArgumentsPasswordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords get <host|id>", "Insert a new password"},
-		{"          [--host | --exact-host | --id]", "Specify that the supplier argument is a host / record-id (otherwise both is possible)"},
+		{"          [--host | --exact-host | --id]", "Specify that the supplied argument is a host / record-id (otherwise both is possible)"},
 	}
 }
 
@@ -54,6 +54,7 @@ func (a *CLIArgumentsPasswordsGet) FullHelp() []string {
 		"If --exact-host is specified, the query is matched exactly against the host field in the password record.",
 		"If --id is specified, the query is matched exactly agains the record-id.",
 		"If --id is _not_ specified this method needs to query all passwords from the server and do a local search.",
+		"If no matching password is found the exitcode [82] is returned",
 	}
 }
 
