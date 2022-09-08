@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -14,6 +15,7 @@ type CLIArgumentsPasswordsDelete struct {
 	QueryIsHost      bool
 	QueryIsExactHost bool
 	QueryIsID        bool
+	SoftDelete       bool
 
 	CLIArgumentsPasswordsUtil
 }
@@ -24,6 +26,7 @@ func NewCLIArgumentsPasswordsDelete() *CLIArgumentsPasswordsDelete {
 		QueryIsHost:      false,
 		QueryIsExactHost: false,
 		QueryIsID:        false,
+		SoftDelete:       false,
 	}
 }
 
@@ -74,6 +77,10 @@ func (a *CLIArgumentsPasswordsDelete) Init(positionalArgs []string, optionArgs [
 			a.QueryIsID = true
 			continue
 		}
+		if arg.Key == "soft" && arg.Value == nil {
+			a.SoftDelete = true
+			continue
+		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
@@ -84,6 +91,7 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Delete Password]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Query", a.Query)
+	ctx.PrintVerboseKV("SoftDelete", a.SoftDelete)
 
 	if langext.BoolCount(a.QueryIsID, a.QueryIsExactHost, a.QueryIsHost) > 1 {
 		ctx.PrintFatalMessage("Must specify at most one of --id, --exact-host, --host")
@@ -135,10 +143,48 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerbose("Delete Record " + record.ID)
 
-	err = client.DeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
-	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+	if a.SoftDelete {
+
+		record, err := client.GetRecord(ctx, session, consts.CollectionPasswords, record.ID, true)
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+		var jsonpayload langext.H
+		err = json.Unmarshal(record.DecodedData, &jsonpayload)
+		if err != nil {
+			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to unmarshal"))
+			return consts.ExitcodeError
+		}
+		jsonpayload["deleted"] = true
+
+		plainpayload, err := json.Marshal(jsonpayload)
+		if err != nil {
+			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to re-marshal payload"))
+			return consts.ExitcodeError
+		}
+
+		payload, err := client.EncryptPayload(ctx, session, consts.CollectionPasswords, string(plainpayload))
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+		err = client.PutRecord(ctx, session, consts.CollectionPasswords, record.ID, payload, false, false)
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+	} else {
+
+		err = client.DeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
 	}
 
 	// ========================================================================

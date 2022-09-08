@@ -11,6 +11,7 @@ import (
 
 type PasswordPayloadSchema struct {
 	ID                  string  `json:"id"`
+	Deleted             bool    `json:"deleted,omitempty"`
 	Hostname            string  `json:"hostname"`
 	FormSubmitURL       string  `json:"formSubmitURL"`
 	HTTPRealm           *string `json:"httpRealm"`
@@ -27,6 +28,7 @@ type PasswordPayloadSchema struct {
 func (j PasswordPayloadSchema) ToModel() PasswordRecord {
 	return PasswordRecord{
 		ID:              j.ID,
+		Deleted:         j.Deleted,
 		Hostname:        j.Hostname,
 		FormSubmitURL:   j.FormSubmitURL,
 		HTTPRealm:       j.HTTPRealm,
@@ -41,16 +43,9 @@ func (j PasswordPayloadSchema) ToModel() PasswordRecord {
 	}
 }
 
-func optMilliTime(ms *int64) *time.Time {
-	if ms == nil || *ms == 0 {
-		return nil
-	} else {
-		return langext.Ptr(time.UnixMilli(*ms))
-	}
-}
-
 type PasswordRecord struct {
 	ID              string
+	Deleted         bool
 	Hostname        string
 	FormSubmitURL   string
 	HTTPRealm       *string
@@ -71,6 +66,7 @@ func (pw PasswordRecord) ToJSON(ctx *cli.FFSContext, showPW bool) langext.H {
 		"formSubmitURL":        pw.FormSubmitURL,
 		"httpRealm":            pw.HTTPRealm,
 		"username":             pw.Username,
+		"deleted":              pw.Deleted,
 		"password":             fmtPass(pw.Password, showPW),
 		"usernameField":        pw.UsernameField,
 		"passwordField":        pw.PasswordField,

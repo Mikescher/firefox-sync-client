@@ -18,6 +18,8 @@ type CLIArgumentsPasswordsList struct {
 	Limit              *int
 	Offset             *int
 	After              *time.Time
+	IncludeDeleted     bool
+	OnlyDeleted        bool
 
 	CLIArgumentsPasswordsUtil
 }
@@ -30,6 +32,8 @@ func NewCLIArgumentsPasswordsList() *CLIArgumentsPasswordsList {
 		Limit:              nil,
 		Offset:             nil,
 		After:              nil,
+		IncludeDeleted:     false,
+		OnlyDeleted:        false,
 	}
 }
 
@@ -50,20 +54,23 @@ func (a *CLIArgumentsPasswordsList) ShortHelp() [][]string {
 		{"          [--sort <sort>]", "Sort the result by (newest|index|oldest)"},
 		{"          [--limit <n>]", "Return max <n> elements"},
 		{"          [--offset <o>]", "Skip the first <n> elements"},
+		{"          [--include-deleted]", "Show deleted entries"},
+		{"          [--only-deleted]", "Show only deleted entries"},
 	}
 }
 
 func (a *CLIArgumentsPasswordsList) FullHelp() []string {
 	return []string{
-		"$> ffsclient passwords list [--show-passwords] [--ignore-schema-errors] [--after <rfc3339>] [--sort <sort>] [--limit <n>] [--offset <o>]",
+		"$> ffsclient passwords list [--show-passwords] [--ignore-schema-errors] [--after <rfc3339>] [--sort <sort>] [--limit <n>] [--offset <o>] [--include-deleted] [--only-deleted]",
 		"",
 		"List passwords",
 		"",
 		"Does not show passwords by default. Use --show-passwords to output them.",
-		"If --ignore-schema-errors is not supplied the programm returns with an exitcode <> 0 if any record in the passwords collection has invalid data. Otherwise we simply skip that record.",
+		"If --ignore-schema-errors is not supplied the programm returns with exitcode [0] if any record in the passwords collection has invalid data. Otherwise we simply skip that record.",
 		"If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned.",
 		"If --sort is specified the resulting records are sorted by ( newest | index | oldest ).",
 		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
+		"By default we skip entries with {deleted:true}, this can be changed with --include-deleted and --only-deleted.",
 	}
 }
 
@@ -75,6 +82,14 @@ func (a *CLIArgumentsPasswordsList) Init(positionalArgs []string, optionArgs []c
 		}
 		if arg.Key == "ignore-schema-errors" && arg.Value == nil {
 			a.IgnoreSchemaErrors = true
+			continue
+		}
+		if arg.Key == "include-deleted" && arg.Value == nil {
+			a.IncludeDeleted = true
+			continue
+		}
+		if arg.Key == "only-deleted" && arg.Value == nil {
+			a.OnlyDeleted = true
 			continue
 		}
 		if arg.Key == "after" && arg.Value != nil {
@@ -174,6 +189,8 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 }
 
 func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) int {
+	passwords = a.FilterDeleted(ctx, passwords, a.IncludeDeleted, a.OnlyDeleted)
+
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 
 	case cli.OutputFormatTable:

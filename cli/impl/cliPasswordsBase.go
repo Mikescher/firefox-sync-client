@@ -6,6 +6,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
+	"fmt"
 	"github.com/joomcode/errorx"
 	"net/url"
 	"strings"
@@ -173,4 +174,24 @@ func (a *CLIArgumentsPasswordsUtil) extUrlParse(v string) (*url.URL, error) {
 	}
 
 	return url.Parse(v)
+}
+
+func (a *CLIArgumentsPasswordsList) FilterDeleted(ctx *cli.FFSContext, records []models.PasswordRecord, includeDeleted bool, onlyDeleted bool) []models.PasswordRecord {
+	result := make([]models.PasswordRecord, 0, len(records))
+
+	for _, v := range records {
+		if v.Deleted && !includeDeleted {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (is deleted and include-deleted == false)", v.ID))
+			continue
+		}
+
+		if !v.Deleted && onlyDeleted {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (is not deleted and only-deleted == true)", v.ID))
+			continue
+		}
+
+		result = append(result, v)
+	}
+
+	return result
 }

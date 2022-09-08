@@ -26,7 +26,7 @@ func (a *CLIArgumentsCollectionsDelete) PositionArgCount() (*int, *int) {
 
 func (a *CLIArgumentsCollectionsDelete) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient delete <collection>", "Delete the all records in a collection"},
+		{"ffsclient delete <collection>", "Delete all the records in a collection"},
 	}
 }
 
@@ -34,7 +34,7 @@ func (a *CLIArgumentsCollectionsDelete) FullHelp() []string {
 	return []string{
 		"$> ffsclient delete <collection>",
 		"",
-		"Delete the all records in a collection",
+		"Delete all the records in a collection",
 	}
 }
 
