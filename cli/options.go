@@ -19,6 +19,7 @@ type Options struct {
 	TimeFormat           string
 	SaveRefreshedSession bool
 	ForceRefreshSession  bool
+	NoXMLDeclaration     bool
 }
 
 func DefaultCLIOptions() Options {

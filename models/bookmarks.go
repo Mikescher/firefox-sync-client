@@ -1,8 +1,10 @@
 package models
 
 import (
+	"encoding/xml"
 	"ffsyncclient/cli"
 	"ffsyncclient/langext"
+	"strings"
 	"time"
 )
 
@@ -26,6 +28,8 @@ type BookmarkPayloadSchema struct {
 	FolderName        string   `json:"folderName"`    // [query]
 	QueryID           string   `json:"queryId"`       // [query]
 	SeparatorPosition int      `json:"pos"`           // [separator]
+	FeedURI           string   `json:"feedUri"`       // [livemark]
+	SiteURI           string   `json:"siteUri"`       // [livemark]
 
 	HasDupe bool `json:"hasDupe"` // ??
 }
@@ -34,6 +38,7 @@ func (j BookmarkPayloadSchema) ToModel() BookmarkRecord {
 	return BookmarkRecord{
 		ID:                j.ID,
 		Deleted:           j.Deleted,
+		DateAdded:         optMilliTime(j.DateAdded),
 		Title:             j.Title,
 		URI:               j.URI,
 		Description:       j.Description,
@@ -49,7 +54,8 @@ func (j BookmarkPayloadSchema) ToModel() BookmarkRecord {
 		FolderName:        j.FolderName,
 		QueryID:           j.QueryID,
 		SeparatorPosition: j.SeparatorPosition,
-		DateAdded:         optMilliTime(j.DateAdded),
+		FeedURI:           j.FeedURI,
+		SiteURI:           j.SiteURI,
 	}
 }
 
@@ -67,6 +73,7 @@ const (
 type BookmarkRecord struct {
 	ID                string
 	Deleted           bool
+	DateAdded         *time.Time
 	Title             string
 	URI               string
 	Description       string
@@ -82,7 +89,8 @@ type BookmarkRecord struct {
 	FolderName        string
 	QueryID           string
 	SeparatorPosition int
-	DateAdded         *time.Time
+	FeedURI           string
+	SiteURI           string
 }
 
 func (bm BookmarkRecord) ToJSON(ctx *cli.FFSContext) langext.H {
@@ -130,6 +138,8 @@ func (bm BookmarkRecord) ToJSON(ctx *cli.FFSContext) langext.H {
 	case BookmarkTypeLivemark:
 		r["title"] = bm.Title
 		r["children"] = langext.ForceArray(bm.Children)
+		r["feed-uri"] = bm.FeedURI
+		r["site-uri"] = bm.SiteURI
 		return r
 	case BookmarkTypeSeparator:
 		r["pos"] = bm.SeparatorPosition
@@ -139,8 +149,161 @@ func (bm BookmarkRecord) ToJSON(ctx *cli.FFSContext) langext.H {
 	}
 }
 
-func (bm BookmarkRecord) ToXML(ctx *cli.FFSContext, node string) any {
-	return nil //TODO
+func (bm BookmarkRecord) ToSingleXML(ctx *cli.FFSContext, containsDeleted bool) any {
+
+	switch bm.Type {
+	case BookmarkTypeBookmark:
+		type xmlentry struct {
+			XMLName     xml.Name
+			ID          string `xml:"id,attr"`
+			Deleted     string `xml:"deleted,omitempty,attr"`
+			Title       string `xml:"title,attr"`
+			URL         string `xml:"href,attr"`
+			AddDate     string `xml:"cdate,omitempty,attr"`
+			Description string `xml:"description,omitempty,attr"`
+			Keyword     string `xml:"keyword,omitempty,attr"`
+			Tags        string `xml:"tags,omitempty,attr"`
+		}
+		return xmlentry{
+			XMLName:     xml.Name{Local: "bookmark"},
+			Deleted:     bm.formatDeleted(ctx, containsDeleted),
+			ID:          bm.ID,
+			Title:       bm.Title,
+			URL:         bm.URI,
+			AddDate:     fmOptDate(ctx, bm.DateAdded),
+			Description: bm.Description,
+			Keyword:     bm.Keyword,
+			Tags:        strings.Join(bm.Tags, ", "),
+		}
+	case BookmarkTypeMicroSummary:
+		type xmlentry struct {
+			XMLName      xml.Name
+			ID           string `xml:"id,attr"`
+			Deleted      string `xml:"deleted,omitempty,attr"`
+			Title        string `xml:"title,attr"`
+			URL          string `xml:"href,attr"`
+			AddDate      string `xml:"cdate,omitempty,attr"`
+			Description  string `xml:"description,omitempty,attr"`
+			Keyword      string `xml:"keyword,omitempty,attr"`
+			Tags         string `xml:"tags,omitempty,attr"`
+			GeneratorURI string `xml:"generatoruri,attr"`
+			StaticTitle  string `xml:"statictitle,attr"`
+		}
+		return xmlentry{
+			XMLName:      xml.Name{Local: "microsummary"},
+			Deleted:      bm.formatDeleted(ctx, containsDeleted),
+			ID:           bm.ID,
+			Title:        bm.Title,
+			URL:          bm.URI,
+			AddDate:      fmOptDate(ctx, bm.DateAdded),
+			Description:  bm.Description,
+			Keyword:      bm.Keyword,
+			Tags:         strings.Join(bm.Tags, ", "),
+			GeneratorURI: bm.GeneratorUri,
+			StaticTitle:  bm.StaticTitle,
+		}
+	case BookmarkTypeQuery:
+		type xmlentry struct {
+			XMLName     xml.Name
+			ID          string `xml:"id,attr"`
+			Deleted     string `xml:"deleted,omitempty,attr"`
+			Title       string `xml:"title,attr"`
+			URL         string `xml:"href,attr"`
+			AddDate     string `xml:"cdate,omitempty,attr"`
+			Description string `xml:"description,omitempty,attr"`
+			Keyword     string `xml:"keyword,omitempty,attr"`
+			Tags        string `xml:"tags,omitempty,attr"`
+			FolderName  string `xml:"foldername,attr"`
+			QueryID     string `xml:"queryid,attr"`
+		}
+		return xmlentry{
+			XMLName:     xml.Name{Local: "query"},
+			Deleted:     bm.formatDeleted(ctx, containsDeleted),
+			ID:          bm.ID,
+			Title:       bm.Title,
+			URL:         bm.URI,
+			AddDate:     fmOptDate(ctx, bm.DateAdded),
+			Description: bm.Description,
+			Keyword:     bm.Keyword,
+			Tags:        strings.Join(bm.Tags, ", "),
+			FolderName:  bm.FolderName,
+			QueryID:     bm.QueryID,
+		}
+	case BookmarkTypeFolder:
+		type xmlentry struct {
+			XMLName  xml.Name
+			ID       string `xml:"id,attr"`
+			Deleted  string `xml:"deleted,omitempty,attr"`
+			Title    string `xml:"title,attr"`
+			AddDate  string `xml:"cdate,omitempty,attr"`
+			Children string `xml:"children,attr"`
+		}
+		return xmlentry{
+			XMLName:  xml.Name{Local: "folder"},
+			Deleted:  bm.formatDeleted(ctx, containsDeleted),
+			ID:       bm.ID,
+			Title:    bm.Title,
+			AddDate:  fmOptDate(ctx, bm.DateAdded),
+			Children: strings.Join(bm.Children, ", "),
+		}
+	case BookmarkTypeLivemark:
+		type xmlentry struct {
+			XMLName  xml.Name
+			ID       string `xml:"id,attr"`
+			Deleted  string `xml:"deleted,omitempty,attr"`
+			Title    string `xml:"title,attr"`
+			AddDate  string `xml:"cdate,omitempty,attr"`
+			Children string `xml:"children,attr"`
+			FeedURI  string `xml:"feeduri,attr"`
+			SiteURI  string `xml:"siteuri,attr"`
+		}
+		return xmlentry{
+			XMLName:  xml.Name{Local: "livemark"},
+			Deleted:  bm.formatDeleted(ctx, containsDeleted),
+			ID:       bm.ID,
+			Title:    bm.Title,
+			AddDate:  fmOptDate(ctx, bm.DateAdded),
+			Children: strings.Join(bm.Children, ", "),
+			FeedURI:  bm.FeedURI,
+			SiteURI:  bm.SiteURI,
+		}
+	case BookmarkTypeSeparator:
+		type xmlentry struct {
+			XMLName xml.Name
+			ID      string `xml:"id,attr"`
+			Deleted string `xml:"deleted,omitempty,attr"`
+			AddDate string `xml:"cdate,omitempty,attr"`
+			Pos     int    `xml:"pos,attr"`
+		}
+		return xmlentry{
+			XMLName: xml.Name{Local: "separator"},
+			Deleted: bm.formatDeleted(ctx, containsDeleted),
+			ID:      bm.ID,
+			Pos:     bm.SeparatorPosition,
+		}
+	default:
+		type xmlentry struct {
+			XMLName xml.Name
+			ID      string `xml:"id,attr"`
+			Deleted string `xml:"deleted,omitempty,attr"`
+			AddDate string `xml:"cdate,attr"`
+			Type    string `xml:"type,attr"`
+		}
+		return xmlentry{
+			XMLName: xml.Name{Local: "unknown"},
+			Type:    string(bm.Type),
+			Deleted: bm.formatDeleted(ctx, containsDeleted),
+			ID:      bm.ID,
+		}
+	}
+}
+
+func (bm BookmarkRecord) formatDeleted(ctx *cli.FFSContext, showFalse bool) string {
+	if showFalse {
+		return langext.FormatBool(bm.Deleted, "TRUE", "FALSE")
+	} else {
+		return langext.FormatBool(bm.Deleted, "TRUE", "")
+	}
 }
 
 func (bm BookmarkRecord) ToPlaintextPayload() (string, error) {
@@ -162,4 +325,59 @@ func (bmt BookmarkTreeRecord) ToTreeJSON(ctx *cli.FFSContext) langext.H {
 		base["children"] = arr
 	}
 	return base
+}
+
+func (bmt BookmarkTreeRecord) ToTreeXML(ctx *cli.FFSContext, containsDeleted bool) any {
+	if bmt.Type == BookmarkTypeFolder {
+		arr := make([]any, 0, len(bmt.ResolvedChildren))
+		for _, child := range bmt.ResolvedChildren {
+			arr = append(arr, child.ToTreeXML(ctx, containsDeleted))
+		}
+
+		type xmlentry struct {
+			XMLName  xml.Name
+			Children []any
+			ID       string `xml:"id,attr"`
+			Deleted  string `xml:"deleted,omitempty,attr"`
+			Title    string `xml:"title,attr"`
+			AddDate  string `xml:"cdate,attr"`
+		}
+		return xmlentry{
+			XMLName:  xml.Name{Local: "folder"},
+			Deleted:  bmt.formatDeleted(ctx, containsDeleted),
+			ID:       bmt.ID,
+			Title:    bmt.Title,
+			AddDate:  fmOptDate(ctx, bmt.DateAdded),
+			Children: arr,
+		}
+	}
+	if bmt.Type == BookmarkTypeLivemark {
+		arr := make([]any, 0, len(bmt.ResolvedChildren))
+		for _, child := range bmt.ResolvedChildren {
+			arr = append(arr, child.ToTreeXML(ctx, containsDeleted))
+		}
+
+		type xmlentry struct {
+			XMLName  xml.Name
+			ID       string `xml:"id,attr"`
+			Deleted  string `xml:"deleted,omitempty,attr"`
+			Title    string `xml:"title,attr"`
+			AddDate  string `xml:"cdate,attr"`
+			Children []any
+			FeedURI  string `xml:"feeduri,attr"`
+			SiteURI  string `xml:"siteuri,attr"`
+		}
+		return xmlentry{
+			XMLName:  xml.Name{Local: "livemark"},
+			Deleted:  bmt.formatDeleted(ctx, containsDeleted),
+			ID:       bmt.ID,
+			Title:    bmt.Title,
+			AddDate:  fmOptDate(ctx, bmt.DateAdded),
+			Children: arr,
+			FeedURI:  bmt.FeedURI,
+			SiteURI:  bmt.SiteURI,
+		}
+	}
+
+	return bmt.ToSingleXML(ctx, containsDeleted)
 }

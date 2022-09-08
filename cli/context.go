@@ -55,6 +55,9 @@ func (c FFSContext) PrintPrimaryOutputXML(data any) {
 		panic("failed to marshal output: " + err.Error())
 	}
 
+	if !c.Opt.NoXMLDeclaration {
+		c.printPrimaryRaw("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+	}
 	c.printPrimaryRaw(string(msg) + "\n")
 }
 

@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"encoding/xml"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -256,6 +257,12 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			if v.URI != "" {
 				ctx.PrintPrimaryOutput("URI:         " + v.URI)
 			}
+			if v.SiteURI != "" {
+				ctx.PrintPrimaryOutput("SiteURI:     " + v.URI)
+			}
+			if v.FeedURI != "" {
+				ctx.PrintPrimaryOutput("FeedURI:     " + v.URI)
+			}
 			if v.Type == models.BookmarkTypeFolder || v.Type == models.BookmarkTypeLivemark {
 				if len(v.Children) > 0 {
 					ctx.PrintPrimaryOutput("Children:    " + "['" + strings.Join(v.Children, "', '") + "']")
@@ -292,9 +299,43 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 
 	case cli.OutputFormatXML:
 		if a.LinearOutput {
-			panic(0) //TODO
+			type xmlroot struct {
+				Entries []any
+				XMLName struct{} `xml:"bookmarks"`
+			}
+			node := xmlroot{Entries: make([]any, 0, len(bookmarks))}
+			for _, v := range bookmarks {
+				node.Entries = append(node.Entries, v.ToSingleXML(ctx, a.IncludeDeleted))
+			}
+			ctx.PrintPrimaryOutputXML(node)
+			return 0
 		} else {
-			panic(0) //TODO
+			roots, unreferenced, missing := a.CalculateTree(ctx, bookmarks)
+			type xmlroot struct {
+				Entries []any
+				XMLName struct{} `xml:"bookmarks"`
+				Missing string   `xml:"missing,attr,omitempty"`
+			}
+			node := xmlroot{Entries: make([]any, 0, len(bookmarks)), Missing: strings.Join(missing, ", ")}
+			for _, v := range roots {
+				node.Entries = append(node.Entries, v.ToTreeXML(ctx, a.IncludeDeleted))
+			}
+			if len(unreferenced) > 0 {
+				type xmlentry struct {
+					XMLName xml.Name
+					Entries []any
+				}
+				e := make([]any, 0)
+				for _, v := range unreferenced {
+					e = append(e, v.ToSingleXML(ctx, a.IncludeDeleted))
+				}
+				node.Entries = append(node.Entries, xmlentry{
+					XMLName: xml.Name{Local: "@unreferenced"},
+					Entries: e,
+				})
+			}
+			ctx.PrintPrimaryOutputXML(node)
+			return 0
 		}
 
 	case cli.OutputFormatNetscape:

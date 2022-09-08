@@ -163,5 +163,6 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"-o <f>, --output <f>, --output=<f>", "Write the output to a file"},
 		{"--no-autosave-session", "Do not update the sessionfile if the session was auto-refreshed"},
 		{"--force-refresh-session", "Always auto-refresh the session, even if its not expired"},
+		{"--no-xml-declaration", "Do not print the xml declaration when using `--format xml`"},
 	}
 }

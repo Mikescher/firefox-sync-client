@@ -243,6 +243,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if arg.Key == "no-xml-declaration" && arg.Value == nil {
+			opt.NoXMLDeclaration = true
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 
