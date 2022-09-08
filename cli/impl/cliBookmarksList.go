@@ -7,6 +7,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
+	"ffsyncclient/netscapefmt"
 	"ffsyncclient/syncclient"
 	"strconv"
 	"strings"
@@ -81,7 +82,7 @@ func (a *CLIArgumentsBookmarksList) FullHelp() []string {
 		"  * [--format text]     Simple text output",
 		"  * [--format table]    Simple tabular output",
 		"  * [--format json]     Output bookmark data as json",
-		"  * [--format netscape] Output bookmark data as netscape bookmarks html (same as firefox format)",
+		"  * [--format netscape] Output bookmark data as netscape bookmarks html (same as the firefox bookmarks.html format)",
 		"  * [--format xml]      Output bookmark data as XML",
 		"",
 		"You can filter the returned bookmark types with --type, the following types are possible:",
@@ -339,7 +340,10 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		}
 
 	case cli.OutputFormatNetscape:
-		panic(0) //TODO
+		roots, _, _ := a.CalculateTree(ctx, bookmarks)
+		nc := netscapefmt.Format(ctx, roots)
+		ctx.PrintPrimaryOutput(nc)
+		return 0
 
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
