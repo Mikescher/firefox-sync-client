@@ -13,6 +13,7 @@ const (
 	ModeRecordsList       Mode = "list"
 	ModeRecordsGet        Mode = "get"
 	ModeRecordsDelete     Mode = "delete"
+	ModeRecordsUndelete   Mode = "undelete"
 	ModeCollectionsDelete Mode = "delete-collection"
 	ModeDeleteAll         Mode = "delete-all"
 	ModeRecordsCreate     Mode = "create"
@@ -52,6 +53,7 @@ var Modes = []Mode{
 	ModeRecordsList,
 	ModeRecordsGet,
 	ModeRecordsDelete,
+	ModeRecordsUndelete,
 	ModeCollectionsDelete,
 	ModeDeleteAll,
 	ModeRecordsCreate,
