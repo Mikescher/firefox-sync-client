@@ -33,7 +33,6 @@ func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 }
 
 func ParsePassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
-
 	var jsonschema PasswordPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	if err != nil {
@@ -43,6 +42,43 @@ func ParsePassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
 	model := jsonschema.ToModel()
 
 	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.Hostname))
+
+	return model, nil
+}
+
+func ParseBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]BookmarkRecord, error) {
+	result := make([]BookmarkRecord, 0, len(records))
+
+	for _, v := range records {
+		var jsonschema BookmarkPayloadSchema
+		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		if err != nil {
+			if ignoreSchemaErrors {
+				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to bookmark-schema -- skipping", v.ID))
+				continue
+			}
+
+			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema\n%s", v.ID, string(v.DecodedData)))
+		}
+
+		result = append(result, jsonschema.ToModel())
+
+		ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", v.ID, jsonschema.Title))
+	}
+
+	return result, nil
+}
+
+func ParseBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, error) {
+	var jsonschema BookmarkPayloadSchema
+	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	if err != nil {
+		return BookmarkRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema\n%s", record.ID, string(record.DecodedData)))
+	}
+
+	model := jsonschema.ToModel()
+
+	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.Title))
 
 	return model, nil
 }
@@ -74,4 +110,12 @@ func fmOptDateToNullableUnix(d *time.Time) *int64 {
 		return nil
 	}
 	return langext.Ptr(d.Unix())
+}
+
+func optMilliTime(ms *int64) *time.Time {
+	if ms == nil || *ms == 0 {
+		return nil
+	} else {
+		return langext.Ptr(time.UnixMilli(*ms))
+	}
 }

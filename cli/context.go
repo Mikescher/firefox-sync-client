@@ -67,6 +67,18 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 		return
 	}
 
+	c.PrintPrimaryOutputTableExt(data, header, langext.IntRange(0, len(data[0])))
+}
+
+func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, columnFilter []int) {
+	if c.Opt.Quiet {
+		return
+	}
+
+	if len(data) == 0 {
+		return
+	}
+
 	lens := make([]int, len(data[0]))
 	for _, row := range data {
 		for i, cell := range row {
@@ -74,29 +86,23 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 		}
 	}
 
-	for _, row := range data {
-		for i, cell := range row {
-			lens[i] = langext.Max(lens[i], len(cell))
-		}
-	}
-
-	for rowidx, row := range data {
+	for rowidx := range data {
 
 		{
 			rowstr := ""
-			for colidx, cell := range row {
-				if colidx > 0 {
+			for ic, colidx := range columnFilter {
+				if ic > 0 {
 					rowstr += "    "
 				}
-				rowstr += langext.StrPadRight(cell, " ", lens[colidx])
+				rowstr += langext.StrPadRight(data[rowidx][colidx], " ", lens[colidx])
 			}
 			c.printPrimaryRaw(rowstr + "\n")
 		}
 
 		if rowidx == 0 && header {
 			rowstr := ""
-			for colidx := range row {
-				if colidx > 0 {
+			for ic, colidx := range columnFilter {
+				if ic > 0 {
 					rowstr += "    "
 				}
 				rowstr += langext.StrPadRight("", "-", lens[colidx])
