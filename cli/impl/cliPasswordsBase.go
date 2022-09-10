@@ -85,7 +85,7 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 			return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to query record")
 		}
 
-		pwrec, err := models.ParsePassword(ctx, record)
+		pwrec, err := models.UnmarshalPassword(ctx, record)
 		if err != nil {
 			return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to decode password-record")
 		}
@@ -98,7 +98,7 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 		return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to list passwords")
 	}
 
-	allPasswords, err := models.ParsePasswords(ctx, records, true)
+	allPasswords, err := models.UnmarshalPasswords(ctx, records, true)
 	if err != nil {
 		return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to decode passwords")
 	}
@@ -176,7 +176,7 @@ func (a *CLIArgumentsPasswordsUtil) extUrlParse(v string) (*url.URL, error) {
 	return url.Parse(v)
 }
 
-func (a *CLIArgumentsPasswordsList) FilterDeleted(ctx *cli.FFSContext, records []models.PasswordRecord, includeDeleted bool, onlyDeleted bool) []models.PasswordRecord {
+func (a *CLIArgumentsPasswordsList) filterDeleted(ctx *cli.FFSContext, records []models.PasswordRecord, includeDeleted bool, onlyDeleted bool) []models.PasswordRecord {
 	result := make([]models.PasswordRecord, 0, len(records))
 
 	for _, v := range records {

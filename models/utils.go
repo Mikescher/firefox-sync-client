@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]PasswordRecord, error) {
+func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]PasswordRecord, error) {
 	result := make([]PasswordRecord, 0, len(records))
 
 	for _, v := range records {
@@ -32,7 +32,7 @@ func ParsePasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 	return result, nil
 }
 
-func ParsePassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
+func UnmarshalPassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
 	var jsonschema PasswordPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	if err != nil {
@@ -46,7 +46,7 @@ func ParsePassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
 	return model, nil
 }
 
-func ParseBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]BookmarkRecord, error) {
+func UnmarshalBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]BookmarkRecord, error) {
 	result := make([]BookmarkRecord, 0, len(records))
 
 	for _, v := range records {
@@ -69,7 +69,7 @@ func ParseBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 	return result, nil
 }
 
-func ParseBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, error) {
+func UnmarshalBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, error) {
 	var jsonschema BookmarkPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	if err != nil {

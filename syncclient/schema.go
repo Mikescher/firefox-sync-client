@@ -59,12 +59,6 @@ type collectionsCountResponseSchema map[string]int
 
 type collectionsUsageResponseSchema map[string]float64
 
-type recordSchema struct {
-	ID       string  `json:"id"`
-	Modified float64 `json:"modified"`
-	Payload  string  `json:"payload"`
-}
-
 type payloadSchema struct {
 	Ciphertext string `json:"ciphertext"`
 	IV         string `json:"IV"`
@@ -91,8 +85,11 @@ type recordsResponseSchema struct {
 }
 
 type recordsRequestSchema struct {
-	ID      string `json:"id"`
-	Payload string `json:"payload"`
+	ID        string  `json:"id"`
+	SortIndex *int64  `json:"sortindex,omitempty"`
+	Payload   *string `json:"payload,omitempty"`
+	TTL       *int64  `json:"ttl,omitempty"`
+	Deleted   *bool   `json:"deleted,omitempty"`
 }
 
 type sessionStatusResponseSchema struct {

@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -15,7 +14,7 @@ type CLIArgumentsPasswordsDelete struct {
 	QueryIsHost      bool
 	QueryIsExactHost bool
 	QueryIsID        bool
-	SoftDelete       bool
+	HardDelete       bool
 
 	CLIArgumentsPasswordsUtil
 }
@@ -26,7 +25,7 @@ func NewCLIArgumentsPasswordsDelete() *CLIArgumentsPasswordsDelete {
 		QueryIsHost:      false,
 		QueryIsExactHost: false,
 		QueryIsID:        false,
-		SoftDelete:       false,
+		HardDelete:       false,
 	}
 }
 
@@ -40,14 +39,14 @@ func (a *CLIArgumentsPasswordsDelete) PositionArgCount() (*int, *int) {
 
 func (a *CLIArgumentsPasswordsDelete) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient passwords delete <host|id>", "Delete a single password"},
+		{"ffsclient passwords delete <host|id> [--hard]", "Delete a single password"},
 		{"          [--is-host | --is-exact-host | --is-id]", "Specify that the supplied argument is a host / record-id (otherwise both is possible)"},
 	}
 }
 
 func (a *CLIArgumentsPasswordsDelete) FullHelp() []string {
 	return []string{
-		"$> ffsclient passwords delete <host|id> [--is-host | --is-exact-host | --is-id]",
+		"$> ffsclient passwords delete <host|id> [--is-host | --is-exact-host | --is-id] [--hard]",
 		"",
 		"Delete a single password",
 		"",
@@ -57,6 +56,7 @@ func (a *CLIArgumentsPasswordsDelete) FullHelp() []string {
 		"If --is-id is specified, the query is matched exactly agains the record-id.",
 		"If --is-id is _not_ specified this method needs to query all passwords from the server and do a local search.",
 		"If multiple passwords match the first match is deleted.",
+		"If --hard is specified we delete the record, otherwise we only add {deleted:true} to mark it as a tombstone",
 		"If no matching password is found the exitcode [82] is returned",
 	}
 }
@@ -77,8 +77,8 @@ func (a *CLIArgumentsPasswordsDelete) Init(positionalArgs []string, optionArgs [
 			a.QueryIsID = true
 			continue
 		}
-		if arg.Key == "soft" && arg.Value == nil {
-			a.SoftDelete = true
+		if arg.Key == "hard" && arg.Value == nil {
+			a.HardDelete = true
 			continue
 		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
@@ -91,7 +91,7 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("[Delete Password]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Query", a.Query)
-	ctx.PrintVerboseKV("SoftDelete", a.SoftDelete)
+	ctx.PrintVerboseKV("HardDelete", a.HardDelete)
 
 	if langext.BoolCount(a.QueryIsID, a.QueryIsExactHost, a.QueryIsHost) > 1 {
 		ctx.PrintFatalMessage("Must specify at most one of --id, --exact-host, --host")
@@ -143,35 +143,9 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerbose("Delete Record " + record.ID)
 
-	if a.SoftDelete {
+	if a.HardDelete {
 
-		record, err := client.GetRecord(ctx, session, consts.CollectionPasswords, record.ID, true)
-		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
-		}
-
-		var jsonpayload langext.H
-		err = json.Unmarshal(record.DecodedData, &jsonpayload)
-		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to unmarshal"))
-			return consts.ExitcodeError
-		}
-		jsonpayload["deleted"] = true
-
-		plainpayload, err := json.Marshal(jsonpayload)
-		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to re-marshal payload"))
-			return consts.ExitcodeError
-		}
-
-		payload, err := client.EncryptPayload(ctx, session, consts.CollectionPasswords, string(plainpayload))
-		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
-		}
-
-		err = client.PutRecord(ctx, session, consts.CollectionPasswords, record.ID, payload, false, false)
+		err = client.DeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError
@@ -179,7 +153,7 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	} else {
 
-		err = client.DeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
+		err = client.SoftDeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError

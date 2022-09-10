@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -12,12 +11,12 @@ import (
 type CLIArgumentsRecordsDelete struct {
 	Collection string
 	RecordID   string
-	SoftDelete bool
+	HardDelete bool
 }
 
 func NewCLIArgumentsRecordsDelete() *CLIArgumentsRecordsDelete {
 	return &CLIArgumentsRecordsDelete{
-		SoftDelete: false,
+		HardDelete: false,
 	}
 }
 
@@ -31,16 +30,16 @@ func (a *CLIArgumentsRecordsDelete) PositionArgCount() (*int, *int) {
 
 func (a *CLIArgumentsRecordsDelete) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient delete <collection> <record-id> [--soft]", "Delete the specified record"},
+		{"ffsclient delete <collection> <record-id> [--hard]", "Delete the specified record"},
 	}
 }
 
 func (a *CLIArgumentsRecordsDelete) FullHelp() []string {
 	return []string{
-		"$> ffsclient delete <collection> <record-id>",
+		"$> ffsclient delete <collection> <record-id> [--hard]",
 		"",
 		"Delete the specific record from the server",
-		"If --soft is specified we do not really delete the record, but only add {deleted:true} to its payload",
+		"If --hard is specified we delete the record, otherwise we only add {deleted:true} to mark it as a tombstone",
 	}
 }
 
@@ -49,8 +48,8 @@ func (a *CLIArgumentsRecordsDelete) Init(positionalArgs []string, optionArgs []c
 	a.RecordID = positionalArgs[1]
 
 	for _, arg := range optionArgs {
-		if arg.Key == "soft" && arg.Value == nil {
-			a.SoftDelete = true
+		if arg.Key == "hard" && arg.Value == nil {
+			a.HardDelete = true
 			continue
 		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
@@ -64,7 +63,7 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
 	ctx.PrintVerboseKV("RecordID", a.RecordID)
-	ctx.PrintVerboseKV("Soft", a.SoftDelete)
+	ctx.PrintVerboseKV("HardDelete", a.HardDelete)
 
 	// ========================================================================
 
@@ -99,35 +98,9 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	if a.SoftDelete {
+	if a.HardDelete {
 
-		record, err := client.GetRecord(ctx, session, a.Collection, a.RecordID, true)
-		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
-		}
-
-		var jsonpayload langext.H
-		err = json.Unmarshal(record.DecodedData, &jsonpayload)
-		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to unmarshal"))
-			return consts.ExitcodeError
-		}
-		jsonpayload["deleted"] = true
-
-		plainpayload, err := json.Marshal(jsonpayload)
-		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to re-marshal payload"))
-			return consts.ExitcodeError
-		}
-
-		payload, err := client.EncryptPayload(ctx, session, a.Collection, string(plainpayload))
-		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
-		}
-
-		err = client.PutRecord(ctx, session, a.Collection, a.RecordID, payload, false, false)
+		err = client.DeleteRecord(ctx, session, a.Collection, a.RecordID)
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError
@@ -135,7 +108,7 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	} else {
 
-		err = client.DeleteRecord(ctx, session, a.Collection, a.RecordID)
+		err = client.SoftDeleteRecord(ctx, session, a.Collection, a.RecordID)
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError

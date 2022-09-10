@@ -6,6 +6,7 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
+	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 )
 
@@ -37,7 +38,7 @@ func (a *CLIArgumentsRecordsUndelete) FullHelp() []string {
 		"$> ffsclient undelete <collection> <record-id>",
 		"",
 		"Undelete the specific record from the server",
-		"THis only works if the record was not hard deleted but only flagged as {deleted:true} (eg. with ffsclient delete --soft)",
+		"This does not works if the record was hard deleted (eg. with ffsclient delete --hard)",
 	}
 }
 
@@ -117,7 +118,13 @@ func (a *CLIArgumentsRecordsUndelete) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
-	err = client.PutRecord(ctx, session, a.Collection, a.RecordID, payload, false, false)
+	update := models.RecordUpdate{
+		ID:      a.RecordID,
+		Payload: langext.Ptr(payload),
+		Deleted: langext.Ptr(false),
+	}
+
+	err = client.PutRecord(ctx, session, a.Collection, update, false, false)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

@@ -5,6 +5,7 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
+	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 )
 
@@ -40,8 +41,8 @@ func (a *CLIArgumentsRecordsUpdate) PositionArgCount() (*int, *int) {
 
 func (a *CLIArgumentsRecordsUpdate) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient create <collection> <record-id>", "Update an existing record"},
-		{"          (--raw <r> | --data <d> | --raw-stdin | --data-stdin)", ""},
+		{"ffsclient update <collection> <record-id>", "Update an existing record"},
+		{"          (--raw <r> | --data <d> | --raw-stdin | --data-stdin)", "The new data"},
 		{"          [--create]", "Create a new record if the specified record-id does not exist"},
 	}
 }
@@ -177,7 +178,12 @@ func (a *CLIArgumentsRecordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	err = client.PutRecord(ctx, session, a.Collection, a.RecordID, payload, false, !a.CreateIfNotExistant)
+	update := models.RecordUpdate{
+		ID:      a.RecordID,
+		Payload: langext.Ptr(payload),
+	}
+
+	err = client.PutRecord(ctx, session, a.Collection, update, false, !a.CreateIfNotExistant)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

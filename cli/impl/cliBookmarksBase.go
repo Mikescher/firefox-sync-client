@@ -6,7 +6,9 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
+	"ffsyncclient/syncclient"
 	"fmt"
+	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsBookmarksBase struct {
@@ -52,7 +54,7 @@ func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) int {
 
 type CLIArgumentsBookmarksUtil struct{}
 
-func (a *CLIArgumentsBookmarksUtil) FilterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType) []models.BookmarkRecord {
+func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType) []models.BookmarkRecord {
 	result := make([]models.BookmarkRecord, 0, len(records))
 
 	for _, v := range records {
@@ -76,7 +78,8 @@ func (a *CLIArgumentsBookmarksUtil) FilterDeleted(ctx *cli.FFSContext, records [
 
 	return result
 }
-func (a *CLIArgumentsBookmarksUtil) CalculateTree(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) ([]*models.BookmarkTreeRecord, []*models.BookmarkRecord, []string) {
+
+func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) ([]*models.BookmarkTreeRecord, []*models.BookmarkRecord, []string) {
 	processedOkay := make(map[string]*models.BookmarkTreeRecord)
 	parentMap := make(map[string]*models.BookmarkTreeRecord)
 
@@ -163,4 +166,23 @@ func (a *CLIArgumentsBookmarksUtil) CalculateTree(ctx *cli.FFSContext, bookmarks
 	}
 
 	return roots, unref, langext.MapKeyArr(missing)
+}
+
+func (a *CLIArgumentsBookmarksUtil) findBookmarkRecord(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, query string) (models.BookmarkRecord, bool, error) {
+
+	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, query, true)
+	if err != nil && errorx.IsOfType(err, fferr.Request404) {
+		return models.BookmarkRecord{}, false, nil
+	}
+	if err != nil {
+		return models.BookmarkRecord{}, false, errorx.Decorate(err, "failed to query record")
+	}
+
+	pwrec, err := models.UnmarshalBookmark(ctx, record)
+	if err != nil {
+		return models.BookmarkRecord{}, false, errorx.Decorate(err, "failed to decode password-record")
+	}
+
+	return pwrec, true, nil
+
 }

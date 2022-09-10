@@ -177,7 +177,7 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
-	passwords, err := models.ParsePasswords(ctx, records, a.IgnoreSchemaErrors)
+	passwords, err := models.UnmarshalPasswords(ctx, records, a.IgnoreSchemaErrors)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -189,7 +189,7 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 }
 
 func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) int {
-	passwords = a.FilterDeleted(ctx, passwords, a.IncludeDeleted, a.OnlyDeleted)
+	passwords = a.filterDeleted(ctx, passwords, a.IncludeDeleted, a.OnlyDeleted)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 

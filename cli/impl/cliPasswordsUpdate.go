@@ -208,7 +208,12 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
-	err = client.PutRecord(ctx, session, consts.CollectionPasswords, record.ID, payload, false, false)
+	update := models.RecordUpdate{
+		ID:      record.ID,
+		Payload: langext.Ptr(payload),
+	}
+
+	err = client.PutRecord(ctx, session, consts.CollectionPasswords, update, false, false)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

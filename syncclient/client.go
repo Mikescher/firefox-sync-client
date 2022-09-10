@@ -73,6 +73,8 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 
 	ctx.PrintVerbose("Request session from " + requestURL)
 
+	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", "POST", requestURL))
+
 	rawResp, err := f.client.Do(req)
 	if err != nil {
 		return LoginSession{}, errorx.Decorate(err, "failed to do request")
@@ -351,7 +353,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 		return CryptoSession{}, errorx.Decorate(err, "API request failed")
 	}
 
-	var resp recordSchema
+	var resp recordsResponseSchema
 	err = json.Unmarshal(binResp, &resp)
 	if err != nil {
 		return CryptoSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
@@ -692,9 +694,13 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	record := models.Record{
-		ID:       resp.ID,
-		Payload:  resp.Payload,
-		Modified: langext.UnixFloatSeconds(resp.Modified),
+		ID:        resp.ID,
+		RawData:   binResp,
+		Modified:  langext.UnixFloatSeconds(resp.Modified),
+		Payload:   resp.Payload,
+		SortIndex: resp.SortIndex,
+		TTL:       resp.TTL,
+		Deleted:   langext.Coalesce(resp.Deleted, false),
 	}
 
 	if decode {
@@ -738,6 +744,39 @@ func (f FxAClient) RecordExists(ctx *cli.FFSContext, session FFSyncSession, coll
 		return false, nil
 	}
 	return false, errorx.Decorate(err, "API request failed")
+}
+
+func (f FxAClient) SoftDeleteRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) error {
+	jsonpayload := recordsRequestSchema{
+		ID:        recordid,
+		SortIndex: nil,
+		Payload:   nil,
+		TTL:       nil,
+		Deleted:   langext.Ptr(true),
+	}
+
+	plainpayload, err := json.Marshal(jsonpayload)
+	if err != nil {
+		return err
+	}
+
+	payload, err := f.EncryptPayload(ctx, session, collection, string(plainpayload))
+	if err != nil {
+		return err
+	}
+
+	bso := recordsRequestSchema{
+		ID:      recordid,
+		Payload: langext.Ptr(payload),
+		Deleted: langext.Ptr(true),
+	}
+
+	_, err = f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), bso)
+	if err != nil {
+		return errorx.Decorate(err, "API request failed")
+	}
+
+	return nil
 }
 
 func (f FxAClient) DeleteRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) error {
@@ -790,10 +829,10 @@ func (f FxAClient) CheckSession(ctx *cli.FFSContext, session FFSyncSession) (boo
 	return true, nil
 }
 
-func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string, payload string, forceCreateNew bool, forceUpdateExisting bool) error {
+func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, data models.RecordUpdate, forceCreateNew bool, forceUpdateExisting bool) error {
 
 	if forceCreateNew {
-		exists, err := f.RecordExists(ctx, session, collection, recordid)
+		exists, err := f.RecordExists(ctx, session, collection, data.ID)
 		if err != nil {
 			return errorx.Decorate(err, "failed to check record-exists")
 		}
@@ -803,7 +842,7 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	if forceUpdateExisting {
-		exists, err := f.RecordExists(ctx, session, collection, recordid)
+		exists, err := f.RecordExists(ctx, session, collection, data.ID)
 		if err != nil {
 			return errorx.Decorate(err, "failed to check record-exists")
 		}
@@ -813,11 +852,14 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	bso := recordsRequestSchema{
-		ID:      recordid,
-		Payload: payload,
+		ID:        data.ID,
+		SortIndex: data.SortIndex,
+		Payload:   data.Payload,
+		TTL:       data.TTL,
+		Deleted:   data.Deleted,
 	}
 
-	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), bso)
+	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(data.ID)), bso)
 	if err != nil {
 		return errorx.Decorate(err, "API request failed")
 	}
@@ -937,6 +979,13 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 
 	ctx.PrintVerboseKV("Authorization", hawkAuth)
 
+	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", req.Method, requestURL))
+	if strBody != "" {
+		ctx.PrintVerbose("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+		ctx.PrintVerbose(langext.TryPrettyPrintJson(strBody))
+		ctx.PrintVerbose("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+	}
+
 	rawResp, err := f.client.Do(req)
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to do request")
@@ -963,6 +1012,32 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		} else {
 			return nil, fferr.Request404.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
 		}
+	}
+
+	if rawResp.StatusCode == 400 {
+		if string(respBodyRaw) == "6" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "JSON parse failure, likely due to badly-formed POST data."))
+		}
+		if string(respBodyRaw) == "8" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "Invalid BSO, likely due to badly-formed POST data."))
+		}
+		if string(respBodyRaw) == "13" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "Invalid collection, likely invalid chars incollection name."))
+		}
+		if string(respBodyRaw) == "14" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "User has exceeded their storage quota."))
+		}
+		if string(respBodyRaw) == "16" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "Client is known to be incompatible with the server."))
+		}
+		if string(respBodyRaw) == "17" {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v (%s: %s)", requestURL, rawResp.StatusCode, string(respBodyRaw), "Server limit exceeded, likely due to too many items or too large a payload in a POST request."))
+		}
+		if len(string(respBodyRaw)) > 1 {
+			return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v\nBody:\n%v", requestURL, rawResp.StatusCode, string(respBodyRaw)))
+		}
+
+		return nil, fferr.Request400.New(fmt.Sprintf("call to %v returned statuscode %v", requestURL, rawResp.StatusCode))
 	}
 
 	if rawResp.StatusCode != 200 {

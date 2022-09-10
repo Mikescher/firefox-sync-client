@@ -208,7 +208,7 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
-	bookmarks, err := models.ParseBookmarks(ctx, records, a.IgnoreSchemaErrors)
+	bookmarks, err := models.UnmarshalBookmarks(ctx, records, a.IgnoreSchemaErrors)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -220,15 +220,16 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 }
 
 func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) int {
-	bookmarks = a.FilterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter)
+	bookmarks = a.filterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(bookmarks))
-		table = append(table, []string{"TYPE", "DELETED", "TITLE", "URI"})
+		table = append(table, []string{"ID", "TYPE", "DELETED", "TITLE", "URI"})
 		for _, v := range bookmarks {
 			table = append(table, []string{
+				v.ID,
 				string(v.Type),
 				langext.FormatBool(v.Deleted, "true", "false"),
 				v.Title,
@@ -237,9 +238,9 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		}
 
 		if a.IncludeDeleted && !a.OnlyDeleted {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 2, 3})
+			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 2, 3, 4})
 		} else {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3})
+			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 3, 4})
 		}
 
 		return 0
@@ -284,7 +285,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			ctx.PrintPrimaryOutputJSON(json)
 			return 0
 		} else {
-			roots, unreferenced, missing := a.CalculateTree(ctx, bookmarks)
+			roots, unreferenced, missing := a.calculateTree(ctx, bookmarks)
 			jsonRoots := langext.H{}
 			for _, v := range roots {
 				jsonRoots[v.ID] = v.ToTreeJSON(ctx)
@@ -311,7 +312,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			ctx.PrintPrimaryOutputXML(node)
 			return 0
 		} else {
-			roots, unreferenced, missing := a.CalculateTree(ctx, bookmarks)
+			roots, unreferenced, missing := a.calculateTree(ctx, bookmarks)
 			type xmlroot struct {
 				Entries []any
 				XMLName struct{} `xml:"bookmarks"`
@@ -340,7 +341,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		}
 
 	case cli.OutputFormatNetscape:
-		roots, _, _ := a.CalculateTree(ctx, bookmarks)
+		roots, _, _ := a.calculateTree(ctx, bookmarks)
 		nc := netscapefmt.Format(ctx, roots)
 		ctx.PrintPrimaryOutput(nc)
 		return 0

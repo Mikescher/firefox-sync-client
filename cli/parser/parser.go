@@ -152,7 +152,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	for _, arg := range allOptionArguments {
 
-		if arg.Key == "help" && arg.Value == nil {
+		if (arg.Key == "h" || arg.Key == "help") && arg.Value == nil {
 			return &impl.CLIArgumentsHelp{Verb: langext.Ptr(verbArg.Mode())}, cli.Options{}, nil
 		}
 
