@@ -24,10 +24,8 @@ const (
 	ModeBookmarksCreateBase      Mode = "bookmarks create"
 	ModeBookmarksCreateBookmark  Mode = "bookmarks create bookmark"
 	ModeBookmarksCreateFolder    Mode = "bookmarks create folder"
-	ModeBookmarksCreateSeparator Mode = "bookmarks create separator" // TODO
-	ModeBookmarksCreateQuery     Mode = "bookmarks create query"     // TODO
-	ModeBookmarksCreateLivemark  Mode = "bookmarks create livemark"  // TODO
-	ModeBookmarksUpdate          Mode = "bookmarks update"           // TODO
+	ModeBookmarksCreateSeparator Mode = "bookmarks create separator"
+	ModeBookmarksUpdate          Mode = "bookmarks update" // TODO
 	ModePasswordsBase            Mode = "passwords"
 	ModePasswordsList            Mode = "passwords list"
 	ModePasswordsGet             Mode = "passwords get"
@@ -70,8 +68,6 @@ var Modes = []Mode{
 	ModeBookmarksCreateBookmark,
 	ModeBookmarksCreateFolder,
 	ModeBookmarksCreateSeparator,
-	ModeBookmarksCreateQuery,
-	ModeBookmarksCreateLivemark,
 	ModeBookmarksUpdate,
 
 	ModePasswordsBase,

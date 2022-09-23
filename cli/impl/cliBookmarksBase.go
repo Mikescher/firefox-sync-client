@@ -56,7 +56,7 @@ func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) int {
 
 type CLIArgumentsBookmarksUtil struct{}
 
-func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType) []models.BookmarkRecord {
+func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType, parents *[]string) []models.BookmarkRecord {
 	result := make([]models.BookmarkRecord, 0, len(records))
 
 	for _, v := range records {
@@ -72,6 +72,11 @@ func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records [
 
 		if bmtype != nil && !langext.InArray(v.Type, *bmtype) {
 			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (not in type-filter)", v.ID))
+			continue
+		}
+
+		if parents != nil && !langext.InArray(v.ParentID, *parents) {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (not in parent-filter)", v.ID))
 			continue
 		}
 
@@ -199,24 +204,24 @@ func (a *CLIArgumentsBookmarksUtil) newBookmarkID() string {
 	return v
 }
 
-func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, error, int) {
+func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, int, error, int) {
 	ctx.PrintVerbose("Query parent by ID")
 
 	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, parentid, true)
 	if err != nil && errorx.IsOfType(err, fferr.Request404) {
-		return models.BookmarkRecord{}, "", fferr.DirectOutput.Wrap(err, fmt.Sprintf("parent-record with ID '%s' not found", parentid)), consts.ExitcodeRecordNotFound
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.Wrap(err, fmt.Sprintf("parent-record with ID '%s' not found", parentid)), consts.ExitcodeRecordNotFound
 	}
 	if err != nil {
-		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to query parent-record"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to query parent-record"), consts.ExitcodeError
 	}
 
 	bmrec, err := models.UnmarshalBookmark(ctx, record)
 	if err != nil {
-		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to decode bookmark-record"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to decode bookmark-record"), consts.ExitcodeError
 	}
 
 	if bmrec.Type != models.BookmarkTypeFolder {
-		return models.BookmarkRecord{}, "", fferr.DirectOutput.New("The parent record must be a folder"), consts.ExitcodeParentNotAFolder
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New("The parent record must be a folder"), consts.ExitcodeParentNotAFolder
 	}
 
 	children := langext.ForceArray(bmrec.Children)
@@ -239,17 +244,17 @@ func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client 
 		children = append(children[:normpos+1], children[normpos:]...)
 		children[normpos] = newid
 	} else {
-		return models.BookmarkRecord{}, "", fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)), consts.ExitcodeInvalidPosition
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)), consts.ExitcodeInvalidPosition
 	}
 
 	ctx.PrintVerboseKV("Parent<new>.children", strings.Join(children, ", "))
 
 	newPlainPayload, err := langext.PatchJson(record.DecodedData, "children", children)
 	if err != nil {
-		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to patch parent-record data"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to patch parent-record data"), consts.ExitcodeError
 	}
 	bmrec.Children = children
 
-	return bmrec, string(newPlainPayload), nil, 0
+	return bmrec, string(newPlainPayload), normpos, nil, 0
 
 }

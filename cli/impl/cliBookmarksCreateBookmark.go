@@ -157,7 +157,7 @@ func (a *CLIArgumentsBookmarksCreateBookmark) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerboseHeader("[1] Search for parent")
 
-	parent, newParentPayload, err, excode := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
+	parent, newParentPayload, _, err, excode := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
 	if err != nil {
 		ctx.PrintFatalError(errorx.Decorate(err, "failed to find+calculate parent"))
 		return excode

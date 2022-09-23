@@ -23,6 +23,7 @@ type CLIArgumentsBookmarksList struct {
 	IncludeDeleted     bool
 	OnlyDeleted        bool
 	TypeFilter         *[]models.BookmarkType
+	ParentFilter       *[]string
 	LinearOutput       bool
 
 	CLIArgumentsBookmarksUtil
@@ -61,6 +62,7 @@ func (a *CLIArgumentsBookmarksList) ShortHelp() [][]string {
 		{"          [--include-deleted]", "Show deleted entries"},
 		{"          [--only-deleted]", "Show only deleted entries"},
 		{"          [--type <folder|separator|bookmark|...>]", "Show only entries with the specified type"},
+		{"          [--parent <id>]", "Show only entries with the specified parent (by record-id), can be specified multiple times"},
 		{"          [--linear", "Do not output the folder hierachy"},
 	}
 }
@@ -93,6 +95,8 @@ func (a *CLIArgumentsBookmarksList) FullHelp() []string {
 		"  * [--type folder]",
 		"  * [--type livemark]",
 		"  * [--type separator]",
+		"You can also filter the returned bookmarks by their parent with --parent (needs a record-id).",
+		"This can also be used specify multiple parents with multiple --parent arguments.",
 	}
 }
 
@@ -120,6 +124,15 @@ func (a *CLIArgumentsBookmarksList) Init(positionalArgs []string, optionArgs []c
 			} else {
 				v := append(*a.TypeFilter, models.BookmarkType(*arg.Value))
 				a.TypeFilter = &v
+			}
+			continue
+		}
+		if arg.Key == "parent" && arg.Value != nil {
+			if a.ParentFilter == nil {
+				a.ParentFilter = &[]string{*arg.Value}
+			} else {
+				v := append(*a.ParentFilter, *arg.Value)
+				a.ParentFilter = &v
 			}
 			continue
 		}
@@ -220,7 +233,7 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 }
 
 func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) int {
-	bookmarks = a.filterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter)
+	bookmarks = a.filterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter, a.ParentFilter)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 

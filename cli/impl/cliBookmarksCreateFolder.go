@@ -39,7 +39,7 @@ func (a *CLIArgumentsBookmarksCreateFolder) PositionArgCount() (*int, *int) {
 
 func (a *CLIArgumentsBookmarksCreateFolder) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient bookmarks create folder <title>", "Insert a new bookmark"},
+		{"ffsclient bookmarks create folder <title>", "Insert a new bookmark-folder"},
 		{"          [--parent <id>]", "Specify the ID of the parent folder (if not specified the entry lives under `unfiled`)"},
 		{"          [--position=<idx>]", "The position of the entry in the parent (0 = first, default is last). Can use negative indizes."},
 	}
@@ -124,7 +124,7 @@ func (a *CLIArgumentsBookmarksCreateFolder) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerboseHeader("[1] Search for parent")
 
-	parent, newParentPayload, err, excode := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
+	parent, newParentPayload, _, err, excode := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
 	if err != nil {
 		ctx.PrintFatalError(errorx.Decorate(err, "failed to find+calculate parent"))
 		return excode
