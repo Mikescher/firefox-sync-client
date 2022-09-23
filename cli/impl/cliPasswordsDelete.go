@@ -9,7 +9,7 @@ import (
 	"ffsyncclient/syncclient"
 )
 
-type CLIArgumentsPasswordsDelete struct { //TODO does this work, do we need tombstones?, see bookmarks
+type CLIArgumentsPasswordsDelete struct {
 	Query            string
 	QueryIsHost      bool
 	QueryIsExactHost bool

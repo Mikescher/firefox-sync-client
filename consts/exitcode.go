@@ -13,4 +13,6 @@ const (
 const (
 	ExitcodeInvalidSession   = 81
 	ExitcodePasswordNotFound = 82
+	ExitcodeParentNotAFolder = 83
+	ExitcodeInvalidPosition  = 84
 )

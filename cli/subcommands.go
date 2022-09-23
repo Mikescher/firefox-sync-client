@@ -3,43 +3,48 @@ package cli
 type Mode string
 
 const (
-	ModeHelp              Mode = "help"
-	ModeVersion           Mode = "version"
-	ModeLogin             Mode = "login"
-	ModeTokenRefresh      Mode = "refresh"
-	ModeCheckSession      Mode = "check-session"
-	ModeQuotaGet          Mode = "quota"
-	ModeCollectionsList   Mode = "collections"
-	ModeRecordsList       Mode = "list"
-	ModeRecordsGet        Mode = "get"
-	ModeRecordsDelete     Mode = "delete"
-	ModeCollectionsDelete Mode = "delete-collection"
-	ModeDeleteAll         Mode = "delete-all"
-	ModeRecordsCreate     Mode = "create"
-	ModeRecordsUpdate     Mode = "update"
-	ModeMetaGet           Mode = "meta"
-	ModeBookmarksBase     Mode = "bookmarks"
-	ModeBookmarksList     Mode = "bookmarks list"
-	ModeBookmarksDelete   Mode = "bookmarks delete" // TODO
-	ModeBookmarksCreate   Mode = "bookmarks create" // TODO
-	ModeBookmarksUpdate   Mode = "bookmarks update" // TODO
-	ModePasswordsBase     Mode = "passwords"
-	ModePasswordsList     Mode = "passwords list"
-	ModePasswordsGet      Mode = "passwords get"
-	ModePasswordsCreate   Mode = "passwords create"
-	ModePasswordsUpdate   Mode = "passwords update"
-	ModePasswordsDelete   Mode = "passwords delete"
-	ModeFormsBase         Mode = "forms"
-	ModeFormsList         Mode = "forms list"   // TODO
-	ModeFormsGet          Mode = "forms get"    // TODO
-	ModeFormsCreate       Mode = "forms create" // TODO
-	ModeFormsUpdate       Mode = "forms update" // TODO
-	ModeFormsDelete       Mode = "forms delete" // TODO
-	ModeHistoryBase       Mode = "history"
-	ModeHistoryList       Mode = "history list"   // TODO
-	ModeHistoryCreate     Mode = "history create" // TODO
-	ModeHistoryUpdate     Mode = "history update" // TODO
-	ModeHistoryDelete     Mode = "history delete" // TODO
+	ModeHelp                     Mode = "help"
+	ModeVersion                  Mode = "version"
+	ModeLogin                    Mode = "login"
+	ModeTokenRefresh             Mode = "refresh"
+	ModeCheckSession             Mode = "check-session"
+	ModeQuotaGet                 Mode = "quota"
+	ModeCollectionsList          Mode = "collections"
+	ModeRecordsList              Mode = "list"
+	ModeRecordsGet               Mode = "get"
+	ModeRecordsDelete            Mode = "delete"
+	ModeCollectionsDelete        Mode = "delete-collection"
+	ModeDeleteAll                Mode = "delete-all"
+	ModeRecordsCreate            Mode = "create"
+	ModeRecordsUpdate            Mode = "update"
+	ModeMetaGet                  Mode = "meta"
+	ModeBookmarksBase            Mode = "bookmarks"
+	ModeBookmarksList            Mode = "bookmarks list"
+	ModeBookmarksDelete          Mode = "bookmarks delete"
+	ModeBookmarksCreateBase      Mode = "bookmarks create"
+	ModeBookmarksCreateBookmark  Mode = "bookmarks create bookmark"
+	ModeBookmarksCreateFolder    Mode = "bookmarks create folder"    // TODO
+	ModeBookmarksCreateSeparator Mode = "bookmarks create separator" // TODO
+	ModeBookmarksCreateQuery     Mode = "bookmarks create query"     // TODO
+	ModeBookmarksCreateLivemark  Mode = "bookmarks create livemark"  // TODO
+	ModeBookmarksUpdate          Mode = "bookmarks update"           // TODO
+	ModePasswordsBase            Mode = "passwords"
+	ModePasswordsList            Mode = "passwords list"
+	ModePasswordsGet             Mode = "passwords get"
+	ModePasswordsCreate          Mode = "passwords create"
+	ModePasswordsUpdate          Mode = "passwords update"
+	ModePasswordsDelete          Mode = "passwords delete"
+	ModeFormsBase                Mode = "forms"
+	ModeFormsList                Mode = "forms list"   // TODO
+	ModeFormsGet                 Mode = "forms get"    // TODO
+	ModeFormsCreate              Mode = "forms create" // TODO
+	ModeFormsUpdate              Mode = "forms update" // TODO
+	ModeFormsDelete              Mode = "forms delete" // TODO
+	ModeHistoryBase              Mode = "history"
+	ModeHistoryList              Mode = "history list"   // TODO
+	ModeHistoryCreate            Mode = "history create" // TODO
+	ModeHistoryUpdate            Mode = "history update" // TODO
+	ModeHistoryDelete            Mode = "history delete" // TODO
 )
 
 var Modes = []Mode{
@@ -61,7 +66,12 @@ var Modes = []Mode{
 	ModeBookmarksBase,
 	ModeBookmarksList,
 	ModeBookmarksDelete,
-	ModeBookmarksCreate,
+	ModeBookmarksCreateBase,
+	ModeBookmarksCreateBookmark,
+	ModeBookmarksCreateFolder,
+	ModeBookmarksCreateSeparator,
+	ModeBookmarksCreateQuery,
+	ModeBookmarksCreateLivemark,
 	ModeBookmarksUpdate,
 
 	ModePasswordsBase,

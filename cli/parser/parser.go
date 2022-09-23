@@ -75,6 +75,13 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			positionalArguments = append(positionalArguments, arg)
 			continue
 		}
+		if strings.HasPrefix(arg, "--!arg=") {
+			if !positional {
+				return nil, cli.Options{}, fferr.DirectOutput.New("Unknown/Misplaced argument: " + arg)
+			}
+			positionalArguments = append(positionalArguments, arg[7:])
+			continue
+		}
 
 		positional = false
 
@@ -270,6 +277,8 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 	if posArgLenMax != nil && len(positionalArguments) > *posArgLenMax {
 		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be at most %d)", verbArg.Mode(), *posArgLenMax))
 	}
+
+	//TODO if format notin verbArg.AvailableOutputFormats() -> error
 
 	err = verbArg.Init(positionalArguments, optionArguments)
 	if err != nil {

@@ -54,13 +54,13 @@ func (a *CLIArgumentsRecordsList) ShortHelp() [][]string {
 		{"          [--sort <sort>]", "Sort the result by (newest|index|oldest)"},
 		{"          [--limit <n>]", "Return max <n> elements"},
 		{"          [--offset <o>]", "Skip the first <n> elements"},
-		{"          [--pretty-print]", "Pretty-Print json in decoded data / payload (if possible)"},
+		{"          [--pretty-print | --pp]", "Pretty-Print json in decoded data / payload (if possible)"},
 	}
 }
 
 func (a *CLIArgumentsRecordsList) FullHelp() []string {
 	return []string{
-		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print]",
+		"$> ffsclient list <collection> (--raw | --decoded | --ids) [--after <rfc3339>] [--sort <newest|index|oldest>] [--pretty-print | --pp]",
 		"",
 		"List all records in a collection",
 		"",
@@ -126,7 +126,7 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 			}
 			return fferr.DirectOutput.New("Failed to parse number argument '--offset': '" + *arg.Value + "'")
 		}
-		if arg.Key == "pretty-print" && arg.Value == nil {
+		if (arg.Key == "pretty-print" || arg.Key == "pp") && arg.Value == nil {
 			a.PrettyPrint = true
 			continue
 		}

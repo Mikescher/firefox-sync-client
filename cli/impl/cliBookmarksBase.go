@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"encoding/base64"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -9,6 +10,7 @@ import (
 	"ffsyncclient/syncclient"
 	"fmt"
 	"github.com/joomcode/errorx"
+	"strings"
 )
 
 type CLIArgumentsBookmarksBase struct {
@@ -178,11 +180,76 @@ func (a *CLIArgumentsBookmarksUtil) findBookmarkRecord(ctx *cli.FFSContext, clie
 		return models.BookmarkRecord{}, false, errorx.Decorate(err, "failed to query record")
 	}
 
-	pwrec, err := models.UnmarshalBookmark(ctx, record)
+	bmrec, err := models.UnmarshalBookmark(ctx, record)
 	if err != nil {
 		return models.BookmarkRecord{}, false, errorx.Decorate(err, "failed to decode password-record")
 	}
 
-	return pwrec, true, nil
+	return bmrec, true, nil
+
+}
+
+func (a *CLIArgumentsBookmarksUtil) newBookmarkID() string {
+	// BSO ids must only contain printable ASCII characters. They should be exactly 12 base64-urlsafe characters
+	v := base64.RawURLEncoding.EncodeToString(langext.RandBytes(32))[0:12]
+	if v[0] == '-' {
+		// it is annoying when the ID starts with an '-', so it's nice to prevent it as much as possible
+		v = "A" + v[1:]
+	}
+	return v
+}
+
+func (a *CLIArgumentsBookmarksCreateBookmark) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, error, int) {
+	ctx.PrintVerbose("Query parent by ID")
+
+	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, parentid, true)
+	if err != nil && errorx.IsOfType(err, fferr.Request404) {
+		return models.BookmarkRecord{}, "", fferr.DirectOutput.Wrap(err, fmt.Sprintf("parent-record with ID '%s' not found", parentid)), consts.ExitcodeRecordNotFound
+	}
+	if err != nil {
+		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to query parent-record"), consts.ExitcodeError
+	}
+
+	bmrec, err := models.UnmarshalBookmark(ctx, record)
+	if err != nil {
+		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to decode bookmark-record"), consts.ExitcodeError
+	}
+
+	if bmrec.Type != models.BookmarkTypeFolder {
+		return models.BookmarkRecord{}, "", fferr.DirectOutput.New("The parent record must be a folder"), consts.ExitcodeParentNotAFolder
+	}
+
+	children := langext.ForceArray(bmrec.Children)
+
+	normpos := pos
+
+	if normpos < 0 {
+		normpos = len(children) + normpos + 1
+	}
+
+	ctx.PrintVerboseKV("Position", pos)
+	ctx.PrintVerboseKV("Parent<old>.children.len", len(children))
+	ctx.PrintVerboseKV("Position-normalized", normpos)
+
+	ctx.PrintVerboseKV("Parent<old>.children", strings.Join(children, ", "))
+
+	if normpos == len(children) {
+		children = append(children, newid)
+	} else if 0 <= normpos && normpos < len(children) {
+		children = append(children[:normpos+1], children[normpos:]...)
+		children[normpos] = newid
+	} else {
+		return models.BookmarkRecord{}, "", fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)), consts.ExitcodeInvalidPosition
+	}
+
+	ctx.PrintVerboseKV("Parent<new>.children", strings.Join(children, ", "))
+
+	newPlainPayload, err := langext.PatchJson(record.DecodedData, "children", children)
+	if err != nil {
+		return models.BookmarkRecord{}, "", errorx.Decorate(err, "failed to patch parent-record data"), consts.ExitcodeError
+	}
+	bmrec.Children = children
+
+	return bmrec, string(newPlainPayload), nil, 0
 
 }

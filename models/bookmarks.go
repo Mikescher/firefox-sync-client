@@ -34,6 +34,29 @@ type BookmarkPayloadSchema struct {
 	HasDupe bool `json:"hasDupe"` // ??
 }
 
+type BookmarkCreatePayloadSchema struct {
+	ID         string `json:"id"`         // [common]
+	Type       string `json:"type"`       // [common]
+	DateAdded  int64  `json:"dateAdded"`  // [common]
+	ParentID   string `json:"parentid"`   // [common]
+	ParentName string `json:"parentName"` // [common]
+
+	Title             *string   `json:"title,omitempty"`         // [bookmark, microsummary, query, livemark, folder]
+	URI               *string   `json:"bmkUri,omitempty"`        // [bookmark, microsummary, query]
+	Description       *string   `json:"description,omitempty"`   // [bookmark, microsummary, query]
+	LoadInSidebar     *bool     `json:"loadInSidebar,omitempty"` // [bookmark, microsummary, query]
+	Tags              *[]string `json:"tags,omitempty"`          // [bookmark, microsummary, query]
+	Keyword           *string   `json:"keyword,omitempty"`       // [bookmark, microsummary, query]
+	Children          *[]string `json:"children,omitempty"`      // [folder, livemark]
+	GeneratorUri      *string   `json:"generatorUri,omitempty"`  // [microsummary]
+	StaticTitle       *string   `json:"staticTitle,omitempty"`   // [microsummary]
+	FolderName        *string   `json:"folderName,omitempty"`    // [query]
+	QueryID           *string   `json:"queryId,omitempty"`       // [query]
+	SeparatorPosition *int      `json:"pos,omitempty"`           // [separator]
+	FeedURI           *string   `json:"feedUri,omitempty"`       // [livemark]
+	SiteURI           *string   `json:"siteUri,omitempty"`       // [livemark]
+}
+
 func (j BookmarkPayloadSchema) ToModel() BookmarkRecord {
 	return BookmarkRecord{
 		ID:                j.ID,

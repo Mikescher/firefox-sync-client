@@ -95,10 +95,18 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("firefox-sync-client.")
 		ctx.PrintPrimaryOutput("")
+		ctx.PrintPrimaryOutput("# (Use `ffsclient <command> --help` for more detailed info)")
+		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
 		for _, row := range verbhelp {
 			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
 		}
+		ctx.PrintPrimaryOutput("")
+		ctx.PrintPrimaryOutput("Hint:")
+		ctx.PrintPrimaryOutput("  # If you need to supply a record-id / collection that starts with an minus, use the --!arg=... syntax")
+		ctx.PrintPrimaryOutput("  #     e.g.: `ffsclient get bookmarks --!arg=-udhG86-JgpUx --decoded`")
+		ctx.PrintPrimaryOutput("  # Also if you need to supply a argument that starts with an - use the --arg=value syntax")
+		ctx.PrintPrimaryOutput("  #     e.g.: `ffsclient bookmarks add Test \"https://example.org\" --parent toolbar --position=-3`")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Options:")
 		for _, row := range opthelp {
@@ -117,6 +125,8 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("  81            (check-session): The session is not valid")
 		ctx.PrintPrimaryOutput("  82            (passwords): No matching password found")
+		ctx.PrintPrimaryOutput("  83            (create-bookmarks): Parent record is not a folder")
+		ctx.PrintPrimaryOutput("  84            (create-bookmarks): The position in the parent would be out of bounds")
 		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 

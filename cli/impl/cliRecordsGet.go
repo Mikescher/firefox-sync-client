@@ -41,13 +41,13 @@ func (a *CLIArgumentsRecordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient get <collection> <record-id>", "Get a single record"},
 		{"          (--raw | --decoded)", "Return raw data or decoded payload"},
-		{"          [--pretty-print]", "Pretty-Print json in decoded data / payload (if possible)"},
+		{"          [--pretty-print | --pp]", "Pretty-Print json in decoded data / payload (if possible)"},
 	}
 }
 
 func (a *CLIArgumentsRecordsGet) FullHelp() []string {
 	return []string{
-		"$> ffsclient get <collection> <record-id> (--raw | --decoded) [--pretty-print]",
+		"$> ffsclient get <collection> <record-id> (--raw | --decoded) [--pretty-print | --pp]",
 		"",
 		"Get data of a single record",
 		"",
@@ -69,7 +69,7 @@ func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.
 			a.Decoded = true
 			continue
 		}
-		if arg.Key == "pretty-print" && arg.Value == nil {
+		if (arg.Key == "pretty-print" || arg.Key == "pp") && arg.Value == nil {
 			a.PrettyPrint = true
 			continue
 		}

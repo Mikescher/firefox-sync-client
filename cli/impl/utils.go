@@ -83,8 +83,18 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 		return NewCLIArgumentsBookmarksList()
 	case cli.ModeBookmarksDelete:
 		return NewCLIArgumentsBookmarksDelete()
-	case cli.ModeBookmarksCreate:
-		return NewCLIArgumentsBookmarksCreate()
+	case cli.ModeBookmarksCreateBase:
+		return NewCLIArgumentsBookmarksCreateBase()
+	case cli.ModeBookmarksCreateBookmark:
+		return NewCLIArgumentsBookmarksCreateBookmark()
+	case cli.ModeBookmarksCreateFolder:
+		return NewCLIArgumentsBookmarksCreateFolder()
+	case cli.ModeBookmarksCreateLivemark:
+		return NewCLIArgumentsBookmarksCreateLivemark()
+	case cli.ModeBookmarksCreateQuery:
+		return NewCLIArgumentsBookmarksCreateQuery()
+	case cli.ModeBookmarksCreateSeparator:
+		return NewCLIArgumentsBookmarksCreateSeparator()
 	case cli.ModeBookmarksUpdate:
 		return NewCLIArgumentsBookmarksUpdate()
 	case cli.ModePasswordsBase:

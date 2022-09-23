@@ -55,6 +55,7 @@ func (a *CLIArgumentsPasswordsCreate) FullHelp() []string {
 		"",
 		"The fields <host>, <username> <password> must be specified.",
 		"The fields formSubmitURL, httpRealm, usernameField and passwordField are optional and get their default values (empty-string/null) if not supplied",
+		"",
 		"Outputs the RecordID of the newly created entry on success.",
 	}
 }

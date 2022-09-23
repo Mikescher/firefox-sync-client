@@ -132,6 +132,10 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeUnsupportedOutputFormat
 	}
 
-	ctx.PrintPrimaryOutput("Record " + a.RecordID + " deleted")
+	if a.HardDelete {
+		ctx.PrintPrimaryOutput("Record " + a.RecordID + " deleted")
+	} else {
+		ctx.PrintPrimaryOutput("Record " + a.RecordID + " marked as deleted")
+	}
 	return 0
 }

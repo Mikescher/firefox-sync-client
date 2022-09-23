@@ -3,6 +3,7 @@ package langext
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/joomcode/errorx"
 )
 
 type H map[string]any
@@ -23,4 +24,23 @@ func PrettyPrintJson(str string) (string, bool) {
 		return str, false
 	}
 	return prettyJSON.String(), true
+}
+
+func PatchJson[JV string | []byte](rawjson JV, key string, value any) (JV, error) {
+	var err error
+
+	var jsonpayload map[string]any
+	err = json.Unmarshal([]byte(rawjson), &jsonpayload)
+	if err != nil {
+		return *new(JV), errorx.Decorate(err, "failed to unmarshal payload")
+	}
+
+	jsonpayload[key] = value
+
+	newjson, err := json.Marshal(jsonpayload)
+	if err != nil {
+		return *new(JV), errorx.Decorate(err, "failed to re-marshal payload")
+	}
+
+	return JV(newjson), nil
 }

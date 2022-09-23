@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"encoding/json"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -13,7 +12,7 @@ import (
 )
 
 type CLIArgumentsBookmarksDelete struct {
-	RecordID string
+	RecordID string //TODO cannot delete record whith ids taht start with a '-' (parser thinks its an option)
 
 	CLIArgumentsBookmarksUtil
 }
@@ -93,6 +92,8 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
+	ctx.PrintVerboseHeader("[0] Find bookmark")
+
 	record, found, err := a.findBookmarkRecord(ctx, client, session, a.RecordID)
 	if err != nil {
 		ctx.PrintFatalError(err)
@@ -104,6 +105,8 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodePasswordNotFound
 	}
 
+	ctx.PrintVerboseHeader("[1] Get parent")
+
 	parent, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, record.ParentID, true)
 	parentFound := true
 	if errorx.IsOfType(err, fferr.Request404) {
@@ -114,7 +117,7 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeError
 	}
 
-	ctx.PrintVerbose("Delete Record " + record.ID)
+	ctx.PrintVerboseHeader("[2] Delete Record " + record.ID)
 
 	var parentRecord models.BookmarkRecord
 	if parentFound {
@@ -132,7 +135,7 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 	}
 
 	if parentFound {
-		ctx.PrintVerbose("Modify Record Parent '" + parent.ID + "'")
+		ctx.PrintVerboseHeader("[3] Update parent " + parentRecord.ID)
 
 		newChildren := make([]string, 0, len(parentRecord.Children))
 		for _, v := range parentRecord.Children {
@@ -143,18 +146,9 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 			}
 		}
 
-		var jsonpayload langext.H
-		err = json.Unmarshal(parent.DecodedData, &jsonpayload)
+		plainpayload, err := langext.PatchJson(parent.DecodedData, "children", newChildren)
 		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to unmarshal"))
-			return consts.ExitcodeError
-		}
-
-		jsonpayload["children"] = newChildren
-
-		plainpayload, err := json.Marshal(jsonpayload)
-		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to re-marshal payload"))
+			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to patch payload of parent"))
 			return consts.ExitcodeError
 		}
 
@@ -183,6 +177,6 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodeUnsupportedOutputFormat
 	}
 
-	ctx.PrintPrimaryOutput("Bookmark " + a.RecordID + " deleted")
+	ctx.PrintPrimaryOutput("Bookmark " + a.RecordID + " marked as deleted")
 	return 0
 }
