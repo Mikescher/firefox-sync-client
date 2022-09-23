@@ -127,6 +127,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  82            (passwords): No matching password found")
 		ctx.PrintPrimaryOutput("  83            (create-bookmarks): Parent record is not a folder")
 		ctx.PrintPrimaryOutput("  84            (create-bookmarks): The position in the parent would be out of bounds")
+		ctx.PrintPrimaryOutput("  85            (update-bookmarks): One of the specified fields is not valid on the record type")
 		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 

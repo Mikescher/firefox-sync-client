@@ -37,9 +37,12 @@ func (a *CLIArgumentsBookmarksBase) FullHelp() []string {
 		"$> ffsclient bookmarks (list|delete|create|update)",
 		"======================================================",
 		"",
+		"",
 	}
-	for _, v := range ListSubcommands(a.Mode()) {
+	for _, v := range ListSubcommands(a.Mode(), true) {
 		r = append(r, GetModeImpl(v).FullHelp()...)
+		r = append(r, "")
+		r = append(r, "")
 		r = append(r, "")
 	}
 
@@ -220,11 +223,26 @@ func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client 
 		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to decode bookmark-record"), consts.ExitcodeError
 	}
 
+	bmrec, newPlainPayload, normpos, err, excode := a.moveChild(ctx, record, bmrec, newid, pos)
+	if err != nil {
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to move child"), excode
+	}
+
+	return bmrec, newPlainPayload, normpos, nil, 0
+}
+
+func (a *CLIArgumentsBookmarksUtil) moveChild(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord, recordid string, pos int) (models.BookmarkRecord, string, int, error, int) {
+
 	if bmrec.Type != models.BookmarkTypeFolder {
 		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New("The parent record must be a folder"), consts.ExitcodeParentNotAFolder
 	}
 
-	children := langext.ForceArray(bmrec.Children)
+	children := make([]string, 0, len(bmrec.Children))
+	for _, v := range bmrec.Children {
+		if v != recordid {
+			children = append(children, v)
+		}
+	}
 
 	normpos := pos
 
@@ -233,16 +251,16 @@ func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client 
 	}
 
 	ctx.PrintVerboseKV("Position", pos)
-	ctx.PrintVerboseKV("Parent<old>.children.len", len(children))
+	ctx.PrintVerboseKV("Parent<old>.children.len", len(bmrec.Children))
 	ctx.PrintVerboseKV("Position-normalized", normpos)
 
-	ctx.PrintVerboseKV("Parent<old>.children", strings.Join(children, ", "))
+	ctx.PrintVerboseKV("Parent<old>.children", strings.Join(bmrec.Children, ", "))
 
 	if normpos == len(children) {
-		children = append(children, newid)
+		children = append(children, recordid)
 	} else if 0 <= normpos && normpos < len(children) {
 		children = append(children[:normpos+1], children[normpos:]...)
-		children[normpos] = newid
+		children[normpos] = recordid
 	} else {
 		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)), consts.ExitcodeInvalidPosition
 	}
@@ -256,5 +274,4 @@ func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client 
 	bmrec.Children = children
 
 	return bmrec, string(newPlainPayload), normpos, nil, 0
-
 }

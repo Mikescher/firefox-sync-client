@@ -51,9 +51,12 @@ func (a *CLIArgumentsPasswordsBase) FullHelp() []string {
 		"$> ffsclient passwords (list|delete|create|update|get)",
 		"======================================================",
 		"",
+		"",
 	}
-	for _, v := range ListSubcommands(a.Mode()) {
+	for _, v := range ListSubcommands(a.Mode(), true) {
 		r = append(r, GetModeImpl(v).FullHelp()...)
+		r = append(r, "")
+		r = append(r, "")
 		r = append(r, "")
 	}
 

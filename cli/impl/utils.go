@@ -133,11 +133,14 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 	}
 }
 
-func ListSubcommands(m cli.Mode) []cli.Mode {
+func ListSubcommands(m cli.Mode, skipBase bool) []cli.Mode {
 	r := make([]cli.Mode, 0)
 
 	for _, v := range cli.Modes {
 		if strings.HasPrefix(string(v), string(m)+" ") {
+			if skipBase && GetModeImpl(v).ShortHelp() == nil {
+				continue
+			}
 			r = append(r, v)
 		}
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 type CLIArgumentsBookmarksDelete struct {
-	RecordID string //TODO cannot delete record whith ids taht start with a '-' (parser thinks its an option)
+	RecordID string
 
 	CLIArgumentsBookmarksUtil
 }

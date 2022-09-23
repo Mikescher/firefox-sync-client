@@ -30,9 +30,12 @@ func (a *CLIArgumentsHistoryBase) FullHelp() []string {
 		"$> ffsclient history (list|delete|create|update)",
 		"======================================================",
 		"",
+		"",
 	}
-	for _, v := range ListSubcommands(a.Mode()) {
+	for _, v := range ListSubcommands(a.Mode(), true) {
 		r = append(r, GetModeImpl(v).FullHelp()...)
+		r = append(r, "")
+		r = append(r, "")
 		r = append(r, "")
 	}
 

@@ -25,7 +25,7 @@ const (
 	ModeBookmarksCreateBookmark  Mode = "bookmarks create bookmark"
 	ModeBookmarksCreateFolder    Mode = "bookmarks create folder"
 	ModeBookmarksCreateSeparator Mode = "bookmarks create separator"
-	ModeBookmarksUpdate          Mode = "bookmarks update" // TODO
+	ModeBookmarksUpdate          Mode = "bookmarks update"
 	ModePasswordsBase            Mode = "passwords"
 	ModePasswordsList            Mode = "passwords list"
 	ModePasswordsGet             Mode = "passwords get"

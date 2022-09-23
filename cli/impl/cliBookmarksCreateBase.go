@@ -28,12 +28,15 @@ func (a *CLIArgumentsBookmarksCreateBase) ShortHelp() [][]string {
 
 func (a *CLIArgumentsBookmarksCreateBase) FullHelp() []string {
 	r := []string{
-		"$> ffsclient bookmarks (list|delete|create|update)",
-		"======================================================",
+		"$> ffsclient bookmarks create (folder|bookmark|separator)",
+		"=========================================================",
+		"",
 		"",
 	}
-	for _, v := range ListSubcommands(a.Mode()) {
+	for _, v := range ListSubcommands(a.Mode(), true) {
 		r = append(r, GetModeImpl(v).FullHelp()...)
+		r = append(r, "")
+		r = append(r, "")
 		r = append(r, "")
 	}
 
@@ -41,7 +44,7 @@ func (a *CLIArgumentsBookmarksCreateBase) FullHelp() []string {
 }
 
 func (a *CLIArgumentsBookmarksCreateBase) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
-	return fferr.DirectOutput.New("ffsclient bookmarks create must be called with a specific type (eg `ffsclient bookmarks create folder`)")
+	return fferr.DirectOutput.New("ffsclient bookmarks create must be called with a specific type (eg `ffsclient bookmarks create folder`), possible types are [bookmark | folder | separator]")
 }
 
 func (a *CLIArgumentsBookmarksCreateBase) Execute(ctx *cli.FFSContext) int {

@@ -2,15 +2,42 @@ package impl
 
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
+	"ffsyncclient/models"
+	"ffsyncclient/syncclient"
+	"fmt"
+	"github.com/joomcode/errorx"
+	"strconv"
+	"strings"
 )
 
 type CLIArgumentsBookmarksUpdate struct {
+	RecordID string
+
+	Title         *string
+	URL           *string
+	Description   *string
+	LoadInSidebar *bool
+	Tags          *[]string
+	Keyword       *string
+	Position      *int
+
+	CLIArgumentsBookmarksUtil
 }
 
 func NewCLIArgumentsBookmarksUpdate() *CLIArgumentsBookmarksUpdate {
-	return &CLIArgumentsBookmarksUpdate{}
+	return &CLIArgumentsBookmarksUpdate{
+		Title:                     nil,
+		URL:                       nil,
+		Description:               nil,
+		LoadInSidebar:             nil,
+		Tags:                      nil,
+		Keyword:                   nil,
+		Position:                  nil,
+		CLIArgumentsBookmarksUtil: CLIArgumentsBookmarksUtil{},
+	}
 }
 
 func (a *CLIArgumentsBookmarksUpdate) Mode() cli.Mode {
@@ -18,19 +45,77 @@ func (a *CLIArgumentsBookmarksUpdate) Mode() cli.Mode {
 }
 
 func (a *CLIArgumentsBookmarksUpdate) PositionArgCount() (*int, *int) {
-	return langext.Ptr(0), langext.Ptr(0) //TODO
+	return langext.Ptr(1), langext.Ptr(1)
 }
 
 func (a *CLIArgumentsBookmarksUpdate) ShortHelp() [][]string {
-	return nil //TODO
+	return [][]string{
+		{"ffsclient bookmarks update <id>", "Partially update a bookmark"},
+		{"          [--title <title>]", "Change the bookmark title"},
+		{"          [--url <url>]", "Change the URL"},
+		{"          [--description <desc>]", "Change the bookmark description"},
+		{"          [--load-in-sidebar <true|false>]", "Set the `LoadInSidebar` field"},
+		{"          [--tag <tag>]", "Change the tags, specify multiple times to set multiple tags"},
+		{"          [--keyword <kw>]", "Specify the keyword (to activate the bookmark from the location bar)"},
+		{"          [--position=<idx>]", "Change the position of the entry in the parent (0 = first). Can use negative indizes."},
+	}
 }
 
 func (a *CLIArgumentsBookmarksUpdate) FullHelp() []string {
-	return nil //TODO
+	return []string{
+		"$> ffsclient bookmarks update <id> [--title <title>] [--url <url>] [--description <desc>] [--load-in-sidebar <true|false>] [--tag <tag>] [--keyword <kw>] [--position=<idx>]",
+		"",
+		"Update the specified fields of the bookmark entry.",
+		"Supplied values that are not valid for the bookmark type result in an error.",
+	}
 }
 
 func (a *CLIArgumentsBookmarksUpdate) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
+	a.RecordID = positionalArgs[0]
+
 	for _, arg := range optionArgs {
+		if arg.Key == "title" && arg.Value != nil {
+			a.Title = langext.Ptr(*arg.Value)
+			continue
+		}
+		if arg.Key == "url" && arg.Value != nil {
+			a.URL = langext.Ptr(*arg.Value)
+			continue
+		}
+		if arg.Key == "description" && arg.Value != nil {
+			a.Description = langext.Ptr(*arg.Value)
+			continue
+		}
+		if arg.Key == "load-in-sidebar" && arg.Value != nil {
+			if strings.ToLower(*arg.Value) == "true" {
+				a.LoadInSidebar = langext.Ptr(true)
+			} else if strings.ToLower(*arg.Value) == "false" {
+				a.LoadInSidebar = langext.Ptr(false)
+			} else {
+				return fferr.DirectOutput.New("Failed to parse boolean argument '--load-in-sidebar': '" + *arg.Value + "'")
+			}
+			continue
+		}
+		if arg.Key == "tag" && arg.Value != nil {
+			if a.Tags == nil {
+				a.Tags = langext.Ptr(make([]string, 0))
+			}
+			v := *a.Tags
+			v = append(v, *arg.Value)
+			a.Tags = &v
+			continue
+		}
+		if arg.Key == "keyword" && arg.Value != nil {
+			a.Keyword = langext.Ptr(*arg.Value)
+			continue
+		}
+		if arg.Key == "position" && arg.Value != nil {
+			if v, err := strconv.ParseInt(*arg.Value, 10, 32); err == nil {
+				a.Position = langext.Ptr(int(v))
+				continue
+			}
+			return fferr.DirectOutput.New("Failed to parse number argument '--position': '" + *arg.Value + "'")
+		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
@@ -38,5 +123,272 @@ func (a *CLIArgumentsBookmarksUpdate) Init(positionalArgs []string, optionArgs [
 }
 
 func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
-	panic("implement me") //TODO implement me
+	ctx.PrintVerbose("[Update Bookmark]")
+	ctx.PrintVerbose("")
+	ctx.PrintVerboseKV("RecordID", a.RecordID)
+
+	// ========================================================================
+
+	cfp, err := ctx.AbsSessionFilePath()
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	if !langext.FileExists(cfp) {
+		ctx.PrintFatalMessage("Sessionfile does not exist.")
+		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
+		return consts.ExitcodeNoLogin
+	}
+
+	// ========================================================================
+
+	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+
+	ctx.PrintVerbose("Load existing session from " + cfp)
+	session, err := syncclient.LoadSession(ctx, cfp)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	session, err = client.AutoRefreshSession(ctx, session)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		return consts.ExitcodeError
+	}
+
+	// ========================================================================
+
+	ctx.PrintVerboseHeader("[0] Find bookmark")
+
+	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, a.RecordID, true)
+	if err != nil && errorx.IsOfType(err, fferr.Request404) {
+		ctx.PrintErrorMessage("Record not found")
+		return consts.ExitcodePasswordNotFound
+	}
+	if err != nil {
+		ctx.PrintFatalError(errorx.Decorate(err, "failed to query record"))
+		return consts.ExitcodeError
+	}
+
+	bmrec, err := models.UnmarshalBookmark(ctx, record)
+	if err != nil {
+		ctx.PrintFatalError(errorx.Decorate(err, "failed to decode password-record"))
+		return consts.ExitcodeError
+	}
+
+	// ========================================================================
+
+	ctx.PrintVerboseHeader("[2] Patch Data")
+
+	newData := record.DecodedData
+
+	if a.Title != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark, models.BookmarkTypeFolder}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [title] from \"%s\" to \"%s\"", bmrec.Title, *a.Title))
+
+		newData, err = langext.PatchJson(newData, "title", *a.Title)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	if a.URL != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [url] from \"%s\" to \"%s\"", bmrec.URI, *a.URL))
+
+		newData, err = langext.PatchJson(newData, "bmkUri", *a.URL)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	if a.Description != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [description] from \"%s\" to \"%s\"", bmrec.Description, *a.Description))
+
+		newData, err = langext.PatchJson(newData, "description", *a.Description)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	if a.LoadInSidebar != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [loadInSidebar] from \"%v\" to \"%v\"", bmrec.LoadInSidebar, *a.LoadInSidebar))
+
+		newData, err = langext.PatchJson(newData, "loadInSidebar", *a.LoadInSidebar)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	if a.Tags != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [tags] from [%v] to [%v]", strings.Join(bmrec.Tags, ", "), strings.Join(*a.Tags, ", ")))
+
+		newData, err = langext.PatchJson(newData, "tags", *a.Tags)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	if a.Keyword != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [keyword] from \"%v\" to \"%v\"", bmrec.Keyword, *a.Keyword))
+
+		newData, err = langext.PatchJson(newData, "keyword", *a.Keyword)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return consts.ExitcodeError
+		}
+	}
+
+	// ========================================================================
+
+	var parent models.BookmarkRecord
+	var newParentPayload string
+
+	if a.Position != nil {
+
+		ctx.PrintVerboseHeader("[3] Query Parent")
+
+		parentRecord, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, bmrec.ParentID, true)
+		if err != nil && errorx.IsOfType(err, fferr.Request404) {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to find parent"))
+			return consts.ExitcodeRecordNotFound
+		}
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to query parent-record"))
+			return consts.ExitcodeRecordNotFound
+		}
+
+		bmparent, err := models.UnmarshalBookmark(ctx, parentRecord)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to decode parent-record"))
+			return consts.ExitcodeRecordNotFound
+		}
+
+		bmrec, newPlainPayload, normpos, err, excode := a.moveChild(ctx, parentRecord, bmparent, record.ID, *a.Position)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to calculate new pos in parent"))
+			return excode
+		}
+
+		parent = bmrec
+		newParentPayload = newPlainPayload
+
+		if bmrec.Type == models.BookmarkTypeSeparator {
+
+			ctx.PrintVerbose(fmt.Sprintf("Patch field [position] to %v", *a.Position))
+
+			newData, err = langext.PatchJson(newData, "pos", normpos)
+			if err != nil {
+				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+				return consts.ExitcodeError
+			}
+		}
+	}
+
+	// ========================================================================
+
+	if string(newData) != string(record.DecodedData) {
+
+		ctx.PrintVerboseHeader("[4] Update record")
+
+		newPayloadRecord, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, string(newData))
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+		update := models.RecordUpdate{
+			ID:      a.RecordID,
+			Payload: langext.Ptr(newPayloadRecord),
+		}
+
+		err = client.PutRecord(ctx, session, consts.CollectionBookmarks, update, false, false)
+		if err != nil && errorx.IsOfType(err, fferr.Request404) {
+			ctx.PrintErrorMessage("Record not found")
+			return consts.ExitcodeRecordNotFound
+		}
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+	} else {
+
+		ctx.PrintVerbose("Donot update record (nothing to do)")
+
+	}
+
+	// ========================================================================
+
+	if a.Position != nil {
+
+		ctx.PrintVerboseHeader("[5] Update parent")
+
+		payloadParent, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, newParentPayload)
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+		updateParent := models.RecordUpdate{
+			ID:      parent.ID,
+			Payload: langext.Ptr(payloadParent),
+		}
+
+		err = client.PutRecord(ctx, session, consts.CollectionBookmarks, updateParent, false, false)
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+	} else {
+
+		ctx.PrintVerbose("Donot update parent (nothing to do)")
+
+	}
+
+	// ========================================================================
+
+	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
+		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
+		return consts.ExitcodeUnsupportedOutputFormat
+	}
+
+	ctx.PrintPrimaryOutput("Okay.")
+	return 0
 }
