@@ -23,7 +23,7 @@ const (
 	ModeBookmarksDelete          Mode = "bookmarks delete"
 	ModeBookmarksCreateBase      Mode = "bookmarks create"
 	ModeBookmarksCreateBookmark  Mode = "bookmarks create bookmark"
-	ModeBookmarksCreateFolder    Mode = "bookmarks create folder"    // TODO
+	ModeBookmarksCreateFolder    Mode = "bookmarks create folder"
 	ModeBookmarksCreateSeparator Mode = "bookmarks create separator" // TODO
 	ModeBookmarksCreateQuery     Mode = "bookmarks create query"     // TODO
 	ModeBookmarksCreateLivemark  Mode = "bookmarks create livemark"  // TODO

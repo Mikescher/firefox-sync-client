@@ -53,8 +53,8 @@ func (a *CLIArgumentsBookmarksCreateBookmark) ShortHelp() [][]string {
 		{"          [--load-in-sidebar]", "If specified the `LoadInSidebar` field is set to true (default is false)"},
 		{"          [--tag <tag>]", "Add a tag to the bookmark, specify multiple times to add multiple tags"},
 		{"          [--keyword <kw>]", "Specify the keyword (to activate the bookmark from the location bar)"},
-		{"          [--parent <id>]", "Specify the ID of the parent folder (if not specified the bookmark lives under `unfiled`)"},
-		{"          [--position=<idx>]", "The position of the bookmark in the parent (0 = first, default is last). Can use negative indizes."},
+		{"          [--parent <id>]", "Specify the ID of the parent folder (if not specified the entry lives under `unfiled`)"},
+		{"          [--position=<idx>]", "The position of the entry in the parent (0 = first, default is last). Can use negative indizes."},
 	}
 }
 
@@ -70,7 +70,7 @@ func (a *CLIArgumentsBookmarksCreateBookmark) FullHelp() []string {
 		"With --keyword you can specify an alias to activate the bookmark from the location bar.",
 		"With --parent you can specify the ID of the parent folder. Throws an error if the parent does not exist or is not an folder. The default value is `unfiled`",
 		"With --position you can specify the position in the parent folder. The left-most position is 0 and the last position is len(folder.children). You can also use negative indizes: -1 is the last position and -2 the second-last etc. An invalid position throws an error.",
-		"If the position is negative you _have_ to use the --position=XX syntax. (Writing `--position XX` will result in an error)",
+		"If the position is negative you _have_ to use the --position=XX syntax. (Writing `--position XX` will result in a parser error)",
 		"",
 		"Outputs the RecordID of the newly created entry on success.",
 	}
@@ -115,7 +115,7 @@ func (a *CLIArgumentsBookmarksCreateBookmark) Init(positionalArgs []string, opti
 }
 
 func (a *CLIArgumentsBookmarksCreateBookmark) Execute(ctx *cli.FFSContext) int {
-	ctx.PrintVerbose("[Create Password]")
+	ctx.PrintVerbose("[Create Bookmark<Bookmark>]")
 	ctx.PrintVerbose("")
 
 	// ========================================================================

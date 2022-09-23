@@ -199,7 +199,7 @@ func (a *CLIArgumentsBookmarksUtil) newBookmarkID() string {
 	return v
 }
 
-func (a *CLIArgumentsBookmarksCreateBookmark) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, error, int) {
+func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, error, int) {
 	ctx.PrintVerbose("Query parent by ID")
 
 	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, parentid, true)
