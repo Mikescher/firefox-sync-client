@@ -21,6 +21,8 @@ type CLIArgumentsRecordsList struct {
 	Limit       *int
 	Offset      *int
 	After       *time.Time
+
+	CLIArgumentsRecordsUtil
 }
 
 func NewCLIArgumentsRecordsList() *CLIArgumentsRecordsList {
@@ -67,7 +69,8 @@ func (a *CLIArgumentsRecordsList) FullHelp() []string {
 		"If --sort is specified the resulting records are sorted by ( newest | index | oldest )",
 		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
 		"The global --format option is used to control the output format",
-		"If --pretty-print is specified we try to pretty-print the payload/data, only works if it is in JSON format",
+		"If --pretty-print is specified we try to pretty-print the payload/data, only works if it is in JSON format.",
+		"If the output-format is json and we specify --pretty-print the output json also contains the raw data-json (instead of an string-enncoded version)",
 	}
 }
 
@@ -255,7 +258,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 			ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, v.Payload))
+			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, v.Payload, false))
 			ctx.PrintPrimaryOutput("")
 		}
 		return 0
@@ -290,7 +293,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),
-				Payload:      a.prettyPrint(ctx, v.Payload),
+				Payload:      a.prettyPrint(ctx, a.PrettyPrint, v.Payload, true),
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
@@ -324,7 +327,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 			ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, string(v.DecodedData)))
+			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), false))
 			ctx.PrintPrimaryOutput("")
 		}
 		return 0
@@ -332,12 +335,21 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 	case cli.OutputFormatJson:
 		j := langext.A{}
 		for _, v := range records {
-			j = append(j, langext.H{
-				"id":            v.ID,
-				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				"modified_unix": v.Modified.Unix(),
-				"data":          string(v.DecodedData),
-			})
+			if a.PrettyPrint {
+				j = append(j, langext.H{
+					"id":            v.ID,
+					"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+					"modified_unix": v.Modified.Unix(),
+					"data":          a.tryParseJson(ctx, v.DecodedData),
+				})
+			} else {
+				j = append(j, langext.H{
+					"id":            v.ID,
+					"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+					"modified_unix": v.Modified.Unix(),
+					"data":          string(v.DecodedData),
+				})
+			}
 		}
 		ctx.PrintPrimaryOutputJSON(j)
 		return 0
@@ -359,7 +371,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 				ID:           v.ID,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 				ModifiedUnix: v.Modified.Unix(),
-				Data:         a.prettyPrint(ctx, string(v.DecodedData)),
+				Data:         a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), true),
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
@@ -383,13 +395,5 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return consts.ExitcodeUnsupportedOutputFormat
 
-	}
-}
-
-func (a *CLIArgumentsRecordsList) prettyPrint(ctx *cli.FFSContext, v string) string {
-	if a.PrettyPrint {
-		return langext.TryPrettyPrintJson(v)
-	} else {
-		return v
 	}
 }

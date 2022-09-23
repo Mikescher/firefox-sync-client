@@ -49,3 +49,17 @@ func StrRunePadRight(str string, pad string, padlen int) string {
 
 	return str + strings.Repeat(pad, padlen-len([]rune(str)))[0:(padlen-len([]rune(str)))]
 }
+
+func Indent(str string, pad string) string {
+	eonl := strings.HasSuffix(str, "\n")
+	r := ""
+	for _, v := range strings.Split(str, "\n") {
+		r += pad + v + "\n"
+	}
+
+	if eonl {
+		r = r[0 : len(r)-1]
+	}
+
+	return r
+}

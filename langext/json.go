@@ -16,3 +16,11 @@ func TryPrettyPrintJson(str string) string {
 	}
 	return prettyJSON.String()
 }
+
+func PrettyPrintJson(str string) (string, bool) {
+	var prettyJSON bytes.Buffer
+	if err := json.Indent(&prettyJSON, []byte(str), "", "    "); err != nil {
+		return str, false
+	}
+	return prettyJSON.String(), true
+}

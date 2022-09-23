@@ -16,6 +16,8 @@ type CLIArgumentsRecordsGet struct {
 	Raw         bool
 	Decoded     bool
 	PrettyPrint bool
+
+	CLIArgumentsRecordsUtil
 }
 
 func NewCLIArgumentsRecordsGet() *CLIArgumentsRecordsGet {
@@ -150,7 +152,7 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(v.ID)
 		ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, v.Payload))
+		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, v.Payload, false))
 		ctx.PrintPrimaryOutput("")
 		return 0
 
@@ -175,7 +177,7 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 			ID:           v.ID,
 			Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 			ModifiedUnix: v.Modified.Unix(),
-			Payload:      a.prettyPrint(ctx, v.Payload),
+			Payload:      a.prettyPrint(ctx, a.PrettyPrint, v.Payload, true),
 		})
 		return 0
 
@@ -192,17 +194,26 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(v.ID)
 		ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
-		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, string(v.DecodedData)))
+		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), false))
 		ctx.PrintPrimaryOutput("")
 		return 0
 
 	case cli.OutputFormatJson:
-		ctx.PrintPrimaryOutputJSON(langext.H{
-			"id":            v.ID,
-			"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-			"modified_unix": v.Modified.Unix(),
-			"data":          string(v.DecodedData),
-		})
+		if a.PrettyPrint {
+			ctx.PrintPrimaryOutputJSON(langext.H{
+				"id":            v.ID,
+				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				"modified_unix": v.Modified.Unix(),
+				"data":          a.tryParseJson(ctx, v.DecodedData),
+			})
+		} else {
+			ctx.PrintPrimaryOutputJSON(langext.H{
+				"id":            v.ID,
+				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				"modified_unix": v.Modified.Unix(),
+				"data":          string(v.DecodedData),
+			})
+		}
 		return 0
 
 	case cli.OutputFormatXML:
@@ -217,7 +228,7 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 			ID:           v.ID,
 			Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
 			ModifiedUnix: v.Modified.Unix(),
-			Data:         a.prettyPrint(ctx, string(v.DecodedData)),
+			Data:         a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), true),
 		})
 		return 0
 
@@ -225,13 +236,5 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return consts.ExitcodeUnsupportedOutputFormat
 
-	}
-}
-
-func (a *CLIArgumentsRecordsGet) prettyPrint(ctx *cli.FFSContext, v string) string {
-	if a.PrettyPrint {
-		return langext.TryPrettyPrintJson(v)
-	} else {
-		return v
 	}
 }
