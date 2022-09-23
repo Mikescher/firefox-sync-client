@@ -6,6 +6,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
+	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsRecordsDelete struct {
@@ -101,6 +102,10 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 	if a.HardDelete {
 
 		err = client.DeleteRecord(ctx, session, a.Collection, a.RecordID)
+		if err != nil && errorx.IsOfType(err, fferr.Request404) {
+			ctx.PrintErrorMessage("Record not found")
+			return consts.ExitcodeRecordNotFound
+		}
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError
@@ -109,6 +114,10 @@ func (a *CLIArgumentsRecordsDelete) Execute(ctx *cli.FFSContext) int {
 	} else {
 
 		err = client.SoftDeleteRecord(ctx, session, a.Collection, a.RecordID)
+		if err != nil && errorx.IsOfType(err, fferr.Request404) {
+			ctx.PrintErrorMessage("Record not found")
+			return consts.ExitcodeRecordNotFound
+		}
 		if err != nil {
 			ctx.PrintFatalError(err)
 			return consts.ExitcodeError

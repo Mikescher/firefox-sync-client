@@ -7,6 +7,7 @@ import (
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
+	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsRecordsUpdate struct {
@@ -184,6 +185,10 @@ func (a *CLIArgumentsRecordsUpdate) Execute(ctx *cli.FFSContext) int {
 	}
 
 	err = client.PutRecord(ctx, session, a.Collection, update, false, !a.CreateIfNotExistant)
+	if err != nil && errorx.IsOfType(err, fferr.Request404) {
+		ctx.PrintErrorMessage("Record not found")
+		return consts.ExitcodeRecordNotFound
+	}
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

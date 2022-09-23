@@ -1,6 +1,9 @@
 package langext
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 func StrPadLeft(str string, pad string, padlen int) string {
 	if pad == "" {
@@ -62,4 +65,12 @@ func Indent(str string, pad string) string {
 	}
 
 	return r
+}
+
+func NumToStringOpt[V IntConstraint](v *V, fallback string) string {
+	if v == nil {
+		return fallback
+	} else {
+		return fmt.Sprintf("%d", v)
+	}
 }

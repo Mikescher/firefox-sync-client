@@ -7,6 +7,7 @@ import (
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
+	"github.com/joomcode/errorx"
 	"time"
 )
 
@@ -129,6 +130,10 @@ func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
 	// ========================================================================
 
 	record, err := client.GetRecord(ctx, session, a.Collection, a.RecordID, a.Decoded)
+	if err != nil && errorx.IsOfType(err, fferr.Request404) {
+		ctx.PrintErrorMessage("Record not found")
+		return consts.ExitcodeRecordNotFound
+	}
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -159,8 +164,10 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(langext.H{
 			"id":            v.ID,
+			"ttl":           v.TTL,
+			"sortIndex":     v.SortIndex,
 			"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-			"modified_unix": v.Modified.Unix(),
+			"modified_unix": v.ModifiedUnix,
 			"payload":       v.Payload,
 		})
 		return 0
@@ -168,15 +175,19 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 	case cli.OutputFormatXML:
 		type xml struct {
 			ID           string   `xml:"ID,attr"`
+			TTL          string   `xml:"TTL,attr,omitempty"`
+			SortIndex    int64    `xml:"SortIndex,attr"`
 			Modified     string   `xml:"Modified,attr"`
-			ModifiedUnix int64    `xml:"ModifiedUnix,attr"`
+			ModifiedUnix float64  `xml:"ModifiedUnix,attr"`
 			Payload      string   `xml:",innerxml"`
 			XMLName      struct{} `xml:"Record"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{
 			ID:           v.ID,
+			TTL:          langext.NumToStringOpt(v.TTL, ""),
+			SortIndex:    v.SortIndex,
 			Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-			ModifiedUnix: v.Modified.Unix(),
+			ModifiedUnix: v.ModifiedUnix,
 			Payload:      a.prettyPrint(ctx, a.PrettyPrint, v.Payload, true),
 		})
 		return 0
@@ -202,15 +213,19 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 		if a.PrettyPrint {
 			ctx.PrintPrimaryOutputJSON(langext.H{
 				"id":            v.ID,
+				"ttl":           v.TTL,
+				"sortIndex":     v.SortIndex,
 				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				"modified_unix": v.Modified.Unix(),
+				"modified_unix": v.ModifiedUnix,
 				"data":          a.tryParseJson(ctx, v.DecodedData),
 			})
 		} else {
 			ctx.PrintPrimaryOutputJSON(langext.H{
 				"id":            v.ID,
+				"ttl":           v.TTL,
+				"sortIndex":     v.SortIndex,
 				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				"modified_unix": v.Modified.Unix(),
+				"modified_unix": v.ModifiedUnix,
 				"data":          string(v.DecodedData),
 			})
 		}
@@ -219,15 +234,19 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 	case cli.OutputFormatXML:
 		type xml struct {
 			ID           string   `xml:"ID,attr"`
+			TTL          string   `xml:"TTL,attr,omitempty"`
+			SortIndex    int64    `xml:"SortIndex,attr"`
 			Modified     string   `xml:"Modified,attr"`
-			ModifiedUnix int64    `xml:"ModifiedUnix,attr"`
+			ModifiedUnix float64  `xml:"ModifiedUnix,attr"`
 			Data         string   `xml:",innerxml"`
 			XMLName      struct{} `xml:"Record"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{
 			ID:           v.ID,
+			TTL:          langext.NumToStringOpt(v.TTL, ""),
+			SortIndex:    v.SortIndex,
 			Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-			ModifiedUnix: v.Modified.Unix(),
+			ModifiedUnix: v.ModifiedUnix,
 			Data:         a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), true),
 		})
 		return 0

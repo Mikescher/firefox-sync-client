@@ -268,8 +268,10 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		for _, v := range records {
 			j = append(j, langext.H{
 				"id":            v.ID,
+				"ttl":           v.TTL,
+				"sortIndex":     v.SortIndex,
 				"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				"modified_unix": v.Modified.Unix(),
+				"modified_unix": v.ModifiedUnix,
 				"payload":       v.Payload,
 			})
 		}
@@ -278,10 +280,12 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
-			ID           string `xml:"ID,attr"`
-			Modified     string `xml:"Modified,attr"`
-			ModifiedUnix int64  `xml:"ModifiedUnix,attr"`
-			Payload      string `xml:",innerxml"`
+			ID           string  `xml:"ID,attr"`
+			TTL          string  `xml:"TTL,attr,omitempty"`
+			SortIndex    int64   `xml:"SortIndex,attr"`
+			Modified     string  `xml:"Modified,attr"`
+			ModifiedUnix float64 `xml:"ModifiedUnix,attr"`
+			Payload      string  `xml:",innerxml"`
 		}
 		type xml struct {
 			Records []xmlentry `xml:"Record"`
@@ -291,8 +295,10 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		for _, v := range records {
 			data.Records = append(data.Records, xmlentry{
 				ID:           v.ID,
+				TTL:          langext.NumToStringOpt(v.TTL, ""),
+				SortIndex:    v.SortIndex,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				ModifiedUnix: v.Modified.Unix(),
+				ModifiedUnix: v.ModifiedUnix,
 				Payload:      a.prettyPrint(ctx, a.PrettyPrint, v.Payload, true),
 			})
 		}
@@ -338,15 +344,19 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			if a.PrettyPrint {
 				j = append(j, langext.H{
 					"id":            v.ID,
+					"ttl":           v.TTL,
+					"sortIndex":     v.SortIndex,
 					"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-					"modified_unix": v.Modified.Unix(),
+					"modified_unix": v.ModifiedUnix,
 					"data":          a.tryParseJson(ctx, v.DecodedData),
 				})
 			} else {
 				j = append(j, langext.H{
 					"id":            v.ID,
+					"ttl":           v.TTL,
+					"sortIndex":     v.SortIndex,
 					"modified":      v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-					"modified_unix": v.Modified.Unix(),
+					"modified_unix": v.ModifiedUnix,
 					"data":          string(v.DecodedData),
 				})
 			}
@@ -356,10 +366,12 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
-			ID           string `xml:"ID,attr"`
-			Modified     string `xml:"Modified,attr"`
-			ModifiedUnix int64  `xml:"ModifiedUnix,attr"`
-			Data         string `xml:",innerxml"`
+			ID           string  `xml:"ID,attr"`
+			TTL          string  `xml:"TTL,attr,omitempty"`
+			SortIndex    int64   `xml:"SortIndex,attr"`
+			Modified     string  `xml:"Modified,attr"`
+			ModifiedUnix float64 `xml:"ModifiedUnix,attr"`
+			Data         string  `xml:",innerxml"`
 		}
 		type xml struct {
 			Records []xmlentry `xml:"Record"`
@@ -369,8 +381,10 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 		for _, v := range records {
 			data.Records = append(data.Records, xmlentry{
 				ID:           v.ID,
+				TTL:          langext.NumToStringOpt(v.TTL, ""),
+				SortIndex:    v.SortIndex,
 				Modified:     v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				ModifiedUnix: v.Modified.Unix(),
+				ModifiedUnix: v.ModifiedUnix,
 				Data:         a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), true),
 			})
 		}

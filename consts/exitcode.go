@@ -7,6 +7,7 @@ const (
 	ExitcodeCLIParse                = 63
 	ExitcodeNoLogin                 = 64
 	ExitcodeUnsupportedOutputFormat = 65
+	ExitcodeRecordNotFound          = 66
 )
 
 const (

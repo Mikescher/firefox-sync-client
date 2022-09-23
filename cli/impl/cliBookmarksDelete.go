@@ -12,7 +12,7 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-type CLIArgumentsBookmarksDelete struct { //TODO does not work, bookmark still in firefox visible?? - also sot-delete throws 400???
+type CLIArgumentsBookmarksDelete struct {
 	RecordID string
 
 	CLIArgumentsBookmarksUtil

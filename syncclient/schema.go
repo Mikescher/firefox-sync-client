@@ -65,6 +65,11 @@ type payloadSchema struct {
 	HMAC       string `json:"hmac"`
 }
 
+type deletedPayloadData struct {
+	ID      string `json:"id"`
+	Deleted bool   `json:"deleted"`
+}
+
 type cryptoKeysSchema struct {
 	Default     []string            `json:"default"`
 	Collections map[string][]string `json:"collections"`
@@ -81,15 +86,13 @@ type recordsResponseSchema struct {
 	Payload   string  `json:"payload"`
 	SortIndex int64   `json:"sortIndex"`
 	TTL       *int64  `json:"ttl"`
-	Deleted   *bool   `json:"deleted"`
 }
 
 type recordsRequestSchema struct {
-	ID        string  `json:"id"`
+	ID        *string `json:"id"`
 	SortIndex *int64  `json:"sortindex,omitempty"`
 	Payload   *string `json:"payload,omitempty"`
 	TTL       *int64  `json:"ttl,omitempty"`
-	Deleted   *bool   `json:"deleted,omitempty"`
 }
 
 type sessionStatusResponseSchema struct {

@@ -637,10 +637,11 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 
 	for _, v := range resp {
 		result = append(result, models.Record{
-			ID:        v.ID,
-			Payload:   v.Payload,
-			SortIndex: v.SortIndex,
-			Modified:  langext.UnixFloatSeconds(v.Modified),
+			ID:           v.ID,
+			Payload:      v.Payload,
+			SortIndex:    v.SortIndex,
+			Modified:     langext.UnixFloatSeconds(v.Modified),
+			ModifiedUnix: v.Modified,
 		})
 	}
 
@@ -694,13 +695,13 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	record := models.Record{
-		ID:        resp.ID,
-		RawData:   binResp,
-		Modified:  langext.UnixFloatSeconds(resp.Modified),
-		Payload:   resp.Payload,
-		SortIndex: resp.SortIndex,
-		TTL:       resp.TTL,
-		Deleted:   langext.Coalesce(resp.Deleted, false),
+		ID:           resp.ID,
+		RawData:      binResp,
+		Modified:     langext.UnixFloatSeconds(resp.Modified),
+		ModifiedUnix: resp.Modified,
+		Payload:      resp.Payload,
+		SortIndex:    resp.SortIndex,
+		TTL:          resp.TTL,
 	}
 
 	if decode {
@@ -747,12 +748,9 @@ func (f FxAClient) RecordExists(ctx *cli.FFSContext, session FFSyncSession, coll
 }
 
 func (f FxAClient) SoftDeleteRecord(ctx *cli.FFSContext, session FFSyncSession, collection string, recordid string) error {
-	jsonpayload := recordsRequestSchema{
-		ID:        recordid,
-		SortIndex: nil,
-		Payload:   nil,
-		TTL:       nil,
-		Deleted:   langext.Ptr(true),
+	jsonpayload := deletedPayloadData{
+		ID:      recordid,
+		Deleted: true,
 	}
 
 	plainpayload, err := json.Marshal(jsonpayload)
@@ -765,11 +763,7 @@ func (f FxAClient) SoftDeleteRecord(ctx *cli.FFSContext, session FFSyncSession, 
 		return err
 	}
 
-	bso := recordsRequestSchema{
-		ID:      recordid,
-		Payload: langext.Ptr(payload),
-		Deleted: langext.Ptr(true),
-	}
+	bso := recordsRequestSchema{Payload: langext.Ptr(payload)}
 
 	_, err = f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(recordid)), bso)
 	if err != nil {
@@ -852,11 +846,10 @@ func (f FxAClient) PutRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	}
 
 	bso := recordsRequestSchema{
-		ID:        data.ID,
+		ID:        langext.Ptr(data.ID),
 		SortIndex: data.SortIndex,
 		Payload:   data.Payload,
 		TTL:       data.TTL,
-		Deleted:   data.Deleted,
 	}
 
 	_, err := f.request(ctx, session, "PUT", fmt.Sprintf("/storage/%s/%s", url.PathEscape(collection), url.PathEscape(data.ID)), bso)

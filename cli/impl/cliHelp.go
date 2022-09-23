@@ -113,11 +113,10 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  63            Failed to parse commandline arguments")
 		ctx.PrintPrimaryOutput("  64            Command needs a valid session/session-file and none was found")
 		ctx.PrintPrimaryOutput("  65            The current subcommand does not support the specified output format")
+		ctx.PrintPrimaryOutput("  66            Record with this ID not found")
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("  81            (check-session): The session is not valid")
-		ctx.PrintPrimaryOutput("  82            (passwords get): No matching password found")
-		ctx.PrintPrimaryOutput("  82            (passwords delete): No matching password found")
-		ctx.PrintPrimaryOutput("  82            (passwords update): No matching password found")
+		ctx.PrintPrimaryOutput("  82            (passwords): No matching password found")
 		ctx.PrintPrimaryOutput("")
 		return a.ExitCode
 
