@@ -34,6 +34,8 @@ func NewCLIArgumentsPasswordsList() *CLIArgumentsPasswordsList {
 		After:              nil,
 		IncludeDeleted:     false,
 		OnlyDeleted:        false,
+
+		CLIArgumentsPasswordsUtil: CLIArgumentsPasswordsUtil{},
 	}
 }
 
@@ -195,17 +197,23 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(passwords))
-		table = append(table, []string{"ID", "HOST", "USERNAME", "PASSWORD"})
+		table = append(table, []string{"ID", "DELETED", "HOST", "USERNAME", "PASSWORD"})
 		for _, v := range passwords {
 			table = append(table, []string{
 				v.ID,
+				langext.FormatBool(v.Deleted, "true", "false"),
 				v.Hostname,
 				v.Username,
 				v.FormatPassword(a.ShowPasswords),
 			})
 		}
 
-		ctx.PrintPrimaryOutputTable(table, true)
+		if a.IncludeDeleted && !a.OnlyDeleted {
+			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 2, 3, 4})
+		} else {
+			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3, 4})
+		}
+
 		return 0
 
 	case cli.OutputFormatText:

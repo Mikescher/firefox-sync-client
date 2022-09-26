@@ -33,15 +33,13 @@ const (
 	ModePasswordsUpdate          Mode = "passwords update"
 	ModePasswordsDelete          Mode = "passwords delete"
 	ModeFormsBase                Mode = "forms"
-	ModeFormsList                Mode = "forms list"   // TODO
+	ModeFormsList                Mode = "forms list"
 	ModeFormsGet                 Mode = "forms get"    // TODO
 	ModeFormsCreate              Mode = "forms create" // TODO
-	ModeFormsUpdate              Mode = "forms update" // TODO
 	ModeFormsDelete              Mode = "forms delete" // TODO
 	ModeHistoryBase              Mode = "history"
 	ModeHistoryList              Mode = "history list"   // TODO
 	ModeHistoryCreate            Mode = "history create" // TODO
-	ModeHistoryUpdate            Mode = "history update" // TODO
 	ModeHistoryDelete            Mode = "history delete" // TODO
 )
 
@@ -81,13 +79,11 @@ var Modes = []Mode{
 	ModeFormsList,
 	ModeFormsGet,
 	ModeFormsCreate,
-	ModeFormsUpdate,
 	ModeFormsDelete,
 
 	ModeHistoryBase,
 	ModeHistoryList,
 	ModeHistoryCreate,
-	ModeHistoryUpdate,
 	ModeHistoryDelete,
 
 	ModeVersion,

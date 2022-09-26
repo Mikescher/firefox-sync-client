@@ -329,10 +329,6 @@ func (bm BookmarkRecord) formatDeleted(ctx *cli.FFSContext, showFalse bool) stri
 	}
 }
 
-func (bm BookmarkRecord) ToPlaintextPayload() (string, error) {
-	return "", nil //TODO
-}
-
 type BookmarkTreeRecord struct {
 	BookmarkRecord
 	ResolvedChildren []*BookmarkTreeRecord

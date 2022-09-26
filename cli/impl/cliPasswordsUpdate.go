@@ -194,7 +194,7 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerbose("Update Record " + record.ID)
 
-	record = a.updateRecordFields(ctx, record)
+	record = a.updateRecordFields(ctx, record) //TODO use patch method (as in bookmarks)
 
 	plain, err := record.ToPlaintextPayload()
 	if err != nil {

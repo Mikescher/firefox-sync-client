@@ -83,6 +83,43 @@ func UnmarshalBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, erro
 	return model, nil
 }
 
+func UnmarshalForms(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]FormRecord, error) {
+	result := make([]FormRecord, 0, len(records))
+
+	for _, v := range records {
+		var jsonschema FormPayloadSchema
+		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		if err != nil {
+			if ignoreSchemaErrors {
+				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to form-schema -- skipping", v.ID))
+				continue
+			}
+
+			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema\n%s", v.ID, string(v.DecodedData)))
+		}
+
+		result = append(result, jsonschema.ToModel(v))
+
+		ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", v.ID, jsonschema.Name))
+	}
+
+	return result, nil
+}
+
+func UnmarshalForm(ctx *cli.FFSContext, record Record) (FormRecord, error) {
+	var jsonschema FormPayloadSchema
+	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	if err != nil {
+		return FormRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema\n%s", record.ID, string(record.DecodedData)))
+	}
+
+	model := jsonschema.ToModel(record)
+
+	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.Name))
+
+	return model, nil
+}
+
 func fmtPass(pw string, showPW bool) string {
 	if showPW {
 		return pw

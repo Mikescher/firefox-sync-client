@@ -4,6 +4,9 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
+	"ffsyncclient/langext"
+	"ffsyncclient/models"
+	"fmt"
 )
 
 type CLIArgumentsFormsBase struct {
@@ -48,4 +51,31 @@ func (a *CLIArgumentsFormsBase) Init(positionalArgs []string, optionArgs []cli.A
 
 func (a *CLIArgumentsFormsBase) Execute(ctx *cli.FFSContext) int {
 	return consts.ExitcodeError
+}
+
+type CLIArgumentsFormsUtil struct{}
+
+func (a *CLIArgumentsFormsUtil) filterDeleted(ctx *cli.FFSContext, records []models.FormRecord, includeDeleted bool, onlyDeleted bool, name *[]string) []models.FormRecord {
+	result := make([]models.FormRecord, 0, len(records))
+
+	for _, v := range records {
+		if v.Deleted && !includeDeleted {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (is deleted and include-deleted == false)", v.ID))
+			continue
+		}
+
+		if !v.Deleted && onlyDeleted {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (is not deleted and only-deleted == true)", v.ID))
+			continue
+		}
+
+		if name != nil && !langext.InArray(v.Name, *name) {
+			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (not in name-filter)", v.ID))
+			continue
+		}
+
+		result = append(result, v)
+	}
+
+	return result
 }
