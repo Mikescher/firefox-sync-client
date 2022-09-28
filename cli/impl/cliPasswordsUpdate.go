@@ -239,6 +239,11 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
+	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
+		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
+		return consts.ExitcodeUnsupportedOutputFormat
+	}
+
 	ctx.PrintPrimaryOutput("Okay.")
 	return 0
 }

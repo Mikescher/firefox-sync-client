@@ -1,6 +1,7 @@
 package impl
 
 import (
+	"encoding/base64"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -78,4 +79,14 @@ func (a *CLIArgumentsFormsUtil) filterDeleted(ctx *cli.FFSContext, records []mod
 	}
 
 	return result
+}
+
+func (a *CLIArgumentsFormsUtil) newFormID() string {
+	// BSO ids must only contain printable ASCII characters. They should be exactly 12 base64-urlsafe characters
+	v := base64.RawURLEncoding.EncodeToString(langext.RandBytes(32))[0:12]
+	if v[0] == '-' {
+		// it is annoying when the ID starts with an '-', so it's nice to prevent it as much as possible
+		v = "A" + v[1:]
+	}
+	return v
 }
