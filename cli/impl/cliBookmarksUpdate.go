@@ -65,8 +65,17 @@ func (a *CLIArgumentsBookmarksUpdate) FullHelp() []string {
 	return []string{
 		"$> ffsclient bookmarks update <id> [--title <title>] [--url <url>] [--description <desc>] [--load-in-sidebar <true|false>] [--tag <tag>] [--keyword <kw>] [--position=<idx>]",
 		"",
-		"Update the specified fields of the bookmark entry.",
+		"Update the specified fields of an existing bookmark entry.",
 		"Supplied values that are not valid for the bookmark type result in an error.",
+		"",
+		"The fields of the found bookmark can be updated individually with the parameters:",
+		"  * --title",
+		"  * --url",
+		"  * --description",
+		"  * --load-in-sidebar",
+		"  * --tag",
+		"  * --keyword",
+		"  * --position",
 	}
 }
 
@@ -182,96 +191,9 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintVerboseHeader("[2] Patch Data")
 
-	newData := record.DecodedData
-
-	if a.Title != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark, models.BookmarkTypeFolder}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [title] from \"%s\" to \"%s\"", bmrec.Title, *a.Title))
-
-		newData, err = langext.PatchJson(newData, "title", *a.Title)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
-	}
-
-	if a.URL != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [url] from \"%s\" to \"%s\"", bmrec.URI, *a.URL))
-
-		newData, err = langext.PatchJson(newData, "bmkUri", *a.URL)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
-	}
-
-	if a.Description != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [description] from \"%s\" to \"%s\"", bmrec.Description, *a.Description))
-
-		newData, err = langext.PatchJson(newData, "description", *a.Description)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
-	}
-
-	if a.LoadInSidebar != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [loadInSidebar] from \"%v\" to \"%v\"", bmrec.LoadInSidebar, *a.LoadInSidebar))
-
-		newData, err = langext.PatchJson(newData, "loadInSidebar", *a.LoadInSidebar)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
-	}
-
-	if a.Tags != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [tags] from [%v] to [%v]", strings.Join(bmrec.Tags, ", "), strings.Join(*a.Tags, ", ")))
-
-		newData, err = langext.PatchJson(newData, "tags", *a.Tags)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
-	}
-
-	if a.Keyword != nil {
-		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return consts.ExitcodeBookmarkFieldNotSupported
-		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Patch field [keyword] from \"%v\" to \"%v\"", bmrec.Keyword, *a.Keyword))
-
-		newData, err = langext.PatchJson(newData, "keyword", *a.Keyword)
-		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return consts.ExitcodeError
-		}
+	newData, exitcode := a.patchData(ctx, record, bmrec)
+	if exitcode != 0 {
+		return exitcode
 	}
 
 	// ========================================================================
@@ -391,4 +313,101 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 	ctx.PrintPrimaryOutput("Okay.")
 	return 0
+}
+
+func (a *CLIArgumentsBookmarksUpdate) patchData(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord) ([]byte, int) {
+	var err error
+
+	newData := record.DecodedData
+
+	if a.Title != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark, models.BookmarkTypeFolder}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [title] from \"%s\" to \"%s\"", bmrec.Title, *a.Title))
+
+		newData, err = langext.PatchJson(newData, "title", *a.Title)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.URL != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [url] from \"%s\" to \"%s\"", bmrec.URI, *a.URL))
+
+		newData, err = langext.PatchJson(newData, "bmkUri", *a.URL)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.Description != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [description] from \"%s\" to \"%s\"", bmrec.Description, *a.Description))
+
+		newData, err = langext.PatchJson(newData, "description", *a.Description)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.LoadInSidebar != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [loadInSidebar] from \"%v\" to \"%v\"", bmrec.LoadInSidebar, *a.LoadInSidebar))
+
+		newData, err = langext.PatchJson(newData, "loadInSidebar", *a.LoadInSidebar)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.Tags != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [tags] from [%v] to [%v]", strings.Join(bmrec.Tags, ", "), strings.Join(*a.Tags, ", ")))
+
+		newData, err = langext.PatchJson(newData, "tags", *a.Tags)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.Keyword != nil {
+		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
+			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
+			return nil, consts.ExitcodeBookmarkFieldNotSupported
+		}
+
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [keyword] from \"%v\" to \"%v\"", bmrec.Keyword, *a.Keyword))
+
+		newData, err = langext.PatchJson(newData, "keyword", *a.Keyword)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+	return newData, 0
 }

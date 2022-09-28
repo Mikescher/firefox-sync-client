@@ -44,3 +44,22 @@ func PatchJson[JV string | []byte](rawjson JV, key string, value any) (JV, error
 
 	return JV(newjson), nil
 }
+
+func PatchRemJson[JV string | []byte](rawjson JV, key string) (JV, error) {
+	var err error
+
+	var jsonpayload map[string]any
+	err = json.Unmarshal([]byte(rawjson), &jsonpayload)
+	if err != nil {
+		return *new(JV), errorx.Decorate(err, "failed to unmarshal payload")
+	}
+
+	delete(jsonpayload, key)
+
+	newjson, err := json.Marshal(jsonpayload)
+	if err != nil {
+		return *new(JV), errorx.Decorate(err, "failed to re-marshal payload")
+	}
+
+	return JV(newjson), nil
+}

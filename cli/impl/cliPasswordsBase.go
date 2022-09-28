@@ -73,7 +73,7 @@ func (a *CLIArgumentsPasswordsBase) Execute(ctx *cli.FFSContext) int {
 
 type CLIArgumentsPasswordsUtil struct{}
 
-func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, query string, queryIsID bool, queryIsHost bool, queryIsExactHost bool) (models.PasswordRecord, bool, error) {
+func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, query string, queryIsID bool, queryIsHost bool, queryIsExactHost bool) (models.Record, models.PasswordRecord, bool, error) {
 
 	// #### VARIANT 1: <QueryIsID>
 
@@ -82,28 +82,23 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 
 		record, err := client.GetRecord(ctx, session, consts.CollectionPasswords, query, true)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			return models.PasswordRecord{}, false, nil
+			return models.Record{}, models.PasswordRecord{}, false, nil
 		}
 		if err != nil {
-			return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to query record")
+			return models.Record{}, models.PasswordRecord{}, false, errorx.Decorate(err, "failed to query record")
 		}
 
 		pwrec, err := models.UnmarshalPassword(ctx, record)
 		if err != nil {
-			return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to decode password-record")
+			return models.Record{}, models.PasswordRecord{}, false, errorx.Decorate(err, "failed to decode password-record")
 		}
 
-		return pwrec, true, nil
+		return record, pwrec, true, nil
 	}
 
 	records, err := client.ListRecords(ctx, session, consts.CollectionPasswords, nil, nil, false, true, nil, nil)
 	if err != nil {
-		return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to list passwords")
-	}
-
-	allPasswords, err := models.UnmarshalPasswords(ctx, records, true)
-	if err != nil {
-		return models.PasswordRecord{}, false, errorx.Decorate(err, "failed to decode passwords")
+		return models.Record{}, models.PasswordRecord{}, false, errorx.Decorate(err, "failed to list passwords")
 	}
 
 	var parsedURI *url.URL
@@ -120,17 +115,21 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 		ctx.PrintVerbose("Search for record by URI")
 
 		if parsedURI == nil {
-			return models.PasswordRecord{}, false, errorx.Decorate(err, "cannot parse supplied argument as an URI")
+			return models.Record{}, models.PasswordRecord{}, false, errorx.Decorate(err, "cannot parse supplied argument as an URI")
 		}
 
-		for _, v := range allPasswords {
+		for _, rec := range records {
+			v, err := models.UnmarshalPassword(ctx, rec)
+			if err != nil {
+				continue
+			}
 			if recordURI, err := url.Parse(v.Hostname); err == nil {
 				if strings.ToLower(recordURI.Host) == strings.ToLower(parsedURI.Host) {
-					return v, true, nil
+					return rec, v, true, nil
 				}
 			}
 		}
-		return models.PasswordRecord{}, false, nil
+		return models.Record{}, models.PasswordRecord{}, false, nil
 	}
 
 	// #### VARIANT 3: <QueryIsExactHost>
@@ -138,12 +137,16 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 	if queryIsExactHost {
 		ctx.PrintVerbose("Search for record by exact Hostname")
 
-		for _, v := range allPasswords {
+		for _, rec := range records {
+			v, err := models.UnmarshalPassword(ctx, rec)
+			if err != nil {
+				continue
+			}
 			if v.Hostname == query {
-				return v, true, nil
+				return rec, v, true, nil
 			}
 		}
-		return models.PasswordRecord{}, false, nil
+		return models.Record{}, models.PasswordRecord{}, false, nil
 	}
 
 	// #### VARIANT 4: <GUESS>
@@ -151,22 +154,27 @@ func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, clie
 	{
 		ctx.PrintVerbose("Search for record (guess query type)")
 
-		for _, v := range allPasswords {
+		for _, rec := range records {
+			v, err := models.UnmarshalPassword(ctx, rec)
+			if err != nil {
+				continue
+			}
+
 			if v.ID == query {
-				return v, true, nil
+				return rec, v, true, nil
 			}
 			if v.Hostname == query {
-				return v, true, nil
+				return rec, v, true, nil
 			}
 			if parsedURI != nil {
 				if recordURI, err := url.Parse(v.Hostname); err == nil {
 					if strings.ToLower(recordURI.Host) == strings.ToLower(parsedURI.Host) {
-						return v, true, nil
+						return rec, v, true, nil
 					}
 				}
 			}
 		}
-		return models.PasswordRecord{}, false, nil
+		return models.Record{}, models.PasswordRecord{}, false, nil
 	}
 
 }

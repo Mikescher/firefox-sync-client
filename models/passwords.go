@@ -14,7 +14,7 @@ type PasswordPayloadSchema struct {
 	Deleted             bool    `json:"deleted,omitempty"`
 	Hostname            string  `json:"hostname"`
 	FormSubmitURL       string  `json:"formSubmitURL"`
-	HTTPRealm           *string `json:"httpRealm"`
+	HTTPRealm           *string `json:"httpRealm,omitempty"`
 	Username            string  `json:"username"`
 	Password            string  `json:"password"`
 	UsernameField       string  `json:"usernameField"`

@@ -20,7 +20,7 @@ func (a *CLIArgumentsCheckSession) Mode() cli.Mode {
 }
 
 func (a *CLIArgumentsCheckSession) PositionArgCount() (*int, *int) {
-	return langext.Ptr(0), langext.Ptr(0) //TODO
+	return langext.Ptr(0), langext.Ptr(0)
 }
 
 func (a *CLIArgumentsCheckSession) ShortHelp() [][]string {

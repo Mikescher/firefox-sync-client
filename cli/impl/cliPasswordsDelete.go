@@ -130,7 +130,7 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	record, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
+	_, record, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError

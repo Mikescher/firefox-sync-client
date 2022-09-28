@@ -8,6 +8,7 @@ import (
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 	"fmt"
+	"github.com/joomcode/errorx"
 )
 
 type CLIArgumentsPasswordsUpdate struct {
@@ -69,7 +70,7 @@ func (a *CLIArgumentsPasswordsUpdate) FullHelp() []string {
 	return []string{
 		"$> ffsclient passwords update <host|id> [--is-host | --is-exact-host | --is-id] [--host <url>] [--username <user>] [--password <pass>] [--form-submit-url <url>] [--http-realm <realm>] [--username-field <name>] [--password-field <name>]",
 		"",
-		"Update an existing password",
+		"Update the specified fields of an existing password entry.",
 		"",
 		"By default we can supply a host or a record-id.",
 		"If --is-host is specified, the query is parsed as an URI and we return the password that matches the host.",
@@ -78,7 +79,7 @@ func (a *CLIArgumentsPasswordsUpdate) FullHelp() []string {
 		"If --is-id is _not_ specified this method needs to query all passwords from the server and do a local search.",
 		"If no matching password is found the exitcode [82] is returned",
 		"",
-		"The fields of the found password can be updated individually with the parameter:",
+		"The fields of the found password can be updated individually with the parameters:",
 		"  * --host",
 		"  * --username",
 		"  * --password",
@@ -181,7 +182,9 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	record, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
+	ctx.PrintVerboseHeader("[0] Find Record")
+
+	record, pwrec, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
 	if err != nil {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
@@ -192,36 +195,52 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 		return consts.ExitcodePasswordNotFound
 	}
 
-	ctx.PrintVerbose("Update Record " + record.ID)
+	// ========================================================================
 
-	record = a.updateRecordFields(ctx, record) //TODO use patch method (as in bookmarks)
+	ctx.PrintVerboseHeader("[2] Patch Data")
 
-	plain, err := record.ToPlaintextPayload()
-	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
-	}
-
-	payload, err := client.EncryptPayload(ctx, session, consts.CollectionPasswords, plain)
-	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
-	}
-
-	update := models.RecordUpdate{
-		ID:      record.ID,
-		Payload: langext.Ptr(payload),
-	}
-
-	err = client.PutRecord(ctx, session, consts.CollectionPasswords, update, false, false)
-	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+	newData, exitcode := a.patchData(ctx, record, pwrec)
+	if exitcode != 0 {
+		return exitcode
 	}
 
 	// ========================================================================
 
-	return a.printOutput(ctx, record)
+	if string(newData) != string(record.DecodedData) {
+
+		ctx.PrintVerboseHeader("[3] Update record")
+
+		newPayloadRecord, err := client.EncryptPayload(ctx, session, consts.CollectionPasswords, string(newData))
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+		update := models.RecordUpdate{
+			ID:      record.ID,
+			Payload: langext.Ptr(newPayloadRecord),
+		}
+
+		err = client.PutRecord(ctx, session, consts.CollectionPasswords, update, false, false)
+		if err != nil && errorx.IsOfType(err, fferr.Request404) {
+			ctx.PrintErrorMessage("Record not found")
+			return consts.ExitcodeRecordNotFound
+		}
+		if err != nil {
+			ctx.PrintFatalError(err)
+			return consts.ExitcodeError
+		}
+
+	} else {
+
+		ctx.PrintVerbose("Donot update record (nothing to do)")
+
+	}
+
+	// ========================================================================
+
+	ctx.PrintPrimaryOutput("Okay.")
+	return 0
 }
 
 func (a *CLIArgumentsPasswordsUpdate) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) int {
@@ -245,41 +264,90 @@ func (a *CLIArgumentsPasswordsUpdate) printOutput(ctx *cli.FFSContext, password 
 	}
 }
 
-func (a *CLIArgumentsPasswordsUpdate) updateRecordFields(ctx *cli.FFSContext, record models.PasswordRecord) models.PasswordRecord {
+func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record models.Record, pwrec models.PasswordRecord) ([]byte, int) {
+	var err error
+
+	newData := record.DecodedData
 
 	if a.NewHost != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update Host from '%s' to '%s'", record.Hostname, *a.NewHost))
-		record.Hostname = *a.NewHost
-	}
-	if a.NewUsername != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update Username from '%s' to '%s'", record.Username, *a.NewUsername))
-		record.Username = *a.NewUsername
-	}
-	if a.NewPassword != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update Password from '%s' to '%s'", record.Password, *a.NewPassword))
-		record.Password = *a.NewPassword
-	}
-	if a.NewFormSubmitURL != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update FormSubmitURL from '%s' to '%s'", record.FormSubmitURL, *a.NewFormSubmitURL))
-		record.FormSubmitURL = *a.NewFormSubmitURL
-	}
-	if a.NewHTTPRealm != nil {
-		newrealm := langext.Ptr(*a.NewHTTPRealm)
-		if *newrealm == "" {
-			newrealm = nil
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [hostname] from \"%s\" to \"%s\"", pwrec.Hostname, *a.NewHost))
+
+		newData, err = langext.PatchJson(newData, "hostname", *a.NewHost)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
 		}
-
-		ctx.PrintVerbose(fmt.Sprintf("Update HTTPRealm from '%v' to '%v'", record.HTTPRealm, newrealm))
-		record.HTTPRealm = newrealm
 	}
+
+	if a.NewUsername != nil {
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [username] from \"%s\" to \"%s\"", pwrec.Username, *a.NewUsername))
+
+		newData, err = langext.PatchJson(newData, "username", *a.NewUsername)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.NewPassword != nil {
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [password] from \"%s\" to \"%s\"", pwrec.Password, *a.NewPassword))
+
+		newData, err = langext.PatchJson(newData, "password", *a.NewPassword)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.NewFormSubmitURL != nil {
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [formSubmitURL] from \"%s\" to \"%s\"", pwrec.FormSubmitURL, *a.NewFormSubmitURL))
+
+		newData, err = langext.PatchJson(newData, "formSubmitURL", *a.NewFormSubmitURL)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	if a.NewHTTPRealm != nil {
+		if *a.NewHTTPRealm != "" {
+			ctx.PrintVerbose(fmt.Sprintf("Patch field [httpRealm] from \"%v\" to \"%v\"", pwrec.HTTPRealm, *a.NewHTTPRealm))
+
+			newData, err = langext.PatchJson(newData, "httpRealm", *a.NewHTTPRealm)
+			if err != nil {
+				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+				return nil, consts.ExitcodeError
+			}
+		} else {
+			ctx.PrintVerbose(fmt.Sprintf("Patch field [httpRealm] from \"%v\" to \"%v\"", pwrec.HTTPRealm, a.NewHTTPRealm))
+
+			newData, err = langext.PatchRemJson(newData, "httpRealm")
+			if err != nil {
+				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+				return nil, consts.ExitcodeError
+			}
+		}
+	}
+
 	if a.NewUsernameField != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update UsernameField from '%s' to '%s'", record.UsernameField, *a.NewUsernameField))
-		record.UsernameField = *a.NewUsernameField
-	}
-	if a.NewPasswordField != nil {
-		ctx.PrintVerbose(fmt.Sprintf("Update PasswordField from '%s' to '%s'", record.PasswordField, *a.NewPasswordField))
-		record.PasswordField = *a.NewPasswordField
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [usernameField] from \"%s\" to \"%s\"", pwrec.UsernameField, *a.NewUsernameField))
+
+		newData, err = langext.PatchJson(newData, "usernameField", *a.NewUsernameField)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
 	}
 
-	return record
+	if a.NewPasswordField != nil {
+		ctx.PrintVerbose(fmt.Sprintf("Patch field [passwordField] from \"%s\" to \"%s\"", pwrec.PasswordField, *a.NewPasswordField))
+
+		newData, err = langext.PatchJson(newData, "passwordField", *a.NewPasswordField)
+		if err != nil {
+			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
+			return nil, consts.ExitcodeError
+		}
+	}
+
+	return newData, 0
 }
