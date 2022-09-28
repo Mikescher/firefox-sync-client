@@ -255,6 +255,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if arg.Key == "minimized-json" && arg.Value == nil {
+			opt.LinearizeJson = true
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

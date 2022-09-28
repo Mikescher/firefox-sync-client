@@ -20,6 +20,7 @@ type Options struct {
 	SaveRefreshedSession bool
 	ForceRefreshSession  bool
 	NoXMLDeclaration     bool
+	LinearizeJson        bool
 }
 
 func DefaultCLIOptions() Options {

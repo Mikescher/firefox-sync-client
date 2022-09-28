@@ -174,5 +174,6 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"--no-autosave-session", "Do not update the sessionfile if the session was auto-refreshed"},
 		{"--force-refresh-session", "Always auto-refresh the session, even if its not expired"},
 		{"--no-xml-declaration", "Do not print the xml declaration when using `--format xml`"},
+		{"--minimized-json", "Do not indent (pretty-print) json output when using `--format json`"},
 	}
 }

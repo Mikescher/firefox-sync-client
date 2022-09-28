@@ -37,12 +37,22 @@ func (c FFSContext) PrintPrimaryOutputJSON(data any) {
 		return
 	}
 
-	msg, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		panic("failed to marshal output: " + err.Error())
+	if c.Opt.LinearizeJson {
+		msg, err := json.Marshal(data)
+		if err != nil {
+			panic("failed to marshal output: " + err.Error())
+		}
+
+		c.printPrimaryRaw(string(msg) + "\n")
+	} else {
+		msg, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			panic("failed to marshal output: " + err.Error())
+		}
+
+		c.printPrimaryRaw(string(msg) + "\n")
 	}
 
-	c.printPrimaryRaw(string(msg) + "\n")
 }
 
 func (c FFSContext) PrintPrimaryOutputXML(data any) {

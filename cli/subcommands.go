@@ -34,9 +34,9 @@ const (
 	ModePasswordsDelete          Mode = "passwords delete"
 	ModeFormsBase                Mode = "forms"
 	ModeFormsList                Mode = "forms list"
-	ModeFormsGet                 Mode = "forms get" // TODO
+	ModeFormsGet                 Mode = "forms get"
 	ModeFormsCreate              Mode = "forms create"
-	ModeFormsDelete              Mode = "forms delete" // TODO
+	ModeFormsDelete              Mode = "forms delete"
 	ModeHistoryBase              Mode = "history"
 	ModeHistoryList              Mode = "history list"   // TODO
 	ModeHistoryCreate            Mode = "history create" // TODO
