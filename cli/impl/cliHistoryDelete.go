@@ -28,6 +28,10 @@ func (a *CLIArgumentsHistoryDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsHistoryDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsHistoryDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient history delete <id> [--hard]", "Delete the specified history entry"},
@@ -133,5 +137,6 @@ func (a *CLIArgumentsHistoryDelete) Execute(ctx *cli.FFSContext) int {
 	} else {
 		ctx.PrintPrimaryOutput("Entry " + a.RecordID + " marked as deleted")
 	}
+
 	return 0
 }

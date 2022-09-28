@@ -24,6 +24,10 @@ func (a *CLIArgumentsQuotaGet) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsQuotaGet) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsQuotaGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient quota", "Query the storage quota of the current user"},
@@ -100,19 +104,19 @@ func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
 func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, used int64) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
-	case cli.OutputFormatText:
-		if total == nil {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), "INF"))
-		} else {
-			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
-		}
-		return 0
-
 	case cli.OutputFormatTable:
 		if total == nil {
 			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", langext.FormatBytes(used), "INF"))
 		} else {
 			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
+		}
+		return 0
+
+	case cli.OutputFormatText:
+		if total == nil {
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), "INF"))
+		} else {
+			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
 		}
 		return 0
 

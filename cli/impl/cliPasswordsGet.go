@@ -35,6 +35,10 @@ func (a *CLIArgumentsPasswordsGet) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsPasswordsGet) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsPasswordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords get <host|id>", "Insert a new password"},

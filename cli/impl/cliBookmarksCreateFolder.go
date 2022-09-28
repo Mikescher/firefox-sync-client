@@ -37,6 +37,10 @@ func (a *CLIArgumentsBookmarksCreateFolder) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsBookmarksCreateFolder) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksCreateFolder) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks create folder <title>", "Insert a new bookmark-folder"},

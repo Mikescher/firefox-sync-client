@@ -47,6 +47,10 @@ func (a *CLIArgumentsFormsList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsFormsList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsFormsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient forms list", "List form autocomplete suggestions"},

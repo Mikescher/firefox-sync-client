@@ -32,6 +32,10 @@ func (a *CLIArgumentsFormsCreate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsFormsCreate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsFormsCreate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient forms create <name> <value>", "Adds a new HTML-Form autocomplete suggestions"},

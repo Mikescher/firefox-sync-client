@@ -36,6 +36,10 @@ func (a *CLIArgumentsBookmarksCreateSeparator) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsBookmarksCreateSeparator) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksCreateSeparator) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks create separator", "Insert a new bookmark-separator"},

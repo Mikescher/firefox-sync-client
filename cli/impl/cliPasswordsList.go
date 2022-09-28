@@ -47,6 +47,10 @@ func (a *CLIArgumentsPasswordsList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsPasswordsList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsPasswordsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords list", "List passwords"},

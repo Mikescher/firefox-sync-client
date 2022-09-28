@@ -29,6 +29,10 @@ func (a *CLIArgumentsRecordsDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsRecordsDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsRecordsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete <collection> <record-id> [--hard]", "Delete the specified record"},

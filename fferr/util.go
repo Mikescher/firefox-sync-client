@@ -5,11 +5,7 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-func FormatError(err error, verbose bool) string {
-	//errx := errorx.Cast(err)
-	//if errx == nil {
-	//	return err.Error()
-	//}
+func GetDirectOutput(err error) *errorx.Error {
 
 	sub := err
 	for sub != nil {
@@ -25,14 +21,22 @@ func FormatError(err error, verbose bool) string {
 		}
 
 		if errx.Type() == DirectOutput {
-			if verbose {
-				return fmt.Sprintf("%s\n\n%+v", errx.Message(), err)
-			} else {
-				return errx.Message()
-			}
+			return errx
 		}
 
 		sub = errx.Cause()
+	}
+
+	return nil
+}
+
+func FormatError(err error, verbose bool) string {
+	if errx := GetDirectOutput(err); errx != nil {
+		if verbose {
+			return fmt.Sprintf("%s\n\n%+v", errx.Message(), err)
+		} else {
+			return errx.Message()
+		}
 	}
 
 	if verbose {
@@ -40,4 +44,16 @@ func FormatError(err error, verbose bool) string {
 	} else {
 		return err.Error()
 	}
+}
+
+func GetExitCode(err error, fallback int) int {
+	if errx := GetDirectOutput(err); errx != nil {
+		if ec, ok := errx.Property(Exitcode); ok {
+			if eci, ok := ec.(int); ok {
+				return eci
+			}
+		}
+	}
+
+	return fallback
 }

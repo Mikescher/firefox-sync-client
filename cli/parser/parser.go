@@ -283,12 +283,23 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Too many arguments for `ffsclient %s` (must be at most %d)", verbArg.Mode(), *posArgLenMax))
 	}
 
-	//TODO if format notin verbArg.AvailableOutputFormats() -> error
-
 	err = verbArg.Init(positionalArguments, optionArguments)
 	if err != nil {
 		return nil, cli.Options{}, errorx.Decorate(err, "failed to init "+verbArg.Mode().String())
 	}
 
+	possibleFormats := verbArg.AvailableOutputFormats()
+	if opt.Format != nil && !langext.InArray(*opt.Format, possibleFormats) {
+		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("The output format '%s' is not supported in this subcommand.\nSupported formats are: %s", *opt.Format, joinOutputFormats(possibleFormats))).WithProperty(fferr.Exitcode, consts.ExitcodeUnsupportedOutputFormat)
+	}
+
 	return verbArg, opt, nil
+}
+
+func joinOutputFormats(f []cli.OutputFormat) string {
+	a := make([]string, 0, len(f))
+	for _, v := range f {
+		a = append(a, string(v))
+	}
+	return strings.Join(a, ", ")
 }

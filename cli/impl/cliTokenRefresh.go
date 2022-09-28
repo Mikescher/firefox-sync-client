@@ -26,6 +26,10 @@ func (a *CLIArgumentsTokenRefresh) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsTokenRefresh) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsTokenRefresh) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient refresh [--force]", "Refresh the current session token (BID Assertion)"},

@@ -24,6 +24,10 @@ func (a *CLIArgumentsHistoryBase) PositionArgCount() (*int, *int) {
 	return nil, nil
 }
 
+func (a *CLIArgumentsHistoryBase) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsHistoryBase) ShortHelp() [][]string {
 	return nil
 }

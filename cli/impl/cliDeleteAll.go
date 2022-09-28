@@ -24,6 +24,10 @@ func (a *CLIArgumentsDeleteAll) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsDeleteAll) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsDeleteAll) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete-all --force", "Delete all (!) records in the server"},

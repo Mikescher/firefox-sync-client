@@ -42,6 +42,10 @@ func (a *CLIArgumentsPasswordsBase) PositionArgCount() (*int, *int) {
 	return nil, nil
 }
 
+func (a *CLIArgumentsPasswordsBase) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsPasswordsBase) ShortHelp() [][]string {
 	return nil
 }

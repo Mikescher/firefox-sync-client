@@ -29,6 +29,10 @@ func (a *CLIArgumentsCollectionsList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsCollectionsList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsCollectionsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient collections", "List all available collections"},
@@ -155,6 +159,24 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 
 func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collections []models.Collection) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
+	case cli.OutputFormatTable:
+		table := make([][]string, 0, len(collections))
+		if a.ShowUsage {
+			table = append(table, []string{"NAME", "LAST MODIFIED", "COUNT", "USAGE"})
+		} else {
+			table = append(table, []string{"NAME", "LAST MODIFIED", "COUNT"})
+		}
+		for _, v := range collections {
+			if a.ShowUsage {
+				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count), langext.FormatBytes(v.Usage)})
+			} else {
+				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count)})
+			}
+		}
+
+		ctx.PrintPrimaryOutputTable(table, true)
+		return 0
+
 	case cli.OutputFormatText:
 		for _, v := range collections {
 			if a.ShowUsage {
@@ -182,10 +204,11 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 		}
 		ctx.PrintPrimaryOutputJSON(json)
 		return 0
+
 	case cli.OutputFormatXML:
 
 		type xmlentry struct {
-			Name       string `xml:"Name,attr"`
+			Name       string `xml:",chardata"`
 			Time       string `xml:"LastModified,attr"`
 			TimeUnix   string `xml:"LastModifiedUnix,attr"`
 			Count      string `xml:"Count,attr"`
@@ -212,24 +235,6 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 			node.Collections = append(node.Collections, obj)
 		}
 		ctx.PrintPrimaryOutputXML(node)
-		return 0
-
-	case cli.OutputFormatTable:
-		table := make([][]string, 0, len(collections))
-		if a.ShowUsage {
-			table = append(table, []string{"NAME", "LAST MODIFIED", "COUNT", "USAGE"})
-		} else {
-			table = append(table, []string{"NAME", "LAST MODIFIED", "COUNT"})
-		}
-		for _, v := range collections {
-			if a.ShowUsage {
-				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count), langext.FormatBytes(v.Usage)})
-			} else {
-				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count)})
-			}
-		}
-
-		ctx.PrintPrimaryOutputTable(table, true)
 		return 0
 
 	default:

@@ -42,7 +42,7 @@ const (
 	ModeHistoryDelete            Mode = "history delete"
 )
 
-var Modes = []Mode{
+var ModesBase = []Mode{
 	ModeLogin,
 	ModeTokenRefresh,
 	ModeCheckSession,
@@ -58,6 +58,11 @@ var Modes = []Mode{
 	ModeRecordsUpdate,
 	ModeMetaGet,
 
+	ModeVersion,
+	ModeHelp,
+}
+
+var ModesSpecial = []Mode{
 	ModeBookmarksBase,
 	ModeBookmarksList,
 	ModeBookmarksDelete,
@@ -83,10 +88,9 @@ var Modes = []Mode{
 	ModeHistoryBase,
 	ModeHistoryList,
 	ModeHistoryDelete,
-
-	ModeVersion,
-	ModeHelp,
 }
+
+var ModesAll = append(append([]Mode{}, ModesBase...), ModesSpecial...)
 
 func (m Mode) String() string {
 	return string(m)
@@ -99,4 +103,5 @@ type Verb interface {
 	ShortHelp() [][]string
 	FullHelp() []string
 	PositionArgCount() (*int, *int)
+	AvailableOutputFormats() []OutputFormat
 }

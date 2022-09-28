@@ -12,3 +12,7 @@ var (
 	DirectOutput         = FFSyncErrors.NewType("direct_out")
 	UnmarshalConsistency = FFSyncErrors.NewType("unmarshal-consistency")
 )
+
+var (
+	Exitcode = errorx.RegisterProperty("ffsync.exitcode")
+)

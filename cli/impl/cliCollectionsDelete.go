@@ -24,6 +24,10 @@ func (a *CLIArgumentsCollectionsDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsCollectionsDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsCollectionsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient delete <collection>", "Delete all the records in a collection"},

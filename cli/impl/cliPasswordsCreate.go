@@ -37,6 +37,10 @@ func (a *CLIArgumentsPasswordsCreate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(3), langext.Ptr(3)
 }
 
+func (a *CLIArgumentsPasswordsCreate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsPasswordsCreate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords create <host> <username> <password>", "Insert a new password"},
@@ -164,6 +168,8 @@ func (a *CLIArgumentsPasswordsCreate) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintFatalError(err)
 		return consts.ExitcodeError
 	}
+
+	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())

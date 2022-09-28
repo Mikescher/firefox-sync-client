@@ -37,6 +37,10 @@ func (a *CLIArgumentsRecordsGet) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsRecordsGet) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsRecordsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient get <collection> <record-id>", "Get a single record"},
@@ -179,7 +183,7 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 			SortIndex    int64    `xml:"SortIndex,attr"`
 			Modified     string   `xml:"Modified,attr"`
 			ModifiedUnix float64  `xml:"ModifiedUnix,attr"`
-			Payload      string   `xml:",innerxml"`
+			Payload      string   `xml:",chardata"`
 			XMLName      struct{} `xml:"Record"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{
@@ -238,7 +242,7 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 			SortIndex    int64    `xml:"SortIndex,attr"`
 			Modified     string   `xml:"Modified,attr"`
 			ModifiedUnix float64  `xml:"ModifiedUnix,attr"`
-			Data         string   `xml:",innerxml"`
+			Data         string   `xml:",chardata"`
 			XMLName      struct{} `xml:"Record"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{

@@ -48,6 +48,10 @@ func (a *CLIArgumentsBookmarksUpdate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsBookmarksUpdate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksUpdate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks update <id>", "Partially update a bookmark"},

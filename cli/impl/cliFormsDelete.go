@@ -28,6 +28,10 @@ func (a *CLIArgumentsFormsDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsFormsDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsFormsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient forms delete <id> [--hard]", "Delete the specified HTML-Form autocomplete suggestion"},

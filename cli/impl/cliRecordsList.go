@@ -46,6 +46,10 @@ func (a *CLIArgumentsRecordsList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsRecordsList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsRecordsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient list <collection>", "Get a all records in a collection (use --format to define the format)"},
@@ -209,6 +213,12 @@ func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
 func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
+	case cli.OutputFormatTable:
+		for _, v := range records {
+			ctx.PrintPrimaryOutput(v.ID)
+		}
+		return 0
+
 	case cli.OutputFormatText:
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
@@ -225,7 +235,7 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
-			ID string `xml:",innerxml"`
+			ID string `xml:",chardata"`
 		}
 		type xml struct {
 			Records []xmlentry `xml:"Record"`
@@ -238,12 +248,6 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 		ctx.PrintPrimaryOutputXML(data)
 		return 0
 
-	case cli.OutputFormatTable:
-		for _, v := range records {
-			ctx.PrintPrimaryOutput(v.ID)
-		}
-		return 0
-
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return consts.ExitcodeUnsupportedOutputFormat
@@ -253,6 +257,20 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 
 func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+
+	case cli.OutputFormatTable:
+		table := make([][]string, 0, len(records))
+		table = append(table, []string{"ID", "LAST MODIFIED", "PAYLOAD"})
+		for _, v := range records {
+			table = append(table, []string{
+				v.ID,
+				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				v.Payload,
+			})
+		}
+
+		ctx.PrintPrimaryOutputTable(table, true)
+		return 0
 
 	case cli.OutputFormatText:
 		for _, v := range records {
@@ -285,7 +303,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 			SortIndex    int64   `xml:"SortIndex,attr"`
 			Modified     string  `xml:"Modified,attr"`
 			ModifiedUnix float64 `xml:"ModifiedUnix,attr"`
-			Payload      string  `xml:",innerxml"`
+			Payload      string  `xml:",chardata"`
 		}
 		type xml struct {
 			Records []xmlentry `xml:"Record"`
@@ -305,20 +323,6 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		ctx.PrintPrimaryOutputXML(data)
 		return 0
 
-	case cli.OutputFormatTable:
-		table := make([][]string, 0, len(records))
-		table = append(table, []string{"ID", "LAST MODIFIED", "PAYLOAD"})
-		for _, v := range records {
-			table = append(table, []string{
-				v.ID,
-				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				v.Payload,
-			})
-		}
-
-		ctx.PrintPrimaryOutputTable(table, true)
-		return 0
-
 	default:
 		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
 		return consts.ExitcodeUnsupportedOutputFormat
@@ -328,6 +332,20 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 
 func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []models.Record) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+
+	case cli.OutputFormatTable:
+		table := make([][]string, 0, len(records))
+		table = append(table, []string{"ID", "LAST MODIFIED", "DATA"})
+		for _, v := range records {
+			table = append(table, []string{
+				v.ID,
+				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				string(v.DecodedData),
+			})
+		}
+
+		ctx.PrintPrimaryOutputTable(table, true)
+		return 0
 
 	case cli.OutputFormatText:
 		for _, v := range records {
@@ -371,7 +389,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			SortIndex    int64   `xml:"SortIndex,attr"`
 			Modified     string  `xml:"Modified,attr"`
 			ModifiedUnix float64 `xml:"ModifiedUnix,attr"`
-			Data         string  `xml:",innerxml"`
+			Data         string  `xml:",chardata"`
 		}
 		type xml struct {
 			Records []xmlentry `xml:"Record"`
@@ -389,20 +407,6 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
-		return 0
-
-	case cli.OutputFormatTable:
-		table := make([][]string, 0, len(records))
-		table = append(table, []string{"ID", "LAST MODIFIED", "DATA"})
-		for _, v := range records {
-			table = append(table, []string{
-				v.ID,
-				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
-				string(v.DecodedData),
-			})
-		}
-
-		ctx.PrintPrimaryOutputTable(table, true)
 		return 0
 
 	default:

@@ -46,6 +46,10 @@ func (a *CLIArgumentsBookmarksCreateBookmark) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsBookmarksCreateBookmark) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksCreateBookmark) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks create bookmark <title> <url>", "Insert a new bookmark"},

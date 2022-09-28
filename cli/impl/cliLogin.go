@@ -38,6 +38,10 @@ func (a *CLIArgumentsLogin) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsLogin) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsLogin) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient login <login> <password>", "Login to FF-Sync account, uses ~/.config as default session location"},
@@ -184,6 +188,13 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	}
 
 	ctx.PrintVerbose("Session saved")
+
+	// ========================================================================
+
+	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
+		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
+		return consts.ExitcodeUnsupportedOutputFormat
+	}
 
 	ctx.PrintPrimaryOutput("Succesfully logged in")
 

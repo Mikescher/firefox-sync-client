@@ -51,6 +51,10 @@ func (a *CLIArgumentsBookmarksList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsBookmarksList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatNetscape}
+}
+
 func (a *CLIArgumentsBookmarksList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks list", "List bookmarks (use --format to define the format)"},

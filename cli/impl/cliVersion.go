@@ -22,6 +22,10 @@ func (a *CLIArgumentsVersion) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsVersion) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatTable, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsVersion) ShortHelp() [][]string {
 	return nil
 }

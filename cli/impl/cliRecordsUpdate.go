@@ -40,6 +40,10 @@ func (a *CLIArgumentsRecordsUpdate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsRecordsUpdate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsRecordsUpdate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient update <collection> <record-id>", "Update an existing record"},

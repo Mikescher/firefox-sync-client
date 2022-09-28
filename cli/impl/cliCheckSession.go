@@ -23,6 +23,10 @@ func (a *CLIArgumentsCheckSession) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsCheckSession) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsCheckSession) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient check-session", "Verify that the current session is valid"},
@@ -117,7 +121,7 @@ func (a *CLIArgumentsCheckSession) printOutput(ctx *cli.FFSContext, okay bool) i
 
 	case cli.OutputFormatXML:
 		type xml struct {
-			Valid   bool     `xml:",innerxml"`
+			Valid   bool     `xml:",chardata"`
 			XMLName struct{} `xml:"Valid"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{Valid: okay})

@@ -10,8 +10,6 @@ import (
 	"time"
 )
 
-//TODO check inner<->outer id mismatch
-
 func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]PasswordRecord, error) {
 	result := make([]PasswordRecord, 0, len(records))
 

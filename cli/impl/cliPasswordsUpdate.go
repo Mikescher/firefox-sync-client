@@ -52,6 +52,10 @@ func (a *CLIArgumentsPasswordsUpdate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsPasswordsUpdate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsPasswordsUpdate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords update <host|id>", "Update an existing password"},

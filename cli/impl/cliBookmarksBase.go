@@ -27,6 +27,10 @@ func (a *CLIArgumentsBookmarksBase) PositionArgCount() (*int, *int) {
 	return nil, nil
 }
 
+func (a *CLIArgumentsBookmarksBase) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksBase) ShortHelp() [][]string {
 	return nil
 }

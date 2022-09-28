@@ -37,6 +37,10 @@ func (a *CLIArgumentsPasswordsDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsPasswordsDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsPasswordsDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient passwords delete <host|id> [--hard]", "Delete a single password"},

@@ -30,6 +30,10 @@ func (a *CLIArgumentsHelp) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsHelp) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsHelp) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient <sub> --help", "Output specific help for a single subcommand"},
@@ -66,10 +70,11 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 
 		leftlen := 0
 
-		verbhelp := make([][]string, 0, 128)
+		verbhelpBase := make([][]string, 0, 128)
+		verbhelpSpec := make([][]string, 0, 128)
 		opthelp := make([][]string, 0, 128)
 
-		for _, mode := range cli.Modes {
+		for _, mode := range cli.ModesBase {
 			verb := GetModeImpl(mode)
 			for _, line := range verb.ShortHelp() {
 				left := line[0]
@@ -77,7 +82,19 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 				if !strings.HasPrefix(left, "ffsclient") && (strings.HasPrefix(left, "  ") || left == "") && right != "" {
 					right = "  # " + right
 				}
-				verbhelp = append(verbhelp, []string{left, right})
+				verbhelpBase = append(verbhelpBase, []string{left, right})
+				leftlen = langext.Max(leftlen, len(left))
+			}
+		}
+		for _, mode := range cli.ModesSpecial {
+			verb := GetModeImpl(mode)
+			for _, line := range verb.ShortHelp() {
+				left := line[0]
+				right := line[1]
+				if !strings.HasPrefix(left, "ffsclient") && (strings.HasPrefix(left, "  ") || left == "") && right != "" {
+					right = "  # " + right
+				}
+				verbhelpSpec = append(verbhelpSpec, []string{left, right})
 				leftlen = langext.Max(leftlen, len(left))
 			}
 		}
@@ -97,8 +114,13 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("# (Use `ffsclient <command> --help` for more detailed info)")
 		ctx.PrintPrimaryOutput("")
+		ctx.PrintPrimaryOutput("Basic Usage:")
+		for _, row := range verbhelpBase {
+			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
+		}
+		ctx.PrintPrimaryOutput("")
 		ctx.PrintPrimaryOutput("Usage:")
-		for _, row := range verbhelp {
+		for _, row := range verbhelpSpec {
 			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
 		}
 		ctx.PrintPrimaryOutput("")
@@ -108,7 +130,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  # Also if you need to supply a argument that starts with an - use the --arg=value syntax")
 		ctx.PrintPrimaryOutput("  #     e.g.: `ffsclient bookmarks add Test \"https://example.org\" --parent toolbar --position=-3`")
 		ctx.PrintPrimaryOutput("")
-		ctx.PrintPrimaryOutput("Options:")
+		ctx.PrintPrimaryOutput("Common Options:")
 		for _, row := range opthelp {
 			ctx.PrintPrimaryOutput("  " + langext.StrPadRight(row[0], " ", leftlen) + "  " + row[1])
 		}
@@ -153,24 +175,24 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"--version", "Show version."},
 		{"-v, --verbose", "Output more intermediate information"},
 		{"-q, --quiet", "Do not print anything"},
-		{"--sessionfile <cfg>, --sessionfile=<cfg>", "Specify the location of the saved session"},
-		{"-f <fmt>, --format <fmt>, --format=<fmt>", "Specify the output format (not all subcommands support all output-formats)"},
+		{"--sessionfile <cfg>", "Specify the location of the saved session"},
+		{"-f <fmt>, --format <fmt>", "Specify the output format (not all subcommands support all output-formats)"},
 		{"", "- 'text'"},
 		{"", "- 'json'"},
 		{"", "- 'netscape'   (default firefox bookmarks format)"},
 		{"", "- 'xml'"},
 		{"", "- 'table'"},
-		{"--auth-server <url>, --auth-server=<url>", "Specify the (authentication) server-url"},
-		{"--token-server <url>, --token-server=<url>", "Specify the (token) server-url"},
+		{"--auth-server <url>", "Specify the (authentication) server-url"},
+		{"--token-server <url>", "Specify the (token) server-url"},
 		{"--color", "Enforce colored output"},
 		{"--no-color", "Disable colored output"},
-		{"--timezone <tz>, --timezone=<tz>", "Specify the output timezone"},
+		{"--timezone <tz>", "Specify the output timezone"},
 		{"", "Can be either:"},
 		{"", "  - UTC"},
 		{"", "  - Local (default)"},
 		{"", "  - IANA Time Zone, e.g. 'America/New_York'"},
-		{"--timeformat <url>, --timeformat=<url>", "Specify the output timeformat (golang syntax)"},
-		{"-o <f>, --output <f>, --output=<f>", "Write the output to a file"},
+		{"--timeformat <url>", "Specify the output timeformat (golang syntax)"},
+		{"-o <f>, --output <f>", "Write the output to a file"},
 		{"--no-autosave-session", "Do not update the sessionfile if the session was auto-refreshed"},
 		{"--force-refresh-session", "Always auto-refresh the session, even if its not expired"},
 		{"--no-xml-declaration", "Do not print the xml declaration when using `--format xml`"},

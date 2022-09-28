@@ -23,6 +23,10 @@ func (a *CLIArgumentsMetaGet) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsMetaGet) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsMetaGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient meta", "Get storage metadata"},
@@ -89,6 +93,11 @@ func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) int {
 	}
 
 	// ========================================================================
+
+	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
+		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
+		return consts.ExitcodeUnsupportedOutputFormat
+	}
 
 	ctx.PrintPrimaryOutput(langext.TryPrettyPrintJson(record.Payload))
 	return 0

@@ -45,6 +45,10 @@ func (a *CLIArgumentsHistoryList) PositionArgCount() (*int, *int) {
 	return langext.Ptr(0), langext.Ptr(0)
 }
 
+func (a *CLIArgumentsHistoryList) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsHistoryList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient history list", "List form history entries"},

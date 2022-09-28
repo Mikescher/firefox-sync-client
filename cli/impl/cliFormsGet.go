@@ -30,6 +30,10 @@ func (a *CLIArgumentsFormsGet) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsFormsGet) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+}
+
 func (a *CLIArgumentsFormsGet) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient forms get <name> [--ignore-case]", "Get all HTML-Form autocomplete suggestions for this name"},
@@ -135,6 +139,12 @@ func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) int {
 func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.FormRecord) int {
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+
+	case cli.OutputFormatTable:
+		for _, v := range forms {
+			ctx.PrintPrimaryOutput(v.Value)
+		}
+		return 0
 
 	case cli.OutputFormatText:
 		for _, v := range forms {

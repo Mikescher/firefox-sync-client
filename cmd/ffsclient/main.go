@@ -4,6 +4,7 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/cli/parser"
 	"ffsyncclient/consts"
+	"ffsyncclient/fferr"
 	"fmt"
 	"os"
 	"runtime/debug"
@@ -21,14 +22,14 @@ func main() {
 	if err != nil {
 		ctx := cli.NewEarlyContext()
 		ctx.PrintFatalError(err)
-		os.Exit(consts.ExitcodeCLIParse)
+		os.Exit(fferr.GetExitCode(err, consts.ExitcodeCLIParse))
 		return
 	}
 
 	ctx, err := cli.NewContext(opt)
 	if err != nil {
 		ctx.PrintFatalError(err)
-		os.Exit(consts.ExitcodeError)
+		os.Exit(fferr.GetExitCode(err, consts.ExitcodeError))
 		return
 	}
 

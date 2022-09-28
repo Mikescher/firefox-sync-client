@@ -37,6 +37,10 @@ func (a *CLIArgumentsRecordsCreate) PositionArgCount() (*int, *int) {
 	return langext.Ptr(2), langext.Ptr(2)
 }
 
+func (a *CLIArgumentsRecordsCreate) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsRecordsCreate) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient create <collection> <record-id>", "Insert a new record"},

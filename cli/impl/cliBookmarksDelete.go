@@ -29,6 +29,10 @@ func (a *CLIArgumentsBookmarksDelete) PositionArgCount() (*int, *int) {
 	return langext.Ptr(1), langext.Ptr(1)
 }
 
+func (a *CLIArgumentsBookmarksDelete) AvailableOutputFormats() []cli.OutputFormat {
+	return []cli.OutputFormat{cli.OutputFormatText}
+}
+
 func (a *CLIArgumentsBookmarksDelete) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient bookmarks delete <id>", "Delete the specified bookmark"},
