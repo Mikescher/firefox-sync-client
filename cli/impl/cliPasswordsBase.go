@@ -7,6 +7,7 @@ import (
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
 	"fmt"
+	"github.com/google/uuid"
 	"github.com/joomcode/errorx"
 	"net/url"
 	"strings"
@@ -191,7 +192,7 @@ func (a *CLIArgumentsPasswordsUtil) extUrlParse(v string) (*url.URL, error) {
 	return url.Parse(v)
 }
 
-func (a *CLIArgumentsPasswordsList) filterDeleted(ctx *cli.FFSContext, records []models.PasswordRecord, includeDeleted bool, onlyDeleted bool) []models.PasswordRecord {
+func (a *CLIArgumentsPasswordsUtil) filterDeleted(ctx *cli.FFSContext, records []models.PasswordRecord, includeDeleted bool, onlyDeleted bool) []models.PasswordRecord {
 	result := make([]models.PasswordRecord, 0, len(records))
 
 	for _, v := range records {
@@ -209,4 +210,8 @@ func (a *CLIArgumentsPasswordsList) filterDeleted(ctx *cli.FFSContext, records [
 	}
 
 	return result
+}
+
+func (a *CLIArgumentsPasswordsUtil) newPasswordID() string {
+	return "{" + uuid.New().String() + "}"
 }

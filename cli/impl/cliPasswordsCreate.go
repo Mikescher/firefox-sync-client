@@ -8,7 +8,6 @@ import (
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"ffsyncclient/syncclient"
-	"github.com/google/uuid"
 	"github.com/joomcode/errorx"
 	"time"
 )
@@ -129,7 +128,7 @@ func (a *CLIArgumentsPasswordsCreate) Execute(ctx *cli.FFSContext) int {
 
 	// ========================================================================
 
-	recordID := "{" + uuid.New().String() + "}"
+	recordID := a.newPasswordID()
 
 	now := time.Now()
 
