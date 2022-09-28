@@ -119,8 +119,6 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 		return NewCLIArgumentsHistoryBase()
 	case cli.ModeHistoryList:
 		return NewCLIArgumentsHistoryList()
-	case cli.ModeHistoryCreate:
-		return NewCLIArgumentsHistoryCreate()
 	case cli.ModeHistoryDelete:
 		return NewCLIArgumentsHistoryDelete()
 

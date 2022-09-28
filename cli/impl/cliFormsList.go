@@ -51,7 +51,7 @@ func (a *CLIArgumentsFormsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient forms list", "List form autocomplete suggestions"},
 		{"          [--name <n>]", "Show only entries with the specified name"},
-		{"          [--ignore-schema-errors]", "Skip records that cannot be decoded into a password schema"},
+		{"          [--ignore-schema-errors]", "Skip records that cannot be decoded into a form schema"},
 		{"          [--after <rfc3339>]", "Return only fields updated after this date"},
 		{"          [--sort <sort>]", "Sort the result by (newest|index|oldest)"},
 		{"          [--limit <n>]", "Return max <n> elements"},

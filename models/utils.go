@@ -3,11 +3,14 @@ package models
 import (
 	"encoding/json"
 	"ffsyncclient/cli"
+	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"fmt"
 	"github.com/joomcode/errorx"
 	"time"
 )
+
+//TODO check inner<->outer id mismatch
 
 func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]PasswordRecord, error) {
 	result := make([]PasswordRecord, 0, len(records))
@@ -15,6 +18,7 @@ func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 	for _, v := range records {
 		var jsonschema PasswordPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
 		if err != nil {
 			if ignoreSchemaErrors {
 				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to password-schema -- skipping", v.ID))
@@ -35,6 +39,7 @@ func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 func UnmarshalPassword(ctx *cli.FFSContext, record Record) (PasswordRecord, error) {
 	var jsonschema PasswordPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
 		return PasswordRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema\n%s", record.ID, string(record.DecodedData)))
 	}
@@ -52,6 +57,7 @@ func UnmarshalBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 	for _, v := range records {
 		var jsonschema BookmarkPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
 		if err != nil {
 			if ignoreSchemaErrors {
 				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to bookmark-schema -- skipping", v.ID))
@@ -72,6 +78,7 @@ func UnmarshalBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 func UnmarshalBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, error) {
 	var jsonschema BookmarkPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
 		return BookmarkRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema\n%s", record.ID, string(record.DecodedData)))
 	}
@@ -89,6 +96,7 @@ func UnmarshalForms(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 	for _, v := range records {
 		var jsonschema FormPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
 		if err != nil {
 			if ignoreSchemaErrors {
 				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to form-schema -- skipping", v.ID))
@@ -109,6 +117,7 @@ func UnmarshalForms(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 func UnmarshalForm(ctx *cli.FFSContext, record Record) (FormRecord, error) {
 	var jsonschema FormPayloadSchema
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
 		return FormRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema\n%s", record.ID, string(record.DecodedData)))
 	}
@@ -118,6 +127,55 @@ func UnmarshalForm(ctx *cli.FFSContext, record Record) (FormRecord, error) {
 	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.Name))
 
 	return model, nil
+}
+
+func UnmarshalHistories(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]HistoryRecord, error) {
+	result := make([]HistoryRecord, 0, len(records))
+
+	for _, v := range records {
+		var jsonschema HistoryPayloadSchema
+		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
+		if err != nil {
+			if ignoreSchemaErrors {
+				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to history-schema -- skipping", v.ID))
+				continue
+			}
+
+			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema\n%s", v.ID, string(v.DecodedData)))
+		}
+
+		result = append(result, jsonschema.ToModel())
+
+		ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", v.ID, jsonschema.URI))
+	}
+
+	return result, nil
+}
+
+func UnmarshalHistory(ctx *cli.FFSContext, record Record) (HistoryRecord, error) {
+	var jsonschema HistoryPayloadSchema
+	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
+	if err != nil {
+		return HistoryRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema\n%s", record.ID, string(record.DecodedData)))
+	}
+
+	model := jsonschema.ToModel()
+
+	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.URI))
+
+	return model, nil
+}
+
+func checkIdFallthrough(err error, id1 string, id2 string) error {
+	if err != nil {
+		return err
+	}
+	if id1 != id2 {
+		return fferr.UnmarshalConsistency.New("cannot unmarshal, inner ID <> outer ID")
+	}
+	return nil
 }
 
 func fmtPass(pw string, showPW bool) string {

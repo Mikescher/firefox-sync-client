@@ -7,7 +7,8 @@ var (
 )
 
 var (
-	Request404   = FFSyncErrors.NewType("http_404")
-	Request400   = FFSyncErrors.NewType("http_400")
-	DirectOutput = FFSyncErrors.NewType("direct_out")
+	Request404           = FFSyncErrors.NewType("http_404")
+	Request400           = FFSyncErrors.NewType("http_400")
+	DirectOutput         = FFSyncErrors.NewType("direct_out")
+	UnmarshalConsistency = FFSyncErrors.NewType("unmarshal-consistency")
 )

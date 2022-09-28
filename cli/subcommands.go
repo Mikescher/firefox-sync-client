@@ -38,8 +38,7 @@ const (
 	ModeFormsCreate              Mode = "forms create"
 	ModeFormsDelete              Mode = "forms delete"
 	ModeHistoryBase              Mode = "history"
-	ModeHistoryList              Mode = "history list"   // TODO
-	ModeHistoryCreate            Mode = "history create" // TODO
+	ModeHistoryList              Mode = "history list"
 	ModeHistoryDelete            Mode = "history delete" // TODO
 )
 
@@ -83,7 +82,6 @@ var Modes = []Mode{
 
 	ModeHistoryBase,
 	ModeHistoryList,
-	ModeHistoryCreate,
 	ModeHistoryDelete,
 
 	ModeVersion,

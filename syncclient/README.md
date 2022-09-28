@@ -21,3 +21,4 @@ Additional Info:
  - https://superuser.com/questions/195583/where-does-mozilla-sync-weave-save-its-passphrase
  - https://github.com/mozilla-services/syncclient
  - https://github.com/mozilla-services/syncclient/issues/30
+ - https://web.archive.org/web/20191008073724/https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XPCOM/Reference/Interface/nsINavHistoryService
