@@ -173,7 +173,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		}
 
 		if (arg.Key == "q" || arg.Key == "quiet") && arg.Value == nil {
-			opt.Verbose = true
+			opt.Quiet = true
 			continue
 		}
 
