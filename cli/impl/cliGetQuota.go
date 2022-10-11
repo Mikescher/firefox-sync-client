@@ -50,7 +50,7 @@ func (a *CLIArgumentsQuotaGet) Init(positionalArgs []string, optionArgs []cli.Ar
 	return nil
 }
 
-func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Get Quota]")
 	ctx.PrintVerbose("")
 
@@ -61,14 +61,11 @@ func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -78,22 +75,19 @@ func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	used, total, err := client.GetQuota(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -101,7 +95,7 @@ func (a *CLIArgumentsQuotaGet) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, total, used)
 }
 
-func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, used int64) int {
+func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, used int64) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatTable:
@@ -110,7 +104,7 @@ func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, us
 		} else {
 			ctx.PrintPrimaryOutput(fmt.Sprintf("%v    %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		if total == nil {
@@ -118,7 +112,7 @@ func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, us
 		} else {
 			ctx.PrintPrimaryOutput(fmt.Sprintf("%v / %v", langext.FormatBytes(used), langext.FormatBytes(*total)))
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		if total == nil {
@@ -136,7 +130,7 @@ func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, us
 				"total_bytes": *total,
 			})
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		if total == nil {
@@ -164,10 +158,9 @@ func (a *CLIArgumentsQuotaGet) printOutput(ctx *cli.FFSContext, total *int64, us
 				TotalBytes: *total,
 			})
 		}
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

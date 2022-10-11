@@ -81,7 +81,7 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Init(positionalArgs []string, opt
 	return nil
 }
 
-func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Create Bookmark<Separator>]")
 	ctx.PrintVerbose("")
 
@@ -89,14 +89,11 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -106,14 +103,12 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -124,10 +119,9 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 
 	ctx.PrintVerboseHeader("[1] Search for parent")
 
-	parent, newParentPayload, realChildPos, err, excode := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
+	parent, newParentPayload, realChildPos, err := a.calculateParent(ctx, client, session, recordID, a.ParentID, a.Position)
 	if err != nil {
-		ctx.PrintFatalError(errorx.Decorate(err, "failed to find+calculate parent"))
-		return excode
+		return errorx.Decorate(err, "failed to find+calculate parent")
 	}
 
 	ctx.PrintVerbose("Found Record Parent record: '" + parent.ID + "'")
@@ -146,14 +140,12 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 
 	plainPayload, err := json.Marshal(bso)
 	if err != nil {
-		ctx.PrintFatalError(errorx.Decorate(err, "failed to marshal BSO json"))
-		return consts.ExitcodeError
+		return errorx.Decorate(err, "failed to marshal BSO json")
 	}
 
 	payloadNewRecord, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, string(plainPayload))
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	update := models.RecordUpdate{
@@ -163,16 +155,14 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 
 	err = client.PutRecord(ctx, session, consts.CollectionBookmarks, update, true, false)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerboseHeader("[3] Update parent record")
 
 	payloadParent, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, newParentPayload)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	updateParent := models.RecordUpdate{
@@ -182,17 +172,15 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) int 
 
 	err = client.PutRecord(ctx, session, consts.CollectionBookmarks, updateParent, false, false)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput(recordID)
-	return 0
+	return nil
 }

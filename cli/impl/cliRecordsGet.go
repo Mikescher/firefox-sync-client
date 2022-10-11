@@ -83,7 +83,7 @@ func (a *CLIArgumentsRecordsGet) Init(positionalArgs []string, optionArgs []cli.
 	return nil
 }
 
-func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Get Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
@@ -92,26 +92,21 @@ func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerboseKV("DecodedData", a.Decoded)
 
 	if !a.Raw && !a.Decoded {
-		ctx.PrintFatalMessage("must specify either --raw or --decoded")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify either --raw or --decoded")
 	}
 	if a.Raw && a.Decoded {
-		ctx.PrintFatalMessage("must specify only one of --raw or --decoded")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify only one of --raw or --decoded")
 	}
 
 	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -121,26 +116,22 @@ func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	record, err := client.GetRecord(ctx, session, a.Collection, a.RecordID, a.Decoded)
 	if err != nil && errorx.IsOfType(err, fferr.Request404) {
-		ctx.PrintErrorMessage("Record not found")
-		return consts.ExitcodeRecordNotFound
+		return fferr.NewDirectOutput(consts.ExitcodeRecordNotFound, "Record not found")
 	}
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -150,12 +141,11 @@ func (a *CLIArgumentsRecordsGet) Execute(ctx *cli.FFSContext) int {
 	} else if a.Decoded {
 		return a.printDecoded(ctx, record)
 	} else {
-		ctx.PrintFatalMessage("must specify only one of --raw or --decoded")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify only one of --raw or --decoded")
 	}
 }
 
-func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) int {
+func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -163,7 +153,7 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 		ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
 		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, v.Payload, false))
 		ctx.PrintPrimaryOutput("")
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(langext.H{
@@ -174,7 +164,7 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 			"modified_unix": v.ModifiedUnix,
 			"payload":       v.Payload,
 		})
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xml struct {
@@ -194,16 +184,15 @@ func (a *CLIArgumentsRecordsGet) printRaw(ctx *cli.FFSContext, v models.Record) 
 			ModifiedUnix: v.ModifiedUnix,
 			Payload:      a.prettyPrint(ctx, a.PrettyPrint, v.Payload, true),
 		})
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
 	}
 }
 
-func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Record) int {
+func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Record) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
@@ -211,7 +200,7 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 		ctx.PrintPrimaryOutput(v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano))
 		ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), false))
 		ctx.PrintPrimaryOutput("")
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		if a.PrettyPrint {
@@ -233,7 +222,7 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 				"data":          string(v.DecodedData),
 			})
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xml struct {
@@ -253,11 +242,10 @@ func (a *CLIArgumentsRecordsGet) printDecoded(ctx *cli.FFSContext, v models.Reco
 			ModifiedUnix: v.ModifiedUnix,
 			Data:         a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), true),
 		})
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
 	}
 }

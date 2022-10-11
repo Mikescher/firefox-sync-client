@@ -1,8 +1,8 @@
 package impl
 
-import "C"
 import (
 	"ffsyncclient/cli"
+	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"strings"
@@ -11,14 +11,14 @@ import (
 type CLIArgumentsHelp struct {
 	Extra    string
 	Verb     *cli.Mode
-	ExitCode int
+	ExitCode consts.FFExitCode
 }
 
 func NewCLIArgumentsHelp() *CLIArgumentsHelp {
 	return &CLIArgumentsHelp{
 		Extra:    "",
 		Verb:     nil,
-		ExitCode: 0,
+		ExitCode: consts.ExitcodeOkay,
 	}
 }
 
@@ -58,7 +58,7 @@ func (a *CLIArgumentsHelp) Init(positionalArgs []string, optionArgs []cli.Argume
 	return nil
 }
 
-func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) error {
 	if a.Extra != "" {
 		ctx.PrintPrimaryOutput(a.Extra)
 		ctx.PrintPrimaryOutput("")
@@ -151,7 +151,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		ctx.PrintPrimaryOutput("  84            (create-bookmarks): The position in the parent would be out of bounds")
 		ctx.PrintPrimaryOutput("  85            (update-bookmarks): One of the specified fields is not valid on the record type")
 		ctx.PrintPrimaryOutput("")
-		return a.ExitCode
+		return fferr.NewEmpty(a.ExitCode)
 
 	} else {
 
@@ -163,7 +163,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) int {
 		}
 		ctx.PrintPrimaryOutput("")
 
-		return a.ExitCode
+		return fferr.NewEmpty(a.ExitCode)
 
 	}
 

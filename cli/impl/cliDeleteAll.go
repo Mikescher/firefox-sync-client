@@ -57,7 +57,7 @@ func (a *CLIArgumentsDeleteAll) Init(positionalArgs []string, optionArgs []cli.A
 	return nil
 }
 
-func (a *CLIArgumentsDeleteAll) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsDeleteAll) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Delete Data]")
 	ctx.PrintVerbose("")
 
@@ -65,14 +65,11 @@ func (a *CLIArgumentsDeleteAll) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -82,36 +79,31 @@ func (a *CLIArgumentsDeleteAll) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if !a.Force {
-		ctx.PrintFatalMessage("The delete-all command needs the --force flag")
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "The delete-all command needs the --force flag")
 	}
 
 	err = client.DeleteAllData(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput("Data deleted")
-	return 0
+	return nil
 }

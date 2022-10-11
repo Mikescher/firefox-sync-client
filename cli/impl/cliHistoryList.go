@@ -132,7 +132,7 @@ func (a *CLIArgumentsHistoryList) Init(positionalArgs []string, optionArgs []cli
 	return nil
 }
 
-func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[List History Entries]")
 	ctx.PrintVerbose("")
 
@@ -140,14 +140,11 @@ func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -157,28 +154,24 @@ func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	records, err := client.ListRecords(ctx, session, consts.CollectionHistory, a.After, a.Sort, false, true, a.Limit, a.Offset)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	entries, err := models.UnmarshalHistories(ctx, records, a.IgnoreSchemaErrors)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -186,7 +179,7 @@ func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, entries)
 }
 
-func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []models.HistoryRecord) int {
+func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []models.HistoryRecord) error {
 	entries = a.filterDeleted(ctx, entries, a.IncludeDeleted, a.OnlyDeleted)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
@@ -212,7 +205,7 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3, 4, 5, 6})
 		}
 
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range entries {
@@ -228,7 +221,7 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 			}
 			ctx.PrintPrimaryOutput("")
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		json := langext.A{}
@@ -236,7 +229,7 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 			json = append(json, v.ToJSON(ctx))
 		}
 		ctx.PrintPrimaryOutputJSON(json)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xmlroot struct {
@@ -248,10 +241,9 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 			node.Entries = append(node.Entries, v.ToSingleXML(ctx, a.IncludeDeleted))
 		}
 		ctx.PrintPrimaryOutputXML(node)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

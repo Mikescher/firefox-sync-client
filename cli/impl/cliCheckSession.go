@@ -53,7 +53,7 @@ func (a *CLIArgumentsCheckSession) Init(positionalArgs []string, optionArgs []cl
 	return nil
 }
 
-func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Check Session]")
 	ctx.PrintVerbose("")
 
@@ -64,14 +64,11 @@ func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -81,16 +78,14 @@ func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	okay, err := client.CheckSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -98,26 +93,26 @@ func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, okay)
 }
 
-func (a *CLIArgumentsCheckSession) printOutput(ctx *cli.FFSContext, okay bool) int {
-
-	ec := 0
-	if !okay {
-		ec = consts.ExitcodeInvalidSession
-	}
+func (a *CLIArgumentsCheckSession) printOutput(ctx *cli.FFSContext, okay bool) error {
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
 		if okay {
 			ctx.PrintPrimaryOutput("Okay")
+			return nil
 		} else {
 			ctx.PrintPrimaryOutput("Session invalid")
+			return fferr.NewEmpty(consts.ExitcodeInvalidSession)
 		}
-		return ec
 
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(langext.H{"valid": okay})
-		return ec
+		if okay {
+			return nil
+		} else {
+			return fferr.NewEmpty(consts.ExitcodeInvalidSession)
+		}
 
 	case cli.OutputFormatXML:
 		type xml struct {
@@ -125,10 +120,13 @@ func (a *CLIArgumentsCheckSession) printOutput(ctx *cli.FFSContext, okay bool) i
 			XMLName struct{} `xml:"Valid"`
 		}
 		ctx.PrintPrimaryOutputXML(xml{Valid: okay})
-		return ec
+		if okay {
+			return nil
+		} else {
+			return fferr.NewEmpty(consts.ExitcodeInvalidSession)
+		}
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

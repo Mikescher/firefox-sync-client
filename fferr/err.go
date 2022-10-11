@@ -14,5 +14,7 @@ var (
 )
 
 var (
-	Exitcode = errorx.RegisterProperty("ffsync.exitcode")
+	Exitcode     = errorx.RegisterProperty("ffsync.exitcode")
+	EmptyMessage = errorx.RegisterProperty("ffsync.empty-essage")
+	ExtraData    = errorx.RegisterProperty("ffsync.extra-data")
 )

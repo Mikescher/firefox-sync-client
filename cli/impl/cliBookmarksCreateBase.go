@@ -51,6 +51,6 @@ func (a *CLIArgumentsBookmarksCreateBase) Init(positionalArgs []string, optionAr
 	return fferr.DirectOutput.New("ffsclient bookmarks create must be called with a specific type (eg `ffsclient bookmarks create folder`), possible types are [bookmark | folder | separator]")
 }
 
-func (a *CLIArgumentsBookmarksCreateBase) Execute(ctx *cli.FFSContext) int {
-	return consts.ExitcodeError
+func (a *CLIArgumentsBookmarksCreateBase) Execute(ctx *cli.FFSContext) error {
+	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `bookmarks` command without an subcommand")
 }

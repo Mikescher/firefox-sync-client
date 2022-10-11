@@ -91,7 +91,7 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 	return nil
 }
 
-func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Login]")
 	ctx.PrintVerbose("")
 
@@ -102,8 +102,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
@@ -114,8 +113,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	session, err := client.Login(ctx, a.Email, a.Password)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -124,8 +122,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	err = client.RegisterDevice(ctx, session, a.DeviceName)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -134,8 +131,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	keyA, keyB, err := client.FetchKeys(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerboseKV("Key[a]", keyA)
@@ -149,8 +145,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	sessionBID, err := client.AssertBrowserID(ctx, extsession)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -159,8 +154,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	sessionHawk, err := client.HawkAuth(ctx, sessionBID)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -169,8 +163,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	sessionCrypto, err := client.GetCryptoKeys(ctx, sessionHawk)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -183,8 +176,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 
 	err = ffsyncSession.Save(cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerbose("Session saved")
@@ -192,13 +184,12 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) int {
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput("Succesfully logged in")
 
-	return 0
+	return nil
 }
 
 func validateDeviceName(name string) error {

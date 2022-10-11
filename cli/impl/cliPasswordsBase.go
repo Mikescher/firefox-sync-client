@@ -72,8 +72,8 @@ func (a *CLIArgumentsPasswordsBase) Init(positionalArgs []string, optionArgs []c
 	return fferr.DirectOutput.New("ffsclient passwords must be called with a subcommand (eg `ffsclient passwords list`)")
 }
 
-func (a *CLIArgumentsPasswordsBase) Execute(ctx *cli.FFSContext) int {
-	return consts.ExitcodeError
+func (a *CLIArgumentsPasswordsBase) Execute(ctx *cli.FFSContext) error {
+	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `passwords` command without an subcommand")
 }
 
 type CLIArgumentsPasswordsUtil struct{}

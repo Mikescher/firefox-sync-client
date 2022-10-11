@@ -14,7 +14,7 @@ func main() {
 	defer func() {
 		if err := recover(); err != nil {
 			_, _ = os.Stderr.WriteString(fmt.Sprintf("%v\n\n%s", err, string(debug.Stack())))
-			os.Exit(consts.ExitcodePanic)
+			os.Exit(consts.ExitcodePanic.Raw)
 		}
 	}()
 
@@ -22,20 +22,25 @@ func main() {
 	if err != nil {
 		ctx := cli.NewEarlyContext()
 		ctx.PrintFatalError(err)
-		os.Exit(fferr.GetExitCode(err, consts.ExitcodeCLIParse))
+		os.Exit(fferr.GetExitCode(err, consts.ExitcodeCLIParse).Raw)
 		return
 	}
 
 	ctx, err := cli.NewContext(opt)
 	if err != nil {
 		ctx.PrintFatalError(err)
-		os.Exit(fferr.GetExitCode(err, consts.ExitcodeError))
+		os.Exit(fferr.GetExitCode(err, consts.ExitcodeError).Raw)
 		return
 	}
 
 	defer ctx.Finish()
 
-	exitcode := verb.Execute(ctx)
+	err = verb.Execute(ctx)
+	if err != nil {
+		ctx.PrintFatalError(err)
+		os.Exit(fferr.GetExitCode(err, consts.ExitcodeError).Raw)
+		return
+	}
 
-	os.Exit(exitcode)
+	os.Exit(consts.ExitcodeOkay.Raw)
 }

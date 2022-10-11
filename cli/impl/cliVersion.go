@@ -46,7 +46,7 @@ func (a *CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.Arg
 	return nil
 }
 
-func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) error {
 	type xml struct {
 		Version string   `xml:"Version,attr"`
 		XMLName struct{} `xml:"FirefoxSyncClient"`
@@ -55,18 +55,17 @@ func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) int {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
-		return 0
+		return nil
 	case cli.OutputFormatTable:
 		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
-		return 0
+		return nil
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(langext.H{"version": consts.FFSCLIENT_VERSION})
-		return 0
+		return nil
 	case cli.OutputFormatXML:
 		ctx.PrintPrimaryOutputXML(xml{Version: consts.FFSCLIENT_VERSION})
-		return 0
+		return nil
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

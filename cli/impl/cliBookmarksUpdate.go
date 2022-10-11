@@ -135,7 +135,7 @@ func (a *CLIArgumentsBookmarksUpdate) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Update Bookmark]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("RecordID", a.RecordID)
@@ -144,14 +144,11 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -161,14 +158,12 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -177,27 +172,24 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, a.RecordID, true)
 	if err != nil && errorx.IsOfType(err, fferr.Request404) {
-		ctx.PrintErrorMessage("Record not found")
-		return consts.ExitcodePasswordNotFound
+		return fferr.WrapDirectOutput(err, consts.ExitcodePasswordNotFound, "Record not found")
 	}
 	if err != nil {
-		ctx.PrintFatalError(errorx.Decorate(err, "failed to query record"))
-		return consts.ExitcodeError
+		return errorx.Decorate(err, "failed to query record")
 	}
 
 	bmrec, err := models.UnmarshalBookmark(ctx, record)
 	if err != nil {
-		ctx.PrintFatalError(errorx.Decorate(err, "failed to decode password-record"))
-		return consts.ExitcodeError
+		return errorx.Decorate(err, "failed to decode password-record")
 	}
 
 	// ========================================================================
 
 	ctx.PrintVerboseHeader("[2] Patch Data")
 
-	newData, exitcode := a.patchData(ctx, record, bmrec)
-	if exitcode != 0 {
-		return exitcode
+	newData, err := a.patchData(ctx, record, bmrec)
+	if err != nil {
+		return err
 	}
 
 	// ========================================================================
@@ -211,24 +203,20 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 		parentRecord, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, bmrec.ParentID, true)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to find parent"))
-			return consts.ExitcodeRecordNotFound
+			return errorx.Decorate(err, "failed to find parent").WithProperty(fferr.Exitcode, consts.ExitcodeRecordNotFound)
 		}
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to query parent-record"))
-			return consts.ExitcodeRecordNotFound
+			return errorx.Decorate(err, "failed to query parent-record")
 		}
 
 		bmparent, err := models.UnmarshalBookmark(ctx, parentRecord)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to decode parent-record"))
-			return consts.ExitcodeRecordNotFound
+			return errorx.Decorate(err, "failed to decode parent-record")
 		}
 
-		bmrec, newPlainPayload, normpos, err, excode := a.moveChild(ctx, parentRecord, bmparent, record.ID, *a.Position)
+		bmrec, newPlainPayload, normpos, err := a.moveChild(ctx, parentRecord, bmparent, record.ID, *a.Position)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to calculate new pos in parent"))
-			return excode
+			return errorx.Decorate(err, "failed to calculate new pos in parent")
 		}
 
 		parent = bmrec
@@ -240,8 +228,7 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 			newData, err = langext.PatchJson(newData, "pos", normpos)
 			if err != nil {
-				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-				return consts.ExitcodeError
+				return errorx.Decorate(err, "failed to patch data of existing record")
 			}
 		}
 	}
@@ -254,8 +241,7 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 		newPayloadRecord, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, string(newData))
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 		update := models.RecordUpdate{
@@ -265,12 +251,10 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 		err = client.PutRecord(ctx, session, consts.CollectionBookmarks, update, false, false)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			ctx.PrintErrorMessage("Record not found")
-			return consts.ExitcodeRecordNotFound
+			return fferr.WrapDirectOutput(err, consts.ExitcodeRecordNotFound, "Record not found")
 		}
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	} else {
@@ -287,8 +271,7 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 		payloadParent, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, newParentPayload)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 		updateParent := models.RecordUpdate{
@@ -298,8 +281,7 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 
 		err = client.PutRecord(ctx, session, consts.CollectionBookmarks, updateParent, false, false)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	} else {
@@ -311,107 +293,94 @@ func (a *CLIArgumentsBookmarksUpdate) Execute(ctx *cli.FFSContext) int {
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput("Okay.")
-	return 0
+	return nil
 }
 
-func (a *CLIArgumentsBookmarksUpdate) patchData(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord) ([]byte, int) {
+func (a *CLIArgumentsBookmarksUpdate) patchData(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord) ([]byte, error) {
 	var err error
 
 	newData := record.DecodedData
 
 	if a.Title != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark, models.BookmarkTypeFolder}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [title] from \"%s\" to \"%s\"", bmrec.Title, *a.Title))
 
 		newData, err = langext.PatchJson(newData, "title", *a.Title)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
 	if a.URL != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [url] from \"%s\" to \"%s\"", bmrec.URI, *a.URL))
 
 		newData, err = langext.PatchJson(newData, "bmkUri", *a.URL)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
 	if a.Description != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [description] from \"%s\" to \"%s\"", bmrec.Description, *a.Description))
 
 		newData, err = langext.PatchJson(newData, "description", *a.Description)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
 	if a.LoadInSidebar != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [loadInSidebar] from \"%v\" to \"%v\"", bmrec.LoadInSidebar, *a.LoadInSidebar))
 
 		newData, err = langext.PatchJson(newData, "loadInSidebar", *a.LoadInSidebar)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
 	if a.Tags != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [tags] from [%v] to [%v]", strings.Join(bmrec.Tags, ", "), strings.Join(*a.Tags, ", ")))
 
 		newData, err = langext.PatchJson(newData, "tags", *a.Tags)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
 	if a.Keyword != nil {
 		if !langext.InArray(bmrec.Type, []models.BookmarkType{models.BookmarkTypeBookmark}) {
-			ctx.PrintErrorMessage(fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
-			return nil, consts.ExitcodeBookmarkFieldNotSupported
+			return nil, fferr.NewDirectOutput(consts.ExitcodeBookmarkFieldNotSupported, fmt.Sprintf("The field 'tile' is not supported on bookmarks of the type %s", bmrec.Type))
 		}
 
 		ctx.PrintVerbose(fmt.Sprintf("Patch field [keyword] from \"%v\" to \"%v\"", bmrec.Keyword, *a.Keyword))
 
 		newData, err = langext.PatchJson(newData, "keyword", *a.Keyword)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
-	return newData, 0
+	return newData, nil
 }

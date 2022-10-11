@@ -63,7 +63,7 @@ func (a *CLIArgumentsFormsCreate) Init(positionalArgs []string, optionArgs []cli
 	return nil
 }
 
-func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Create Bookmark<Folder>]")
 	ctx.PrintVerbose("")
 
@@ -71,14 +71,11 @@ func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -88,14 +85,12 @@ func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -112,14 +107,12 @@ func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) int {
 
 	plainPayload, err := json.Marshal(bso)
 	if err != nil {
-		ctx.PrintFatalError(errorx.Decorate(err, "failed to marshal BSO json"))
-		return consts.ExitcodeError
+		return errorx.Decorate(err, "failed to marshal BSO json")
 	}
 
 	payloadNewRecord, err := client.EncryptPayload(ctx, session, consts.CollectionForms, string(plainPayload))
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	update := models.RecordUpdate{
@@ -129,17 +122,15 @@ func (a *CLIArgumentsFormsCreate) Execute(ctx *cli.FFSContext) int {
 
 	err = client.PutRecord(ctx, session, consts.CollectionForms, update, true, false)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput(recordID)
-	return 0
+	return nil
 }

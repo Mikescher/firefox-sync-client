@@ -91,7 +91,7 @@ func (a *CLIArgumentsRecordsCreate) Init(positionalArgs []string, optionArgs []c
 	return nil
 }
 
-func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Create Record]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
@@ -102,26 +102,21 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerboseKV("Data<Data-stdin>", a.DecryptedPayloadFromStdIn)
 
 	if langext.BoolCount(a.RawPayload != nil, a.DecryptedPayload != nil, a.RawPayloadFromStdIn, a.DecryptedPayloadFromStdIn) == 0 {
-		ctx.PrintFatalMessage("Must specify one of --raw, --data, --raw-stdin or --data-stdin")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "Must specify one of --raw, --data, --raw-stdin or --data-stdin")
 	}
 	if langext.BoolCount(a.RawPayload != nil, a.DecryptedPayload != nil, a.RawPayloadFromStdIn, a.DecryptedPayloadFromStdIn) > 1 {
-		ctx.PrintFatalMessage("Must specify at most one of --raw, --data, --raw-stdin or --data-stdin")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "Must specify at most one of --raw, --data, --raw-stdin or --data-stdin")
 	}
 
 	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -131,14 +126,12 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -150,25 +143,21 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 	} else if a.RawPayloadFromStdIn {
 		payload, err = ctx.ReadStdIn()
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 	} else if a.DecryptedPayload != nil {
 		payload, err = client.EncryptPayload(ctx, session, a.Collection, *a.DecryptedPayload)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 	} else if a.DecryptedPayloadFromStdIn {
 		stdin, err := ctx.ReadStdIn()
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 		payload, err = client.EncryptPayload(ctx, session, a.Collection, stdin)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 	}
 
@@ -179,17 +168,15 @@ func (a *CLIArgumentsRecordsCreate) Execute(ctx *cli.FFSContext) int {
 
 	err = client.PutRecord(ctx, session, a.Collection, update, true, false)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput(a.RecordID)
-	return 0
+	return nil
 }

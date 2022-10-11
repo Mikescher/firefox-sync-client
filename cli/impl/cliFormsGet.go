@@ -63,7 +63,7 @@ func (a *CLIArgumentsFormsGet) Init(positionalArgs []string, optionArgs []cli.Ar
 	return nil
 }
 
-func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Get Forms]")
 	ctx.PrintVerbose("")
 
@@ -71,14 +71,11 @@ func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -88,28 +85,24 @@ func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	records, err := client.ListRecords(ctx, session, consts.CollectionForms, nil, nil, false, true, nil, nil)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	forms, err := models.UnmarshalForms(ctx, records, true)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	filteredForms := make([]models.FormRecord, 0, len(forms))
@@ -136,7 +129,7 @@ func (a *CLIArgumentsFormsGet) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, filteredForms)
 }
 
-func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.FormRecord) int {
+func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.FormRecord) error {
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
@@ -144,13 +137,13 @@ func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.F
 		for _, v := range forms {
 			ctx.PrintPrimaryOutput(v.Value)
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range forms {
 			ctx.PrintPrimaryOutput(v.Value)
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		json := langext.A{}
@@ -158,7 +151,7 @@ func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.F
 			json = append(json, v.Value)
 		}
 		ctx.PrintPrimaryOutputJSON(json)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xmlroot struct {
@@ -170,10 +163,9 @@ func (a *CLIArgumentsFormsGet) printOutput(ctx *cli.FFSContext, forms []models.F
 			node.Entries = append(node.Entries, v.Value)
 		}
 		ctx.PrintPrimaryOutputXML(node)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

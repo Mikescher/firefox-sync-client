@@ -53,8 +53,8 @@ func (a *CLIArgumentsFormsBase) Init(positionalArgs []string, optionArgs []cli.A
 	return fferr.DirectOutput.New("ffsclient forms must be called with a subcommand (eg `ffsclient forms list`)")
 }
 
-func (a *CLIArgumentsFormsBase) Execute(ctx *cli.FFSContext) int {
-	return consts.ExitcodeError
+func (a *CLIArgumentsFormsBase) Execute(ctx *cli.FFSContext) error {
+	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `forms` command without an subcommand")
 }
 
 type CLIArgumentsFormsUtil struct{}

@@ -91,28 +91,24 @@ func (a *CLIArgumentsPasswordsDelete) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Delete Password]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Query", a.Query)
 	ctx.PrintVerboseKV("HardDelete", a.HardDelete)
 
 	if langext.BoolCount(a.QueryIsID, a.QueryIsExactHost, a.QueryIsHost) > 1 {
-		ctx.PrintFatalMessage("Must specify at most one of --id, --exact-host, --host")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "Must specify at most one of --id, --exact-host, --host")
 	}
 	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -122,27 +118,23 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	_, record, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !found {
-		ctx.PrintErrorMessage("Record not found")
-		return consts.ExitcodePasswordNotFound
+		return fferr.NewDirectOutput(consts.ExitcodePasswordNotFound, "Record not found")
 	}
 
 	ctx.PrintVerbose("Delete Record " + record.ID)
@@ -151,16 +143,14 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 
 		err = client.DeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	} else {
 
 		err = client.SoftDeleteRecord(ctx, session, consts.CollectionPasswords, record.ID)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	}
@@ -170,23 +160,22 @@ func (a *CLIArgumentsPasswordsDelete) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, record)
 }
 
-func (a *CLIArgumentsPasswordsDelete) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) int {
+func (a *CLIArgumentsPasswordsDelete) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(password.ID)
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(password.ToJSON(ctx, true))
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		ctx.PrintPrimaryOutputXML(password.ToXML(ctx, "Password", true))
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

@@ -49,7 +49,7 @@ func (a *CLIArgumentsMetaGet) Init(positionalArgs []string, optionArgs []cli.Arg
 	return nil
 }
 
-func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Get Meta]")
 	ctx.PrintVerbose("")
 
@@ -57,14 +57,11 @@ func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -74,31 +71,27 @@ func (a *CLIArgumentsMetaGet) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	record, err := client.GetRecord(ctx, session, consts.CollectionMeta, consts.RecordMetaGlobal, false)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput(langext.TryPrettyPrintJson(record.Payload))
-	return 0
+	return nil
 }

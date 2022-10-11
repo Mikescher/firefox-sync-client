@@ -23,7 +23,9 @@ func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 				continue
 			}
 
-			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema\n%s", v.ID, string(v.DecodedData)))
+			return nil, errorx.
+				Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema", v.ID)).
+				WithProperty(fferr.ExtraData, string(v.DecodedData))
 		}
 
 		result = append(result, jsonschema.ToModel())
@@ -39,7 +41,9 @@ func UnmarshalPassword(ctx *cli.FFSContext, record Record) (PasswordRecord, erro
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
-		return PasswordRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema\n%s", record.ID, string(record.DecodedData)))
+		return PasswordRecord{}, errorx.
+			Decorate(err, fmt.Sprintf("Failed to decode record %s to password-schema", record.ID)).
+			WithProperty(fferr.ExtraData, string(record.DecodedData))
 	}
 
 	model := jsonschema.ToModel()
@@ -62,7 +66,9 @@ func UnmarshalBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 				continue
 			}
 
-			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema\n%s", v.ID, string(v.DecodedData)))
+			return nil, errorx.
+				Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema", v.ID)).
+				WithProperty(fferr.ExtraData, string(v.DecodedData))
 		}
 
 		result = append(result, jsonschema.ToModel())
@@ -78,7 +84,9 @@ func UnmarshalBookmark(ctx *cli.FFSContext, record Record) (BookmarkRecord, erro
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
-		return BookmarkRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema\n%s", record.ID, string(record.DecodedData)))
+		return BookmarkRecord{}, errorx.
+			Decorate(err, fmt.Sprintf("Failed to decode record %s to bookmark-schema", record.ID)).
+			WithProperty(fferr.ExtraData, string(record.DecodedData))
 	}
 
 	model := jsonschema.ToModel()
@@ -101,7 +109,9 @@ func UnmarshalForms(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 				continue
 			}
 
-			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema\n%s", v.ID, string(v.DecodedData)))
+			return nil, errorx.
+				Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema", v.ID)).
+				WithProperty(fferr.ExtraData, string(v.DecodedData))
 		}
 
 		result = append(result, jsonschema.ToModel(v))
@@ -117,7 +127,9 @@ func UnmarshalForm(ctx *cli.FFSContext, record Record) (FormRecord, error) {
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
-		return FormRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema\n%s", record.ID, string(record.DecodedData)))
+		return FormRecord{}, errorx.
+			Decorate(err, fmt.Sprintf("Failed to decode record %s to form-schema", record.ID)).
+			WithProperty(fferr.ExtraData, string(record.DecodedData))
 	}
 
 	model := jsonschema.ToModel(record)
@@ -140,7 +152,9 @@ func UnmarshalHistories(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 				continue
 			}
 
-			return nil, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema\n%s", v.ID, string(v.DecodedData)))
+			return nil, errorx.
+				Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema", v.ID)).
+				WithProperty(fferr.ExtraData, string(v.DecodedData))
 		}
 
 		result = append(result, jsonschema.ToModel())
@@ -156,7 +170,9 @@ func UnmarshalHistory(ctx *cli.FFSContext, record Record) (HistoryRecord, error)
 	err := json.Unmarshal(record.DecodedData, &jsonschema)
 	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
 	if err != nil {
-		return HistoryRecord{}, errorx.Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema\n%s", record.ID, string(record.DecodedData)))
+		return HistoryRecord{}, errorx.
+			Decorate(err, fmt.Sprintf("Failed to decode record %s to history-schema", record.ID)).
+			WithProperty(fferr.ExtraData, string(record.DecodedData))
 	}
 
 	model := jsonschema.ToModel()

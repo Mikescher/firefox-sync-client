@@ -290,7 +290,8 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 	possibleFormats := verbArg.AvailableOutputFormats()
 	if opt.Format != nil && !langext.InArray(*opt.Format, possibleFormats) {
-		return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("The output format '%s' is not supported in this subcommand.\nSupported formats are: %s", *opt.Format, joinOutputFormats(possibleFormats))).WithProperty(fferr.Exitcode, consts.ExitcodeUnsupportedOutputFormat)
+		errmsg := fmt.Sprintf("The output format '%s' is not supported in this subcommand.\nSupported formats are: %s", *opt.Format, joinOutputFormats(possibleFormats))
+		return nil, cli.Options{}, fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, errmsg)
 	}
 
 	return verbArg, opt, nil

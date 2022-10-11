@@ -182,7 +182,7 @@ func (a *CLIArgumentsBookmarksList) Init(positionalArgs []string, optionArgs []c
 	return nil
 }
 
-func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[List Bookmarks]")
 	ctx.PrintVerbose("")
 
@@ -190,14 +190,11 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -207,28 +204,24 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	records, err := client.ListRecords(ctx, session, consts.CollectionBookmarks, a.After, a.Sort, false, true, a.Limit, a.Offset)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	bookmarks, err := models.UnmarshalBookmarks(ctx, records, a.IgnoreSchemaErrors)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -236,7 +229,7 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, bookmarks)
 }
 
-func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) int {
+func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) error {
 	bookmarks = a.filterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter, a.ParentFilter)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
@@ -260,7 +253,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 3, 4})
 		}
 
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range bookmarks {
@@ -291,7 +284,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			}
 			ctx.PrintPrimaryOutput("")
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		if a.LinearOutput {
@@ -300,7 +293,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 				json = append(json, v.ToJSON(ctx))
 			}
 			ctx.PrintPrimaryOutputJSON(json)
-			return 0
+			return nil
 		} else {
 			roots, unreferenced, missing := a.calculateTree(ctx, bookmarks)
 			jsonRoots := langext.H{}
@@ -313,7 +306,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			}
 
 			ctx.PrintPrimaryOutputJSON(langext.H{"bookmarks": jsonRoots, "unreferenced": jsonUnreferenced, "missing": langext.ForceArray(missing)})
-			return 0
+			return nil
 		}
 
 	case cli.OutputFormatXML:
@@ -327,7 +320,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 				node.Entries = append(node.Entries, v.ToSingleXML(ctx, a.IncludeDeleted))
 			}
 			ctx.PrintPrimaryOutputXML(node)
-			return 0
+			return nil
 		} else {
 			roots, unreferenced, missing := a.calculateTree(ctx, bookmarks)
 			type xmlroot struct {
@@ -354,17 +347,16 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 				})
 			}
 			ctx.PrintPrimaryOutputXML(node)
-			return 0
+			return nil
 		}
 
 	case cli.OutputFormatNetscape:
 		roots, _, _ := a.calculateTree(ctx, bookmarks)
 		nc := netscapefmt.Format(ctx, roots)
 		ctx.PrintPrimaryOutput(nc)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

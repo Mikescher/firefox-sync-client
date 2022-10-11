@@ -58,20 +58,17 @@ func (a *CLIArgumentsTokenRefresh) Init(positionalArgs []string, optionArgs []cl
 	return nil
 }
 
-func (a *CLIArgumentsTokenRefresh) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsTokenRefresh) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Refresh Token]")
 	ctx.PrintVerbose("")
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
@@ -79,36 +76,32 @@ func (a *CLIArgumentsTokenRefresh) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerbose("Refresh Session Keys")
 
 	session, refreshed, err := client.RefreshSession(ctx, session, a.Force)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerbose("Save session to " + ctx.Opt.SessionFilePath)
 
 	err = session.Save(cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	if refreshed {
 		ctx.PrintPrimaryOutput("Session refreshed")
-		return 0
+		return nil
 	} else {
 		ctx.PrintPrimaryOutput("Session still valid")
-		return 0
+		return nil
 	}
 }

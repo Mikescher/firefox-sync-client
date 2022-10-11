@@ -61,7 +61,7 @@ func (a *CLIArgumentsFormsDelete) Init(positionalArgs []string, optionArgs []cli
 	return nil
 }
 
-func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Delete Form]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("RecordID", a.RecordID)
@@ -70,14 +70,11 @@ func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -87,14 +84,12 @@ func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -103,24 +98,20 @@ func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
 
 		err = client.DeleteRecord(ctx, session, consts.CollectionForms, a.RecordID)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			ctx.PrintErrorMessage("Record not found")
-			return consts.ExitcodeRecordNotFound
+			return fferr.WrapDirectOutput(err, consts.ExitcodeRecordNotFound, "Record not found")
 		}
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	} else {
 
 		err = client.SoftDeleteRecord(ctx, session, consts.CollectionForms, a.RecordID)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			ctx.PrintErrorMessage("Record not found")
-			return consts.ExitcodeRecordNotFound
+			return fferr.WrapDirectOutput(err, consts.ExitcodeRecordNotFound, "Record not found")
 		}
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	}
@@ -128,8 +119,7 @@ func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	if a.HardDelete {
@@ -137,5 +127,5 @@ func (a *CLIArgumentsFormsDelete) Execute(ctx *cli.FFSContext) int {
 	} else {
 		ctx.PrintPrimaryOutput("Entry " + a.RecordID + " marked as deleted")
 	}
-	return 0
+	return nil
 }

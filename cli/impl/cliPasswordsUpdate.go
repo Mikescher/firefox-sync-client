@@ -144,27 +144,23 @@ func (a *CLIArgumentsPasswordsUpdate) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Delete Password]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Query", a.Query)
 
 	if langext.BoolCount(a.QueryIsID, a.QueryIsExactHost, a.QueryIsHost) > 1 {
-		ctx.PrintFatalMessage("Must specify at most one of --id, --exact-host, --host")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "Must specify at most one of --id, --exact-host, --host")
 	}
 	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -174,14 +170,12 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -190,22 +184,20 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 	record, pwrec, found, err := a.findPasswordRecord(ctx, client, session, a.Query, a.QueryIsID, a.QueryIsHost, a.QueryIsExactHost)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !found {
-		ctx.PrintErrorMessage("Record not found")
-		return consts.ExitcodePasswordNotFound
+		return fferr.NewDirectOutput(consts.ExitcodePasswordNotFound, "Record not found")
 	}
 
 	// ========================================================================
 
 	ctx.PrintVerboseHeader("[2] Patch Data")
 
-	newData, exitcode := a.patchData(ctx, record, pwrec)
-	if exitcode != 0 {
-		return exitcode
+	newData, err := a.patchData(ctx, record, pwrec)
+	if err != nil {
+		return err
 	}
 
 	// ========================================================================
@@ -216,8 +208,7 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 		newPayloadRecord, err := client.EncryptPayload(ctx, session, consts.CollectionPasswords, string(newData))
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 		update := models.RecordUpdate{
@@ -227,53 +218,49 @@ func (a *CLIArgumentsPasswordsUpdate) Execute(ctx *cli.FFSContext) int {
 
 		err = client.PutRecord(ctx, session, consts.CollectionPasswords, update, false, false)
 		if err != nil && errorx.IsOfType(err, fferr.Request404) {
-			ctx.PrintErrorMessage("Record not found")
-			return consts.ExitcodeRecordNotFound
+			return fferr.WrapDirectOutput(err, consts.ExitcodeRecordNotFound, "Record not found")
 		}
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 	} else {
 
-		ctx.PrintVerbose("Donot update record (nothing to do)")
+		ctx.PrintVerbose("Do not update record (nothing to do)")
 
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput("Okay.")
-	return 0
+	return nil
 }
 
-func (a *CLIArgumentsPasswordsUpdate) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) int {
+func (a *CLIArgumentsPasswordsUpdate) printOutput(ctx *cli.FFSContext, password models.PasswordRecord) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatText:
 		ctx.PrintPrimaryOutput(password.ID)
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		ctx.PrintPrimaryOutputJSON(password.ToJSON(ctx, true))
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		ctx.PrintPrimaryOutputXML(password.ToXML(ctx, "Password", true))
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }
 
-func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record models.Record, pwrec models.PasswordRecord) ([]byte, int) {
+func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record models.Record, pwrec models.PasswordRecord) ([]byte, error) {
 	var err error
 
 	newData := record.DecodedData
@@ -283,8 +270,7 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "hostname", *a.NewHost)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
@@ -293,8 +279,7 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "username", *a.NewUsername)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
@@ -303,8 +288,7 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "password", *a.NewPassword)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
@@ -313,8 +297,7 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "formSubmitURL", *a.NewFormSubmitURL)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
@@ -324,16 +307,14 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 			newData, err = langext.PatchJson(newData, "httpRealm", *a.NewHTTPRealm)
 			if err != nil {
-				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-				return nil, consts.ExitcodeError
+				return nil, errorx.Decorate(err, "failed to patch data of existing record")
 			}
 		} else {
 			ctx.PrintVerbose(fmt.Sprintf("Patch field [httpRealm] from \"%v\" to \"%v\"", pwrec.HTTPRealm, a.NewHTTPRealm))
 
 			newData, err = langext.PatchRemJson(newData, "httpRealm")
 			if err != nil {
-				ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-				return nil, consts.ExitcodeError
+				return nil, errorx.Decorate(err, "failed to patch data of existing record")
 			}
 		}
 	}
@@ -343,8 +324,7 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "usernameField", *a.NewUsernameField)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
@@ -353,10 +333,9 @@ func (a *CLIArgumentsPasswordsUpdate) patchData(ctx *cli.FFSContext, record mode
 
 		newData, err = langext.PatchJson(newData, "passwordField", *a.NewPasswordField)
 		if err != nil {
-			ctx.PrintFatalError(errorx.Decorate(err, "failed to patch data of existing record"))
-			return nil, consts.ExitcodeError
+			return nil, errorx.Decorate(err, "failed to patch data of existing record")
 		}
 	}
 
-	return newData, 0
+	return newData, nil
 }

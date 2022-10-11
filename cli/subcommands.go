@@ -99,7 +99,7 @@ func (m Mode) String() string {
 type Verb interface {
 	Mode() Mode
 	Init(positionalArgs []string, optionArgs []ArgumentTuple) error
-	Execute(ctx *FFSContext) int
+	Execute(ctx *FFSContext) error
 	ShortHelp() [][]string
 	FullHelp() []string
 	PositionArgCount() (*int, *int)

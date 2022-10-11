@@ -53,8 +53,8 @@ func (a *CLIArgumentsHistoryBase) Init(positionalArgs []string, optionArgs []cli
 	return fferr.DirectOutput.New("ffsclient history must be called with a subcommand (eg `ffsclient history list`)")
 }
 
-func (a *CLIArgumentsHistoryBase) Execute(ctx *cli.FFSContext) int {
-	return consts.ExitcodeError
+func (a *CLIArgumentsHistoryBase) Execute(ctx *cli.FFSContext) error {
+	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `history` command without an subcommand")
 }
 
 type CLIArgumentsHistoryUtil struct{}

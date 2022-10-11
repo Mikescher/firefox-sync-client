@@ -140,7 +140,7 @@ func (a *CLIArgumentsPasswordsList) Init(positionalArgs []string, optionArgs []c
 	return nil
 }
 
-func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[List Passwords]")
 	ctx.PrintVerbose("")
 
@@ -148,14 +148,11 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -165,28 +162,24 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	records, err := client.ListRecords(ctx, session, consts.CollectionPasswords, a.After, a.Sort, false, true, a.Limit, a.Offset)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	passwords, err := models.UnmarshalPasswords(ctx, records, a.IgnoreSchemaErrors)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -194,7 +187,7 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, passwords)
 }
 
-func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) int {
+func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) error {
 	passwords = a.filterDeleted(ctx, passwords, a.IncludeDeleted, a.OnlyDeleted)
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
@@ -218,7 +211,7 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3, 4})
 		}
 
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range passwords {
@@ -228,7 +221,7 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 				ctx.PrintPrimaryOutput(v.Username + ":" + v.Password + "@" + v.Hostname)
 			}
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		arr := langext.A{}
@@ -236,7 +229,7 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 			arr = append(arr, v.ToJSON(ctx, a.ShowPasswords))
 		}
 		ctx.PrintPrimaryOutputJSON(arr)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xml struct {
@@ -248,10 +241,9 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 			node.Entries = append(node.Entries, v.ToXML(ctx, "Password", a.ShowPasswords))
 		}
 		ctx.PrintPrimaryOutputXML(node)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

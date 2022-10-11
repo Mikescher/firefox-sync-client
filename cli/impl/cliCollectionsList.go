@@ -62,7 +62,7 @@ func (a *CLIArgumentsCollectionsList) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[List collections]")
 	ctx.PrintVerbose("")
 
@@ -70,14 +70,11 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -87,14 +84,12 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -110,8 +105,7 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 
 	collectionInfos, err := client.GetCollectionsInfo(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	collections := make([]models.Collection, 0, len(collectionInfos))
@@ -124,14 +118,12 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 
 	collectionCounts, err := client.GetCollectionsCounts(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 	for _, v := range collectionCounts {
 		idx, err := search(collections, v.Name)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 		collections[idx].Count = v.Count
 	}
@@ -139,14 +131,12 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 	if a.ShowUsage {
 		collectionUsages, err := client.GetCollectionsUsage(ctx, session)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 		for _, v := range collectionUsages {
 			idx, err := search(collections, v.Name)
 			if err != nil {
-				ctx.PrintFatalError(err)
-				return consts.ExitcodeError
+				return err
 			}
 			collections[idx].Usage = v.Usage
 		}
@@ -157,7 +147,7 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) int {
 	return a.printOutput(ctx, collections)
 }
 
-func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collections []models.Collection) int {
+func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collections []models.Collection) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(collections))
@@ -175,7 +165,7 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 		}
 
 		ctx.PrintPrimaryOutputTable(table, true)
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range collections {
@@ -185,7 +175,7 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 				ctx.PrintPrimaryOutput(fmt.Sprintf("%v %v %v", v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), v.Count))
 			}
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		json := langext.A{}
@@ -203,7 +193,7 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 			json = append(json, obj)
 		}
 		ctx.PrintPrimaryOutputJSON(json)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 
@@ -235,10 +225,9 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 			node.Collections = append(node.Collections, obj)
 		}
 		ctx.PrintPrimaryOutputXML(node)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 }

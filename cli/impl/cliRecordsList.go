@@ -140,7 +140,7 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 	return nil
 }
 
-func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[List Records]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("Collection", a.Collection)
@@ -149,26 +149,21 @@ func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerboseKV("IDOnly", a.IDOnly)
 
 	if !a.Raw && !a.Decoded && !a.IDOnly {
-		ctx.PrintFatalMessage("must specify either --raw or --decoded or --ids")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify only one of --raw or --decoded or --ids")
 	}
 	if (a.Raw && a.Decoded) || (a.Decoded && a.IDOnly) || (a.IDOnly && a.Raw) {
-		ctx.PrintFatalMessage("must specify only one of --raw or --decoded or --ids")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify only one of --raw or --decoded or --ids")
 	}
 
 	// ========================================================================
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -178,22 +173,19 @@ func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
 
 	records, err := client.ListRecords(ctx, session, a.Collection, a.After, a.Sort, a.IDOnly, a.Decoded, a.Limit, a.Offset)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -205,25 +197,24 @@ func (a *CLIArgumentsRecordsList) Execute(ctx *cli.FFSContext) int {
 	} else if a.Decoded {
 		return a.printDecoded(ctx, records)
 	} else {
-		ctx.PrintFatalMessage("must specify only one of --raw or --decoded or --ids")
-		return consts.ExitcodeError
+		return fferr.NewDirectOutput(consts.ExitcodeError, "must specify only one of --raw or --decoded or --ids")
 	}
 }
 
-func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []models.Record) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatTable:
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range records {
 			ctx.PrintPrimaryOutput(v.ID)
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		arr := make([]string, 0, len(records))
@@ -231,7 +222,7 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 			arr = append(arr, v.ID)
 		}
 		ctx.PrintPrimaryOutputJSON(arr)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
@@ -246,16 +237,15 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 			data.Records = append(data.Records, xmlentry{ID: v.ID})
 		}
 		ctx.PrintPrimaryOutputXML(data)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
 	}
 }
 
-func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models.Record) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatTable:
@@ -270,7 +260,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		}
 
 		ctx.PrintPrimaryOutputTable(table, true)
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range records {
@@ -279,7 +269,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, v.Payload, false))
 			ctx.PrintPrimaryOutput("")
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		j := langext.A{}
@@ -294,7 +284,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 			})
 		}
 		ctx.PrintPrimaryOutputJSON(j)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
@@ -321,16 +311,15 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
 	}
 }
 
-func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []models.Record) int {
+func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []models.Record) error {
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
 
 	case cli.OutputFormatTable:
@@ -345,7 +334,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 		}
 
 		ctx.PrintPrimaryOutputTable(table, true)
-		return 0
+		return nil
 
 	case cli.OutputFormatText:
 		for _, v := range records {
@@ -354,7 +343,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			ctx.PrintPrimaryOutput(a.prettyPrint(ctx, a.PrettyPrint, string(v.DecodedData), false))
 			ctx.PrintPrimaryOutput("")
 		}
-		return 0
+		return nil
 
 	case cli.OutputFormatJson:
 		j := langext.A{}
@@ -380,7 +369,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			}
 		}
 		ctx.PrintPrimaryOutputJSON(j)
-		return 0
+		return nil
 
 	case cli.OutputFormatXML:
 		type xmlentry struct {
@@ -407,11 +396,10 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
-		return 0
+		return nil
 
 	default:
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
 	}
 }

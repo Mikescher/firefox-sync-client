@@ -56,8 +56,8 @@ func (a *CLIArgumentsBookmarksBase) Init(positionalArgs []string, optionArgs []c
 	return fferr.DirectOutput.New("ffsclient bookmarks must be called with a subcommand (eg `ffsclient bookmarks list`)")
 }
 
-func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) int {
-	return consts.ExitcodeError
+func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) error {
+	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `bookmarks` command without an subcommand")
 }
 
 type CLIArgumentsBookmarksUtil struct{}
@@ -206,34 +206,34 @@ func (a *CLIArgumentsBookmarksUtil) newBookmarkID() string {
 	return langext.RandBase62(12)
 }
 
-func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, int, error, int) {
+func (a *CLIArgumentsBookmarksUtil) calculateParent(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, newid string, parentid string, pos int) (models.BookmarkRecord, string, int, error) {
 	ctx.PrintVerbose("Query parent by ID")
 
 	record, err := client.GetRecord(ctx, session, consts.CollectionBookmarks, parentid, true)
 	if err != nil && errorx.IsOfType(err, fferr.Request404) {
-		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.Wrap(err, fmt.Sprintf("parent-record with ID '%s' not found", parentid)), consts.ExitcodeRecordNotFound
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.Wrap(err, fmt.Sprintf("parent-record with ID '%s' not found", parentid)).WithProperty(fferr.Exitcode, consts.ExitcodeRecordNotFound)
 	}
 	if err != nil {
-		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to query parent-record"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to query parent-record").WithProperty(fferr.Exitcode, consts.ExitcodeError)
 	}
 
 	bmrec, err := models.UnmarshalBookmark(ctx, record)
 	if err != nil {
-		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to decode bookmark-record"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to decode bookmark-record").WithProperty(fferr.Exitcode, consts.ExitcodeError)
 	}
 
-	bmrec, newPlainPayload, normpos, err, excode := a.moveChild(ctx, record, bmrec, newid, pos)
+	bmrec, newPlainPayload, normpos, err := a.moveChild(ctx, record, bmrec, newid, pos)
 	if err != nil {
-		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to move child"), excode
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to move child")
 	}
 
-	return bmrec, newPlainPayload, normpos, nil, 0
+	return bmrec, newPlainPayload, normpos, nil
 }
 
-func (a *CLIArgumentsBookmarksUtil) moveChild(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord, recordid string, pos int) (models.BookmarkRecord, string, int, error, int) {
+func (a *CLIArgumentsBookmarksUtil) moveChild(ctx *cli.FFSContext, record models.Record, bmrec models.BookmarkRecord, recordid string, pos int) (models.BookmarkRecord, string, int, error) {
 
 	if bmrec.Type != models.BookmarkTypeFolder {
-		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New("The parent record must be a folder"), consts.ExitcodeParentNotAFolder
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New("The parent record must be a folder").WithProperty(fferr.Exitcode, consts.ExitcodeParentNotAFolder)
 	}
 
 	children := make([]string, 0, len(bmrec.Children))
@@ -261,16 +261,16 @@ func (a *CLIArgumentsBookmarksUtil) moveChild(ctx *cli.FFSContext, record models
 		children = append(children[:normpos+1], children[normpos:]...)
 		children[normpos] = recordid
 	} else {
-		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)), consts.ExitcodeInvalidPosition
+		return models.BookmarkRecord{}, "", 0, fferr.DirectOutput.New(fmt.Sprintf("The parent record [%d..%d] does not have an index %d (%d)", 0, len(children), pos, normpos)).WithProperty(fferr.Exitcode, consts.ExitcodeInvalidPosition)
 	}
 
 	ctx.PrintVerboseKV("Parent<new>.children", strings.Join(children, ", "))
 
 	newPlainPayload, err := langext.PatchJson(record.DecodedData, "children", children)
 	if err != nil {
-		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to patch parent-record data"), consts.ExitcodeError
+		return models.BookmarkRecord{}, "", 0, errorx.Decorate(err, "failed to patch parent-record data").WithProperty(fferr.Exitcode, consts.ExitcodeError)
 	}
 	bmrec.Children = children
 
-	return bmrec, string(newPlainPayload), normpos, nil, 0
+	return bmrec, string(newPlainPayload), normpos, nil
 }

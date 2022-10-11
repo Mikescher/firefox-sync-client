@@ -58,7 +58,7 @@ func (a *CLIArgumentsBookmarksDelete) Init(positionalArgs []string, optionArgs [
 	return nil
 }
 
-func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
+func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) error {
 	ctx.PrintVerbose("[Delete Bookmark]")
 	ctx.PrintVerbose("")
 	ctx.PrintVerboseKV("RecordID", a.RecordID)
@@ -67,14 +67,11 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 
 	cfp, err := ctx.AbsSessionFilePath()
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !langext.FileExists(cfp) {
-		ctx.PrintFatalMessage("Sessionfile does not exist.")
-		ctx.PrintFatalMessage("Use `ffsclient login <email> <password>` first")
-		return consts.ExitcodeNoLogin
+		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
 	// ========================================================================
@@ -84,14 +81,12 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	session, err = client.AutoRefreshSession(ctx, session)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	// ========================================================================
@@ -100,13 +95,11 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 
 	record, found, err := a.findBookmarkRecord(ctx, client, session, a.RecordID)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if !found {
-		ctx.PrintErrorMessage("Record not found")
-		return consts.ExitcodePasswordNotFound
+		return fferr.NewDirectOutput(consts.ExitcodePasswordNotFound, "Record not found")
 	}
 
 	ctx.PrintVerboseHeader("[1] Get parent")
@@ -117,8 +110,7 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 		parentFound = false
 		ctx.PrintVerbose(fmt.Sprintf("No parent found (parent-id := %s)", record.ParentID))
 	} else if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	ctx.PrintVerboseHeader("[2] Delete Record " + record.ID)
@@ -127,15 +119,13 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 	if parentFound {
 		parentRecord, err = models.UnmarshalBookmark(ctx, parent)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 	}
 
 	err = client.SoftDeleteRecord(ctx, session, consts.CollectionBookmarks, record.ID)
 	if err != nil {
-		ctx.PrintFatalError(err)
-		return consts.ExitcodeError
+		return err
 	}
 
 	if parentFound {
@@ -152,14 +142,12 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 
 		plainpayload, err := langext.PatchJson(parent.DecodedData, "children", newChildren)
 		if err != nil {
-			ctx.PrintFatalError(fferr.DirectOutput.Wrap(err, "failed to patch payload of parent"))
-			return consts.ExitcodeError
+			return fferr.DirectOutput.Wrap(err, "failed to patch payload of parent")
 		}
 
 		payload, err := client.EncryptPayload(ctx, session, consts.CollectionBookmarks, string(plainpayload))
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 
 		update := models.RecordUpdate{
@@ -169,18 +157,16 @@ func (a *CLIArgumentsBookmarksDelete) Execute(ctx *cli.FFSContext) int {
 
 		err = client.PutRecord(ctx, session, consts.CollectionBookmarks, update, false, false)
 		if err != nil {
-			ctx.PrintFatalError(err)
-			return consts.ExitcodeError
+			return err
 		}
 	}
 
 	// ========================================================================
 
 	if langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) != cli.OutputFormatText {
-		ctx.PrintFatalMessage("Unsupported output-format: " + ctx.Opt.Format.String())
-		return consts.ExitcodeUnsupportedOutputFormat
+		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 	}
 
 	ctx.PrintPrimaryOutput("Bookmark " + a.RecordID + " marked as deleted")
-	return 0
+	return nil
 }

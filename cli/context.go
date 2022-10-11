@@ -140,7 +140,12 @@ func (c FFSContext) PrintFatalError(e error) {
 		return
 	}
 
-	c.printErrorRaw(fferr.FormatError(e, c.Opt.Verbose) + "\n")
+	errfmt, empty := fferr.FormatError(e, c.Opt.Verbose)
+	if empty {
+		return
+	}
+
+	c.printErrorRaw(errfmt + "\n")
 }
 
 func (c FFSContext) PrintErrorMessage(msg string) {
