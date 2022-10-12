@@ -7,7 +7,6 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
-	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
 	"strconv"
 	"time"
@@ -28,13 +27,12 @@ type CLIArgumentsBookmarksCreateBookmark struct {
 
 func NewCLIArgumentsBookmarksCreateBookmark() *CLIArgumentsBookmarksCreateBookmark {
 	return &CLIArgumentsBookmarksCreateBookmark{
-		Description:               "",
-		LoadInSidebar:             false,
-		Tags:                      make([]string, 0),
-		Keyword:                   "",
-		ParentID:                  "unfiled",
-		Position:                  -1,
-		CLIArgumentsBookmarksUtil: CLIArgumentsBookmarksUtil{},
+		Description:   "",
+		LoadInSidebar: false,
+		Tags:          make([]string, 0),
+		Keyword:       "",
+		ParentID:      "unfiled",
+		Position:      -1,
 	}
 }
 
@@ -124,26 +122,7 @@ func (a *CLIArgumentsBookmarksCreateBookmark) Execute(ctx *cli.FFSContext) error
 
 	// ========================================================================
 
-	cfp, err := ctx.AbsSessionFilePath()
-	if err != nil {
-		return err
-	}
-
-	if !langext.FileExists(cfp) {
-		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
-	}
-
-	// ========================================================================
-
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
-
-	ctx.PrintVerbose("Load existing session from " + cfp)
-	session, err := syncclient.LoadSession(ctx, cfp)
-	if err != nil {
-		return err
-	}
-
-	session, err = client.AutoRefreshSession(ctx, session)
+	client, session, err := a.InitClient(ctx)
 	if err != nil {
 		return err
 	}

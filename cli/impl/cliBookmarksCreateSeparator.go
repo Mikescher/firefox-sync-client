@@ -7,7 +7,6 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
-	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
 	"strconv"
 	"time"
@@ -22,9 +21,8 @@ type CLIArgumentsBookmarksCreateSeparator struct {
 
 func NewCLIArgumentsBookmarksCreateSeparator() *CLIArgumentsBookmarksCreateSeparator {
 	return &CLIArgumentsBookmarksCreateSeparator{
-		ParentID:                  "unfiled",
-		Position:                  -1,
-		CLIArgumentsBookmarksUtil: CLIArgumentsBookmarksUtil{},
+		ParentID: "unfiled",
+		Position: -1,
 	}
 }
 
@@ -87,26 +85,7 @@ func (a *CLIArgumentsBookmarksCreateSeparator) Execute(ctx *cli.FFSContext) erro
 
 	// ========================================================================
 
-	cfp, err := ctx.AbsSessionFilePath()
-	if err != nil {
-		return err
-	}
-
-	if !langext.FileExists(cfp) {
-		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
-	}
-
-	// ========================================================================
-
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
-
-	ctx.PrintVerbose("Load existing session from " + cfp)
-	session, err := syncclient.LoadSession(ctx, cfp)
-	if err != nil {
-		return err
-	}
-
-	session, err = client.AutoRefreshSession(ctx, session)
+	client, session, err := a.InitClient(ctx)
 	if err != nil {
 		return err
 	}

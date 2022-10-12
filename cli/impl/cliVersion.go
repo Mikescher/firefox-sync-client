@@ -8,6 +8,7 @@ import (
 )
 
 type CLIArgumentsVersion struct {
+	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsVersion() *CLIArgumentsVersion {

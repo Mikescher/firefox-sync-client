@@ -10,6 +10,7 @@ import (
 )
 
 type CLIArgumentsHistoryBase struct {
+	CLIArgumentsHistoryUtil
 }
 
 func NewCLIArgumentsHistoryBase() *CLIArgumentsHistoryBase {
@@ -57,7 +58,9 @@ func (a *CLIArgumentsHistoryBase) Execute(ctx *cli.FFSContext) error {
 	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `history` command without an subcommand")
 }
 
-type CLIArgumentsHistoryUtil struct{}
+type CLIArgumentsHistoryUtil struct {
+	CLIArgumentsBaseUtil
+}
 
 func (a *CLIArgumentsHistoryUtil) filterDeleted(ctx *cli.FFSContext, records []models.HistoryRecord, includeDeleted bool, onlyDeleted bool) []models.HistoryRecord {
 	result := make([]models.HistoryRecord, 0, len(records))

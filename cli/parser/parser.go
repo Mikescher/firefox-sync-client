@@ -260,6 +260,16 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if (arg.Key == "auth-login-email") && arg.Value != nil {
+			opt.ManualAuthLoginEmail = langext.Ptr(*arg.Value)
+			continue
+		}
+
+		if (arg.Key == "auth-login-password") && arg.Value != nil {
+			opt.ManualAuthLoginPassword = langext.Ptr(*arg.Value)
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

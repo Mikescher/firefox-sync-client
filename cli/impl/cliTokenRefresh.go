@@ -10,6 +10,8 @@ import (
 
 type CLIArgumentsTokenRefresh struct {
 	Force bool
+
+	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsTokenRefresh() *CLIArgumentsTokenRefresh {

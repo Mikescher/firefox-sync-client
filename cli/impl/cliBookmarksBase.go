@@ -13,6 +13,7 @@ import (
 )
 
 type CLIArgumentsBookmarksBase struct {
+	CLIArgumentsBookmarksUtil
 }
 
 func NewCLIArgumentsBookmarksBase() *CLIArgumentsBookmarksBase {
@@ -60,7 +61,9 @@ func (a *CLIArgumentsBookmarksBase) Execute(ctx *cli.FFSContext) error {
 	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `bookmarks` command without an subcommand")
 }
 
-type CLIArgumentsBookmarksUtil struct{}
+type CLIArgumentsBookmarksUtil struct {
+	CLIArgumentsBaseUtil
+}
 
 func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType, parents *[]string) []models.BookmarkRecord {
 	result := make([]models.BookmarkRecord, 0, len(records))

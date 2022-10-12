@@ -76,7 +76,9 @@ func (a *CLIArgumentsPasswordsBase) Execute(ctx *cli.FFSContext) error {
 	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `passwords` command without an subcommand")
 }
 
-type CLIArgumentsPasswordsUtil struct{}
+type CLIArgumentsPasswordsUtil struct {
+	CLIArgumentsBaseUtil
+}
 
 func (a *CLIArgumentsPasswordsUtil) findPasswordRecord(ctx *cli.FFSContext, client *syncclient.FxAClient, session syncclient.FFSyncSession, query string, queryIsID bool, queryIsHost bool, queryIsExactHost bool) (models.Record, models.PasswordRecord, bool, error) {
 

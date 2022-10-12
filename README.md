@@ -16,5 +16,4 @@ TODO
    - macports package
    - chocolatey package
    - (=> makefile to build them all?)
- - verb.Execute(ctx) should return error (makes everything more simple)
  - option to skip session-file / session-managment alltogether (aka simply provide username+password and do not cache session (see cliHelp.go))

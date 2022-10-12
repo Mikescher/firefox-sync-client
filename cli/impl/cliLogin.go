@@ -15,6 +15,7 @@ type CLIArgumentsLogin struct {
 	Password   string
 	DeviceName string
 	DeviceType string
+	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsLogin() *CLIArgumentsLogin {

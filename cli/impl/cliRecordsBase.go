@@ -6,7 +6,9 @@ import (
 	"ffsyncclient/langext"
 )
 
-type CLIArgumentsRecordsUtil struct{}
+type CLIArgumentsRecordsUtil struct {
+	CLIArgumentsBaseUtil
+}
 
 func (a *CLIArgumentsRecordsUtil) prettyPrint(ctx *cli.FFSContext, pretty bool, v string, xmlident bool) string {
 	if pretty {

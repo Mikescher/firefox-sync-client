@@ -12,6 +12,7 @@ type CLIArgumentsHelp struct {
 	Extra    string
 	Verb     *cli.Mode
 	ExitCode consts.FFExitCode
+	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsHelp() *CLIArgumentsHelp {
@@ -175,26 +176,35 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"--version", "Show version."},
 		{"-v, --verbose", "Output more intermediate information"},
 		{"-q, --quiet", "Do not print anything"},
-		{"--sessionfile <cfg>", "Specify the location of the saved session"},
+
 		{"-f <fmt>, --format <fmt>", "Specify the output format (not all subcommands support all output-formats)"},
 		{"", "- 'text'"},
 		{"", "- 'json'"},
 		{"", "- 'netscape'   (default firefox bookmarks format)"},
 		{"", "- 'xml'"},
 		{"", "- 'table'"},
+
 		{"--auth-server <url>", "Specify the (authentication) server-url"},
 		{"--token-server <url>", "Specify the (token) server-url"},
+
 		{"--color", "Enforce colored output"},
 		{"--no-color", "Disable colored output"},
+
 		{"--timezone <tz>", "Specify the output timezone"},
 		{"", "Can be either:"},
 		{"", "  - UTC"},
 		{"", "  - Local (default)"},
 		{"", "  - IANA Time Zone, e.g. 'America/New_York'"},
 		{"--timeformat <url>", "Specify the output timeformat (golang syntax)"},
+
 		{"-o <f>, --output <f>", "Write the output to a file"},
+
+		{"--sessionfile <cfg>", "Specify the location of the saved session"},
+		{"--auth-login-email <email>", "Login with the sync server without using the saved session (enforces a new, temporary session)"},
+		{"--auth-login-password <pw>", "Login with the sync server without using the saved session (enforces a new, temporary session)"},
 		{"--no-autosave-session", "Do not update the sessionfile if the session was auto-refreshed"},
 		{"--force-refresh-session", "Always auto-refresh the session, even if its not expired"},
+
 		{"--no-xml-declaration", "Do not print the xml declaration when using `--format xml`"},
 		{"--minimized-json", "Do not indent (pretty-print) json output when using `--format json`"},
 	}

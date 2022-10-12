@@ -10,6 +10,7 @@ import (
 )
 
 type CLIArgumentsFormsBase struct {
+	CLIArgumentsFormsUtil
 }
 
 func NewCLIArgumentsFormsBase() *CLIArgumentsFormsBase {
@@ -57,7 +58,9 @@ func (a *CLIArgumentsFormsBase) Execute(ctx *cli.FFSContext) error {
 	return fferr.NewDirectOutput(consts.ExitcodeError, "Cannot call `forms` command without an subcommand")
 }
 
-type CLIArgumentsFormsUtil struct{}
+type CLIArgumentsFormsUtil struct {
+	CLIArgumentsBaseUtil
+}
 
 func (a *CLIArgumentsFormsUtil) filterDeleted(ctx *cli.FFSContext, records []models.FormRecord, includeDeleted bool, onlyDeleted bool, name *[]string) []models.FormRecord {
 	result := make([]models.FormRecord, 0, len(records))

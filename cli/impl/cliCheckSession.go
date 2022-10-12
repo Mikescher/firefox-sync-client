@@ -9,6 +9,7 @@ import (
 )
 
 type CLIArgumentsCheckSession struct {
+	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsCheckSession() *CLIArgumentsCheckSession {
