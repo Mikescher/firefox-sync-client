@@ -130,13 +130,13 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	}, nil
 }
 
-func (f FxAClient) RegisterDevice(ctx *cli.FFSContext, session LoginSession, deviceName string) error {
+func (f FxAClient) RegisterDevice(ctx *cli.FFSContext, session LoginSession, deviceName string, deviceType string) error {
 
 	ctx.PrintVerbose("Register device-name '" + deviceName + "'")
 
 	body := registerDeviceRequestSchema{
 		Name: deviceName,
-		Type: "cli",
+		Type: deviceType,
 	}
 
 	_, _, err := f.requestWithHawkToken(ctx, "POST", "/account/device", body, session.SessionToken, "sessionToken")
@@ -408,33 +408,6 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	}
 
 	return session.Extend(result), nil
-}
-
-func (f FxAClient) AutoRefreshSession(ctx *cli.FFSContext, session FFSyncSession) (FFSyncSession, error) {
-	session, changed, err := f.RefreshSession(ctx, session, ctx.Opt.ForceRefreshSession)
-	if err != nil {
-		return FFSyncSession{}, errorx.Decorate(err, "failed to refresh session")
-	}
-
-	if changed && ctx.Opt.SaveRefreshedSession {
-
-		ctx.PrintVerbose("Saved new session after auto-update")
-
-		ctx.PrintVerbose("Save session to " + ctx.Opt.SessionFilePath)
-
-		cfp, err := ctx.AbsSessionFilePath()
-		if err != nil {
-			return FFSyncSession{}, errorx.Decorate(err, "failed to get session file path")
-		}
-
-		err = session.Save(cfp)
-		if err != nil {
-			return FFSyncSession{}, errorx.Decorate(err, "failed to save session")
-		}
-
-	}
-
-	return session, nil
 }
 
 func (f FxAClient) RefreshSession(ctx *cli.FFSContext, session FFSyncSession, force bool) (FFSyncSession, bool, error) {

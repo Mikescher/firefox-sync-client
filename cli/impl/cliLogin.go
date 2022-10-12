@@ -28,6 +28,7 @@ func NewCLIArgumentsLogin() *CLIArgumentsLogin {
 		Email:      "",
 		Password:   "",
 		DeviceName: deviceName,
+		DeviceType: "cli",
 	}
 }
 
@@ -110,59 +111,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) error {
 
 	// ========================================================================
 
-	ctx.PrintVerboseHeader("[1] Login to Sync Account")
-
-	session, err := client.Login(ctx, a.Email, a.Password)
-	if err != nil {
-		return err
-	}
-
-	// ========================================================================
-
-	ctx.PrintVerboseHeader("[2] Register Device-Name")
-
-	err = client.RegisterDevice(ctx, session, a.DeviceName)
-	if err != nil {
-		return err
-	}
-
-	// ========================================================================
-
-	ctx.PrintVerboseHeader("[3] Fetch session keys")
-
-	keyA, keyB, err := client.FetchKeys(ctx, session)
-	if err != nil {
-		return err
-	}
-
-	ctx.PrintVerboseKV("Key[a]", keyA)
-	ctx.PrintVerboseKV("Key[b]", keyB)
-
-	extsession := session.Extend(keyA, keyB)
-
-	// ========================================================================
-
-	ctx.PrintVerboseHeader("[4] Assert BrowserID")
-
-	sessionBID, err := client.AssertBrowserID(ctx, extsession)
-	if err != nil {
-		return err
-	}
-
-	// ========================================================================
-
-	ctx.PrintVerboseHeader("[5] Get HAWK Credentials")
-
-	sessionHawk, err := client.HawkAuth(ctx, sessionBID)
-	if err != nil {
-		return err
-	}
-
-	// ========================================================================
-
-	ctx.PrintVerboseHeader("[6] Get Crypto Keys")
-
-	sessionCrypto, err := client.GetCryptoKeys(ctx, sessionHawk)
+	sessionCrypto, err := a.SyncLogin(ctx, client, a.Email, a.Password, a.DeviceName, a.DeviceType)
 	if err != nil {
 		return err
 	}
