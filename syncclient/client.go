@@ -105,7 +105,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	}
 
 	if !resp.Verified {
-		return LoginSession{}, errorx.InternalError.New("You must verify the login attempt (e.g. per e-mail) before continuing")
+		return LoginSession{}, fferr.DirectOutput.New("You must verify the login attempt (e.g. per e-mail) before continuing")
 	}
 
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
