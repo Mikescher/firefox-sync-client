@@ -5,7 +5,6 @@ TODO
 ====
 
  - README
- - API flowchart -> diagram.net
  - packaging
    - AUR package
    - debian package
