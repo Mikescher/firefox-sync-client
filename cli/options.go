@@ -27,6 +27,7 @@ type Options struct {
 	RequestFloodControlRetryDelay time.Duration
 	RequestServerErrRetryDelay    time.Duration
 	MaxRequestRetries             int
+	RequestTimeout                time.Duration
 }
 
 func DefaultCLIOptions() Options {
@@ -49,5 +50,6 @@ func DefaultCLIOptions() Options {
 		RequestFloodControlRetryDelay: 15 * time.Second,
 		RequestServerErrRetryDelay:    1 * time.Second,
 		MaxRequestRetries:             5,
+		RequestTimeout:                10 * time.Second,
 	}
 }

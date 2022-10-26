@@ -304,6 +304,14 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 
+		if (arg.Key == "request-timeout") && arg.Value != nil {
+			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
+				opt.RequestTimeout = timeext.FromSecondsFloat64(v)
+				continue
+			}
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

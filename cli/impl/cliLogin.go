@@ -107,7 +107,7 @@ func (a *CLIArgumentsLogin) Execute(ctx *cli.FFSContext) error {
 		return err
 	}
 
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+	client := syncclient.NewFxAClient(ctx, ctx.Opt.AuthServerURL)
 
 	// ========================================================================
 

@@ -73,7 +73,7 @@ func (a *CLIArgumentsTokenRefresh) Execute(ctx *cli.FFSContext) error {
 		return fferr.NewDirectOutput(consts.ExitcodeNoLogin, "Sessionfile does not exist.\nUse `ffsclient login <email> <password>` first")
 	}
 
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+	client := syncclient.NewFxAClient(ctx, ctx.Opt.AuthServerURL)
 
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)

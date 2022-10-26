@@ -74,7 +74,7 @@ func (a *CLIArgumentsCheckSession) Execute(ctx *cli.FFSContext) error {
 
 	// ========================================================================
 
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+	client := syncclient.NewFxAClient(ctx, ctx.Opt.AuthServerURL)
 
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)

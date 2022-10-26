@@ -29,11 +29,11 @@ type FxAClient struct {
 	client  http.Client
 }
 
-func NewFxAClient(serverurl string) *FxAClient {
+func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 	return &FxAClient{
 		authURL: serverurl,
 		client: http.Client{
-			Timeout: 10 * time.Second,
+			Timeout: ctx.Opt.RequestTimeout,
 		},
 	}
 }

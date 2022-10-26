@@ -34,7 +34,7 @@ func (a *CLIArgumentsBaseUtil) InitClient(ctx *cli.FFSContext) (*syncclient.FxAC
 		}
 		deviceType := "cli"
 
-		client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+		client := syncclient.NewFxAClient(ctx, ctx.Opt.AuthServerURL)
 
 		sessionCrypto, err := a.SyncLogin(ctx, client, email, passw, deviceName, deviceType)
 		if err != nil {
@@ -58,7 +58,7 @@ func (a *CLIArgumentsBaseUtil) InitClient(ctx *cli.FFSContext) (*syncclient.FxAC
 
 	// ========================================================================
 
-	client := syncclient.NewFxAClient(ctx.Opt.AuthServerURL)
+	client := syncclient.NewFxAClient(ctx, ctx.Opt.AuthServerURL)
 
 	ctx.PrintVerbose("Load existing session from " + cfp)
 	session, err := syncclient.LoadSession(ctx, cfp)
