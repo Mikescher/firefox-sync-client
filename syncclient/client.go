@@ -1053,7 +1053,7 @@ func (f FxAClient) doRequestWithRetries(ctx *cli.FFSContext, req *http.Request, 
 	}
 
 	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 500 {
-		// Service Unavailable
+		// Internal Server Error
 
 		ctx.PrintVerbose(fmt.Sprintf("(500 | Internal Server Error) Retry request after %f sec", ctx.Opt.RequestServerErrRetryDelay.Seconds()))
 		time.Sleep(ctx.Opt.RequestServerErrRetryDelay)
@@ -1061,7 +1061,7 @@ func (f FxAClient) doRequestWithRetries(ctx *cli.FFSContext, req *http.Request, 
 	}
 
 	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 502 {
-		// Service Unavailable
+		// Bad Gateway
 
 		ctx.PrintVerbose(fmt.Sprintf("(502 | Bad Gateway) Retry request after %f sec", ctx.Opt.RequestServerErrRetryDelay.Seconds()))
 		time.Sleep(ctx.Opt.RequestServerErrRetryDelay)
