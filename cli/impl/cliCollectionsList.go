@@ -7,17 +7,20 @@ import (
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"fmt"
+	"sort"
 	"strconv"
 )
 
 type CLIArgumentsCollectionsList struct {
 	ShowUsage bool
+	Sorted    bool
 	CLIArgumentsBaseUtil
 }
 
 func NewCLIArgumentsCollectionsList() *CLIArgumentsCollectionsList {
 	return &CLIArgumentsCollectionsList{
 		ShowUsage: false,
+		Sorted:    true,
 	}
 }
 
@@ -54,6 +57,10 @@ func (a *CLIArgumentsCollectionsList) Init(positionalArgs []string, optionArgs [
 	for _, arg := range optionArgs {
 		if arg.Key == "usage" && arg.Value == nil {
 			a.ShowUsage = true
+			continue
+		}
+		if arg.Key == "unsorted" && arg.Value == nil {
+			a.Sorted = false
 			continue
 		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
@@ -121,6 +128,12 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) error {
 			}
 			collections[idx].Usage = v.Usage
 		}
+	}
+
+	if a.Sorted {
+		sort.Slice(collections, func(i1, i2 int) bool {
+			return collections[i1].Name < collections[i2].Name
+		})
 	}
 
 	// ========================================================================

@@ -216,6 +216,12 @@ func (f FxAClient) AssertBrowserID(ctx *cli.FFSContext, session KeyedSession) (B
 		return BrowserIdSession{}, errorx.Decorate(err, "Failed to generate DSA key-pair")
 	}
 
+	ctx.PrintVerboseKV("pub[P]", privateKey.P.Text(16))
+	ctx.PrintVerboseKV("pub[Q]", privateKey.Q.Text(16))
+	ctx.PrintVerboseKV("pub[G]", privateKey.G.Text(16))
+	ctx.PrintVerboseKV("pub[Y]", privateKey.Y.Text(16))
+	ctx.PrintVerboseKV("priv[X]", privateKey.X.Text(16))
+
 	body := signCertRequestSchema{
 		PublicKey: signCertRequestSchemaPKey{
 			Algorithm: "DS",
