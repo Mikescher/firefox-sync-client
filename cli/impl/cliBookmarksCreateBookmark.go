@@ -7,6 +7,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
+	"fmt"
 	"github.com/joomcode/errorx"
 	"strconv"
 	"time"
@@ -108,7 +109,7 @@ func (a *CLIArgumentsBookmarksCreateBookmark) Init(positionalArgs []string, opti
 				a.Position = int(v)
 				continue
 			}
-			return fferr.DirectOutput.New("Failed to parse number argument '--position': '" + *arg.Value + "'")
+			return fferr.DirectOutput.New(fmt.Sprintf("Failed to parse number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}

@@ -12,6 +12,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
 	"ffsyncclient/models"
+	"ffsyncclient/timeext"
 	"fmt"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/joomcode/errorx"
@@ -75,7 +76,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 
 	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", "POST", requestURL))
 
-	rawResp, err := f.client.Do(req)
+	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
 	if err != nil {
 		return LoginSession{}, errorx.Decorate(err, "failed to do request")
 	}
@@ -84,8 +85,6 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	if err != nil {
 		return LoginSession{}, errorx.Decorate(err, "failed to read response-body request")
 	}
-
-	//TODO statuscode [429, 500, 503] means retry-after
 
 	if rawResp.StatusCode != 200 {
 		if len(string(respBodyRaw)) > 1 {
@@ -293,7 +292,7 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 
 	t0 := time.Now()
 
-	rawResp, err := f.client.Do(req)
+	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
 	if err != nil {
 		return HawkSession{}, errorx.Decorate(err, "failed to do request")
 	}
@@ -366,7 +365,7 @@ func (f FxAClient) GetCryptoKeys(ctx *cli.FFSContext, session HawkSession) (Cryp
 	}
 
 	ctx.PrintVerboseKV("record.ID", resp.ID)
-	ctx.PrintVerboseKV("record.Modified", langext.UnixFloatSeconds(resp.Modified))
+	ctx.PrintVerboseKV("record.Modified", timeext.UnixFloatSeconds(resp.Modified))
 	ctx.PrintVerboseKV("record.Payload", resp.Payload)
 
 	var payload payloadSchema
@@ -465,7 +464,7 @@ func (f FxAClient) GetCollectionsInfo(ctx *cli.FFSContext, session FFSyncSession
 	for k, v := range resp {
 		result = append(result, models.CollectionInfo{
 			Name:         k,
-			LastModified: langext.UnixFloatSeconds(v),
+			LastModified: timeext.UnixFloatSeconds(v),
 		})
 	}
 
@@ -619,7 +618,7 @@ func (f FxAClient) ListRecords(ctx *cli.FFSContext, session FFSyncSession, colle
 			ID:           v.ID,
 			Payload:      v.Payload,
 			SortIndex:    v.SortIndex,
-			Modified:     langext.UnixFloatSeconds(v.Modified),
+			Modified:     timeext.UnixFloatSeconds(v.Modified),
 			ModifiedUnix: v.Modified,
 		})
 	}
@@ -676,7 +675,7 @@ func (f FxAClient) GetRecord(ctx *cli.FFSContext, session FFSyncSession, collect
 	record := models.Record{
 		ID:           resp.ID,
 		RawData:      binResp,
-		Modified:     langext.UnixFloatSeconds(resp.Modified),
+		Modified:     timeext.UnixFloatSeconds(resp.Modified),
 		ModifiedUnix: resp.Modified,
 		Payload:      resp.Payload,
 		SortIndex:    resp.SortIndex,
@@ -958,7 +957,7 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		ctx.PrintVerbose("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
 	}
 
-	rawResp, err := f.client.Do(req)
+	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to do request")
 	}
@@ -975,8 +974,6 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 		}
 	}
 	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%s", string(respBodyRaw)))
-
-	//TODO statuscode [429, 500, 503] means retry-after
 
 	if rawResp.StatusCode == 404 {
 		if len(string(respBodyRaw)) > 1 {
@@ -1021,4 +1018,63 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 	}
 
 	return respBodyRaw, nil
+}
+
+func (f FxAClient) doRequestWithRetries(ctx *cli.FFSContext, req *http.Request, try int) (*http.Response, error) {
+
+	ctx.PrintVerbose(fmt.Sprintf("Start HTTP call to %s [[ try %d ]]", req.URL.String(), try))
+
+	resp, err := f.client.Do(req)
+	if err != nil {
+		ctx.PrintVerbose(fmt.Sprintf("HTTP call returned an error (%s)", err.Error()))
+
+		if try <= ctx.Opt.MaxRequestRetries && strings.HasSuffix(err.Error(), "x509: certificate signed by unknown authority") {
+			// not sure why or how this happens
+			// but sometimes token.services.mozilla.com returns simply a wrong cert ?!?
+			// could never really reproduce it and now we simply retry
+
+			ctx.PrintVerbose(fmt.Sprintf("(x509 error) Retry request after %f sec", ctx.Opt.RequestX509RetryDelay.Seconds()))
+			time.Sleep(ctx.Opt.RequestX509RetryDelay)
+			return f.doRequestWithRetries(ctx, req, try+1)
+		}
+
+		return nil, err
+	}
+
+	ctx.PrintVerbose("HTTP call returned Statuscode " + strconv.Itoa(resp.StatusCode))
+
+	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 429 {
+		// Client has sent too many requests
+		// see https://mozilla.github.io/ecosystem-platform/api#defined-errors
+
+		ctx.PrintVerbose(fmt.Sprintf("(429 | Client has sent too many requests) Retry request after %f sec", ctx.Opt.RequestFloodControlRetryDelay.Seconds()))
+		time.Sleep(ctx.Opt.RequestFloodControlRetryDelay)
+		return f.doRequestWithRetries(ctx, req, try+1)
+	}
+
+	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 500 {
+		// Service Unavailable
+
+		ctx.PrintVerbose(fmt.Sprintf("(500 | Internal Server Error) Retry request after %f sec", ctx.Opt.RequestServerErrRetryDelay.Seconds()))
+		time.Sleep(ctx.Opt.RequestServerErrRetryDelay)
+		return f.doRequestWithRetries(ctx, req, try+1)
+	}
+
+	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 502 {
+		// Service Unavailable
+
+		ctx.PrintVerbose(fmt.Sprintf("(502 | Bad Gateway) Retry request after %f sec", ctx.Opt.RequestServerErrRetryDelay.Seconds()))
+		time.Sleep(ctx.Opt.RequestServerErrRetryDelay)
+		return f.doRequestWithRetries(ctx, req, try+1)
+	}
+
+	if try <= ctx.Opt.MaxRequestRetries && resp.StatusCode == 503 {
+		// Service Unavailable
+
+		ctx.PrintVerbose(fmt.Sprintf("(503 | Service Unavailable) Retry request after %f sec", ctx.Opt.RequestServerErrRetryDelay.Seconds()))
+		time.Sleep(ctx.Opt.RequestServerErrRetryDelay)
+		return f.doRequestWithRetries(ctx, req, try+1)
+	}
+
+	return resp, nil
 }

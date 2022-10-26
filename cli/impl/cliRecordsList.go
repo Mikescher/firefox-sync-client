@@ -120,14 +120,14 @@ func (a *CLIArgumentsRecordsList) Init(positionalArgs []string, optionArgs []cli
 				a.Limit = langext.Ptr(int(v))
 				continue
 			}
-			return fferr.DirectOutput.New("Failed to parse number argument '--limit': '" + *arg.Value + "'")
+			return fferr.DirectOutput.New(fmt.Sprintf("Failed to parse number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 		if arg.Key == "offset" && arg.Value != nil {
 			if v, err := strconv.ParseInt(*arg.Value, 10, 32); err == nil {
 				a.Offset = langext.Ptr(int(v))
 				continue
 			}
-			return fferr.DirectOutput.New("Failed to parse number argument '--offset': '" + *arg.Value + "'")
+			return fferr.DirectOutput.New(fmt.Sprintf("Failed to parse number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 		if (arg.Key == "pretty-print" || arg.Key == "pp") && arg.Value == nil {
 			a.PrettyPrint = true

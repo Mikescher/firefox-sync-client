@@ -6,9 +6,11 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/langext"
+	"ffsyncclient/timeext"
 	"fmt"
 	"github.com/joomcode/errorx"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -268,6 +270,38 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 		if (arg.Key == "auth-login-password") && arg.Value != nil {
 			opt.ManualAuthLoginPassword = langext.Ptr(*arg.Value)
 			continue
+		}
+
+		if (arg.Key == "request-retry-delay-certerr") && arg.Value != nil {
+			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
+				opt.RequestX509RetryDelay = timeext.FromSecondsFloat64(v)
+				continue
+			}
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
+		}
+
+		if (arg.Key == "request-retry-delay-floodcontrol") && arg.Value != nil {
+			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
+				opt.RequestFloodControlRetryDelay = timeext.FromSecondsFloat64(v)
+				continue
+			}
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
+		}
+
+		if (arg.Key == "request-retry-delay-servererr") && arg.Value != nil {
+			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
+				opt.RequestServerErrRetryDelay = timeext.FromSecondsFloat64(v)
+				continue
+			}
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
+		}
+
+		if (arg.Key == "request-retry-max") && arg.Value != nil {
+			if v, err := strconv.ParseInt(*arg.Value, 10, 32); err == nil {
+				opt.MaxRequestRetries = int(v)
+				continue
+			}
+			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 
 		optionArguments = append(optionArguments, arg)

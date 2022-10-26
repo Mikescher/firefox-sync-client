@@ -187,6 +187,11 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"--auth-server <url>", "Specify the (authentication) server-url"},
 		{"--token-server <url>", "Specify the (token) server-url"},
 
+		{"--request-retry-delay-certerr <sec>", "Retry delay for requests that had a certificate error (default: 5 sec)"},
+		{"--request-retry-delay-floodcontrol <sec>", "Retry delay for requests that were throttled by the server (default: 15 sec)"},
+		{"--request-retry-delay-servererr <sec>", "Retry delay for requests that failed due to server errors (default: 1 sec)"},
+		{"--request-retry-max <num>", "Max request retries (default: 5)"},
+
 		{"--color", "Enforce colored output"},
 		{"--no-color", "Disable colored output"},
 
