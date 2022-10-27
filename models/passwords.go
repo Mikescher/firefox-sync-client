@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"ffsyncclient/cli"
-	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"time"
 )
 

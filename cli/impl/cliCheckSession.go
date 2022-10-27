@@ -4,8 +4,8 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsCheckSession struct {

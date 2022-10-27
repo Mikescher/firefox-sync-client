@@ -5,9 +5,9 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"time"
 )
 

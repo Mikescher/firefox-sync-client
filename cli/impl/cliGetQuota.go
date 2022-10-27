@@ -4,8 +4,8 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"fmt"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsQuotaGet struct {

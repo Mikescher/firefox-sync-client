@@ -4,10 +4,10 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"fmt"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsPasswordsUpdate struct {

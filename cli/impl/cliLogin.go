@@ -4,9 +4,9 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"ffsyncclient/syncclient"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"os"
 )
 

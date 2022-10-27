@@ -6,10 +6,11 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
-	"ffsyncclient/langext/term"
 	"fmt"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"gogs.mikescher.com/BlackForestBytes/goext/mathext"
+	"gogs.mikescher.com/BlackForestBytes/goext/termext"
 	"io"
 	"os"
 	"os/user"
@@ -80,7 +81,7 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 		return
 	}
 
-	c.PrintPrimaryOutputTableExt(data, header, langext.IntRange(0, len(data[0])))
+	c.PrintPrimaryOutputTableExt(data, header, langext.Range(0, len(data[0])))
 }
 
 func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, columnFilter []int) {
@@ -95,7 +96,7 @@ func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, col
 	lens := make([]int, len(data[0]))
 	for _, row := range data {
 		for i, cell := range row {
-			lens[i] = langext.Max(lens[i], len([]rune(cell)))
+			lens[i] = mathext.Max(lens[i], len([]rune(cell)))
 		}
 	}
 
@@ -230,7 +231,7 @@ func (c FFSContext) printErrorRaw(msg string) {
 	}
 
 	if c.Opt.OutputColor {
-		writeStderr(term.Red(msg))
+		writeStderr(termext.Red(msg))
 	} else {
 		writeStderr(msg)
 	}
@@ -242,7 +243,7 @@ func (c FFSContext) printVerboseRaw(msg string) {
 	}
 
 	if c.Opt.OutputColor {
-		writeStdout(term.Gray(msg))
+		writeStdout(termext.Gray(msg))
 	} else {
 		writeStdout(msg)
 	}

@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
-	"ffsyncclient/langext"
 	"github.com/joomcode/errorx"
+	"gogs.mikescher.com/BlackForestBytes/goext/timeext"
 	"os"
 	"path/filepath"
 	"time"
@@ -133,7 +133,7 @@ func (e BrowserIdSession) Extend(cred HawkCredentials, hawkTimeout time.Time) Ha
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
 		BrowserID:         e.BrowserID,
-		Timeout:           langext.MinTime(e.CertTime.Add(e.CertDuration), hawkTimeout),
+		Timeout:           timeext.Min(e.CertTime.Add(e.CertDuration), hawkTimeout),
 		HawkID:            cred.HawkID,
 		HawkKey:           cred.HawkKey,
 		APIEndpoint:       cred.APIEndpoint,

@@ -4,7 +4,8 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"gogs.mikescher.com/BlackForestBytes/goext/mathext"
 	"strings"
 )
 
@@ -84,7 +85,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) error {
 					right = "  # " + right
 				}
 				verbhelpBase = append(verbhelpBase, []string{left, right})
-				leftlen = langext.Max(leftlen, len(left))
+				leftlen = mathext.Max(leftlen, len(left))
 			}
 		}
 		for _, mode := range cli.ModesSpecial {
@@ -96,7 +97,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) error {
 					right = "  # " + right
 				}
 				verbhelpSpec = append(verbhelpSpec, []string{left, right})
-				leftlen = langext.Max(leftlen, len(left))
+				leftlen = mathext.Max(leftlen, len(left))
 			}
 		}
 
@@ -107,7 +108,7 @@ func (a *CLIArgumentsHelp) Execute(ctx *cli.FFSContext) error {
 				right = "  # " + right
 			}
 			opthelp = append(opthelp, []string{left, right})
-			leftlen = langext.Max(leftlen, len(left))
+			leftlen = mathext.Max(leftlen, len(left))
 		}
 
 		ctx.PrintPrimaryOutput("")

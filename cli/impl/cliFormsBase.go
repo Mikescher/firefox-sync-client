@@ -4,9 +4,9 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"ffsyncclient/langext"
 	"ffsyncclient/models"
 	"fmt"
+	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsFormsBase struct {

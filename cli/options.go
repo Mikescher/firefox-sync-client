@@ -2,7 +2,7 @@ package cli
 
 import (
 	"ffsyncclient/consts"
-	"ffsyncclient/langext/term"
+	"gogs.mikescher.com/BlackForestBytes/goext/termext"
 	"time"
 )
 
@@ -38,7 +38,7 @@ func DefaultCLIOptions() Options {
 		SessionFilePath:               "~/.config/firefox-sync-client.secret",
 		AuthServerURL:                 consts.ServerURLProduction,
 		TokenServerURL:                consts.TokenServerURL,
-		OutputColor:                   term.SupportsColors(),
+		OutputColor:                   termext.SupportsColors(),
 		TimeZone:                      time.Local,
 		TimeFormat:                    "2006-01-02 15:04:05Z07:00",
 		OutputFile:                    nil,
