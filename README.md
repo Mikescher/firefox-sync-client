@@ -151,6 +151,8 @@ This is only recommended for custom collections, you should never write invalid 
 Manual
 ======
 
+*(copied from v1.2.0)*
+
 *If I forgot to update the README you can always get the current version of the help with `./ffsclient --help`*
 
 ```
@@ -177,7 +179,8 @@ Basic Usage:
   ffsclient get <collection> <record-id>                           Get a single record
             (--raw | --decoded)                                      # Return raw data or decoded payload
             [--pretty-print | --pp]                                  # Pretty-Print json in decoded data / payload (if possible)
-  ffsclient delete <collection> <record-id> [--hard]               Delete the specified record
+            [--data-only]                                            # Only return the payload
+ffsclient delete <collection> <record-id> [--hard]               Delete the specified record
   ffsclient delete <collection>                                    Delete all the records in a collection
   ffsclient delete-all --force                                     Delete all (!) records in the server
   ffsclient create <collection> <record-id>                        Insert a new record
