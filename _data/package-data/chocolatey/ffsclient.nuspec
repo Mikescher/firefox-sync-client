@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>ffsclient</id>
+    <version>1.2.0</version>
+    <title>firefox-sync-client (Install)</title>
+    <authors>Mikescher</authors>
+    <projectUrl>https://github.com/Mikescher/firefox-sync-client</projectUrl>
+    <licenseUrl>https://github.com/Mikescher/firefox-sync-client/blob/master/LICENSE</licenseUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <projectSourceUrl>https://github.com/Mikescher/firefox-sync-client</projectSourceUrl>
+    <bugTrackerUrl>https://github.com/Mikescher/firefox-sync-client/issues</bugTrackerUrl>
+    <tags>cli firefox sync</tags>
+    <summary>A cli to access firefox-sync data</summary>
+    <description>
+        ffsclient is a commandline-utility to list/view/edit/delete entries in a firefox-sync account.
+        
+        Can be used to access bookmarks, passwords or custom data.
+    </description>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools" />
+  </files>
+</package>

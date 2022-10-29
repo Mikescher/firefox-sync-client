@@ -338,4 +338,4 @@ Exit Codes:
 Request Flowchart
 =================
 
-![FFSync-Flowchart](readme-data/api-flow.svg)
+![FFSync-Flowchart](_data/readme-data/api-flow.svg)

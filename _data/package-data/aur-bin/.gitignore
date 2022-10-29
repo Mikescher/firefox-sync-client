@@ -1,0 +1,5 @@
+pkg/
+src/
+ffsclient/
+.SRCINFO
+*.tar.zst
