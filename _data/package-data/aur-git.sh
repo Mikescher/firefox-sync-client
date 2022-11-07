@@ -8,18 +8,33 @@ IFS=$'\n\t'      # Set $IFS to only newline and tab.
 
 cd "$(dirname "$0")/aur-git"
 
-git clean -ffdX
-
-
 version=$(cd ../../../ && git tag --sort=-v:refname | grep -P 'v[0-9\.]' | head -1 | cut -c2-)
+
+echo "Version: ${version}"
+
 sed --regexp-extended  -i "s/pkgver=[0-9\.]+/pkgver=${version}/g" PKGBUILD
+
+
 
 namcap PKGBUILD
 makepkg --printsrcinfo > .SRCINFO
 makepkg
+
+git clean -ffdX
+
 
 cd ../../../
 pwd
 git clone ssh://aur@aur.archlinux.org/ffsclient-git.git _out/ffsclient-git
 cp _data/package-data/aur-git/PKGBUILD _out/ffsclient-git/PKGBUILD
 cp _data/package-data/aur-git/.SRCINFO _out/ffsclient-git/.SRCINFO
+
+
+cd _out/ffsclient-git
+
+git add PKGBUILD
+git add .SRCINFO
+
+git commit -m "v${version}"
+
+# git push manually (!)
