@@ -4,7 +4,7 @@
 
 build:
 	CGO_ENABLED=0 go build -o _out/ffsclient cmd/ffsclient/main.go
- 
+
 run: build
 	./_out/ffsclient
 
@@ -36,8 +36,3 @@ package:
 	_data/package-data/aur-bin.sh
 	_data/package-data/chocolatey.sh
 	_data/package-data/homebrew.sh
-
-test:
-	go build -o _out/ffsclient_linux-amd64         cmd/ffsclient/main.go
-	cs0="$(shell sha256sum _out/ffsclient_linux-amd64 | cut -d ' ' -f 1)"
-	echo "$(shell sha256sum _out/ffsclient_linux-amd64 | cut -d ' ' -f 1)"
