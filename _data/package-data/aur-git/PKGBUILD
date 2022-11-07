@@ -1,7 +1,7 @@
 # Maintainer: Mikescher <aur@mikescher.com>
 # Repo:       https://github.com/Mikescher/firefox-sync-client
 
-pkgname=ffsclient
+pkgname=ffsclient-git
 pkgver=1.2.0
 pkgrel=1
 
