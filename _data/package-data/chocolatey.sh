@@ -6,25 +6,29 @@ set -o errtrace  # Allow the above trap be inherited by all functions in the scr
 set -o pipefail  # Return value of a pipeline is the value of the last (rightmost) command to exit with a non-zero status
 IFS=$'\n\t'      # Set $IFS to only newline and tab.
 
-cd "$(dirname "$0")/chocolatey"
+cd "$(dirname "$0")/../../"
+cd "_out"
 
-git clean -ffdX
+cp -r "../_data/package-data/chocolatey" .
+cd "chocolatey"
+
+version=$(cd ../../ && git tag --sort=-v:refname | grep -P 'v[0-9\.]' | head -1 | cut -c2-)
+sed --regexp-extended  -i "s!__VERSION__!${version}!g" ffsclient.nuspec
 
 
-version=$(cd ../../../ && git tag --sort=-v:refname | grep -P 'v[0-9\.]' | head -1 | cut -c2-)
-sed --regexp-extended  -i "s!<version>[0-9\.]+</version>!<version>${version}</version>!g" ffsclient.nuspec
-
-
-cp "../../../_out/ffsclient_win-386.exe" "/tmp/ffsclient.exe"
+cp "../../_out/ffsclient_win-386.exe" "/tmp/ffsclient.exe"
 zip "tools/ffsclient_32.zip" "/tmp/ffsclient.exe"
 rm "/tmp/ffsclient.exe"
 
-cp "../../../_out/ffsclient_win-amd64.exe" "/tmp/ffsclient.exe"
+cp "../../_out/ffsclient_win-amd64.exe" "/tmp/ffsclient.exe"
 zip "tools/ffsclient_64.zip" "/tmp/ffsclient.exe"
 rm "/tmp/ffsclient.exe"
 
 
-# choco pack
+docker run --rm --volume "$(pwd):/root/ffsclient" "chocolatey/choco:latest" choco pack /root/ffsclient/ffsclient.nuspec --outputdirectory ffsclient
 
-# choco push ffsclient.nupkg --source https://push.chocolatey.org/
 
+# (!) manually:
+#
+# docker run --rm --volume "$(pwd)/_out/chocolatey:/root/ffsclient" "chocolatey/choco:latest" /root/ffsclient/push.sh "$(secret-tool lookup identifier "a834a7ca-f2e4-4ffc-b4b7-27bfc1f146d9")"
+#

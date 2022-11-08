@@ -7,6 +7,7 @@ set -o pipefail  # Return value of a pipeline is the value of the last (rightmos
 IFS=$'\n\t'      # Set $IFS to only newline and tab.
 
 cd "$(dirname "$0")/aur-bin"
+git clean -ffdX
 
 version="$(cd ../../../ && git tag --sort=-v:refname | grep -P 'v[0-9\.]' | head -1 | cut -c2-)"
 cs0="$(cd ../../../ && sha256sum _out/ffsclient_linux-amd64 | cut -d ' ' -f 1)"
@@ -20,8 +21,6 @@ namcap PKGBUILD
 makepkg --printsrcinfo > .SRCINFO
 # makepkg #(do not makepkg, release is probably not live)
 
-git clean -ffdX
-
 
 cd ../../../
 git clone ssh://aur@aur.archlinux.org/ffsclient-bin.git _out/ffsclient-bin
@@ -29,11 +28,20 @@ cp -v _data/package-data/aur-bin/PKGBUILD _out/ffsclient-bin/PKGBUILD
 cp -v _data/package-data/aur-bin/.SRCINFO _out/ffsclient-bin/.SRCINFO
 
 
+
 cd _out/ffsclient-bin
 
 git add PKGBUILD
 git add .SRCINFO
 
-git commit -m "v${version}"
+if [ -z "$(git status --porcelain)" ]; then 
+  echo "(!) Nothing changed -- nothing to commit"
+else 
+  git commit -m "v${version}"
+fi
+
+
+cd "../../_data/package-data/aur-bin"
+git clean -ffdX
 
 # git push manually (!)

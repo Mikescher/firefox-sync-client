@@ -32,7 +32,12 @@ cd _out/homebrew-tap/
 
 git add ffsclient.rb
 
-git commit -m "ffsclient v${version}"
+if [ -z "$(git status --porcelain)" ]; then 
+  echo "(!) Nothing changed -- nothing to commit"
+else 
+  git commit -m "ffsclient v${version}"
+fi
+
 
 
 # git push manually (!)

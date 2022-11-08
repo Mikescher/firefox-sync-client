@@ -7,6 +7,7 @@ set -o pipefail  # Return value of a pipeline is the value of the last (rightmos
 IFS=$'\n\t'      # Set $IFS to only newline and tab.
 
 cd "$(dirname "$0")/aur-git"
+git clean -ffdX
 
 version=$(cd ../../../ && git tag --sort=-v:refname | grep -P 'v[0-9\.]' | head -1 | cut -c2-)
 
@@ -19,8 +20,6 @@ sed --regexp-extended  -i "s/pkgver=[0-9\.]+/pkgver=${version}/g" PKGBUILD
 namcap PKGBUILD
 makepkg --printsrcinfo > .SRCINFO
 makepkg
-
-git clean -ffdX
 
 
 cd ../../../
@@ -35,6 +34,14 @@ cd _out/ffsclient-git
 git add PKGBUILD
 git add .SRCINFO
 
-git commit -m "v${version}"
+if [ -z "$(git status --porcelain)" ]; then 
+  echo "(!) Nothing changed -- nothing to commit"
+else 
+  git commit -m "v${version}"
+fi
+
+
+cd "../../_data/package-data/aur-git"
+git clean -ffdX
 
 # git push manually (!)
