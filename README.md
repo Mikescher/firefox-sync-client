@@ -28,14 +28,18 @@ Table of contents
 Installation
 ============
 
-The latest binary can be downloaded from the [github releases page](https://github.com/Mikescher/firefox-sync-client/releases).
+The latest binary (windows/linux/macOS/FreeBSD/OpenBSD) can be downloaded from the [github releases page](https://github.com/Mikescher/firefox-sync-client/releases):.
+
+https://github.com/Mikescher/firefox-sync-client/releases
 
 ffsclient does not have any dependencies and can be placed directly in your $PATH (eg /usr/local/bin).
+
+&nbsp;
 
 Alternatively you can use one of the following package manager:
  - [Arch User Repository](https://aur.archlinux.org/packages/ffsclient): `yay -S ffsclient`
  - [Homebrew](https://formulae.brew.sh/formula/ffsclient): `brew tap Mikescher/tap && brew install ffsclient`
- - [Chocolatey](https://community.chocolatey.org/packages/git): `choco install ffsclient`
+ - [Chocolatey](https://community.chocolatey.org/packages/ffsclient): `choco install ffsclient`
 
 Usage
 =====
