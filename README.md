@@ -30,7 +30,7 @@ Installation
 
 The latest binary (windows/linux/macOS/FreeBSD/OpenBSD) can be downloaded from the [github releases page](https://github.com/Mikescher/firefox-sync-client/releases):.
 
-https://github.com/Mikescher/firefox-sync-client/releases
+https://github.com/Mikescher/firefox-sync-client/releases/latest
 
 ffsclient does not have any dependencies and can be placed directly in your $PATH (eg /usr/local/bin).
 
