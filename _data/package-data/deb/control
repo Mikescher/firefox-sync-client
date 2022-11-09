@@ -1,0 +1,9 @@
+Package: ffsclient
+Version: <<version>>
+Section: custom
+Priority: optional
+Architecture: <<arch>>
+Essential: no
+Installed-Size: <<fsize>>
+Maintainer: mikescher.com
+Description: A cli for firefox-sync (firefox bookmarks, passwords, account, ...)

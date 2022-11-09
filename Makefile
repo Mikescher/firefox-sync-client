@@ -32,6 +32,7 @@ package:
 	GOARCH=amd64 GOOS=freebsd               go build -o _out/ffsclient_freebsd-amd64                        cmd/ffsclient/main.go  # FreeBSD - 64 bit
 	GOARCH=arm64 GOOS=freebsd               go build -o _out/ffsclient_freebsd-arm64                        cmd/ffsclient/main.go  # FreeBSD - ARM
 
+	_data/package-data/deb.sh
 	_data/package-data/aur-git.sh
 	_data/package-data/aur-bin.sh
 	_data/package-data/chocolatey.sh
