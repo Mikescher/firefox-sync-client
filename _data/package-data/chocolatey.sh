@@ -1,10 +1,13 @@
 #!/bin/bash
 
+# https://docs.chocolatey.org/en-us/create/
+
 set -o nounset   # disallow usage of unset vars  ( set -u )
 set -o errexit   # Exit immediately if a pipeline returns non-zero.  ( set -e )
 set -o errtrace  # Allow the above trap be inherited by all functions in the script.  ( set -E )
 set -o pipefail  # Return value of a pipeline is the value of the last (rightmost) command to exit with a non-zero status
 IFS=$'\n\t'      # Set $IFS to only newline and tab.
+
 
 cd "$(dirname "$0")/../../"
 cd "_out"
