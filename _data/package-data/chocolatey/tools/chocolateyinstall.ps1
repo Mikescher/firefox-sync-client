@@ -9,11 +9,8 @@ $packageArgs = @{
     FileFullPath64 = Join-Path $toolsDir 'ffsclient_64.zip'
 }
 
-#Remove old versions of ripgrep in the tools directory
-Get-ChildItem -Directory -Path $toolsDir | Remove-Item -Recurse -Ea 0
-
 Get-ChocolateyUnzip @packageArgs
 
-Write-Host "ripgrep installed to $toolsDir"
+Write-Host "ffsclient installed to $toolsDir"
 
 Remove-Item -Force -Path $toolsDir\*.zip
