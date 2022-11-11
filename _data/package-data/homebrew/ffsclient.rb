@@ -1,4 +1,4 @@
-class FirefoxSyncClient < Formula
+class Ffsclient < Formula
 
   desc     " A cli for firefox-sync (firefox bookmarks, passwords, account, ...) "
   homepage "https://github.com/Mikescher/firefox-sync-client"
@@ -6,7 +6,7 @@ class FirefoxSyncClient < Formula
   sha256   "<<shahash>>"
 
   def install
-    bin.install "firefox-sync-client"
+    bin.install "ffsclient_macos-amd64" => "ffsclient"
   end
 
   test do
