@@ -37,7 +37,7 @@ ffsclient does not have any dependencies and can be placed directly in your $PAT
 &nbsp;
 
 Alternatively you can use one of the following package manager:
- - [Arch User Repository](https://aur.archlinux.org/packages/ffsclient): `yay -S ffsclient`
+ - [Arch User Repository](https://aur.archlinux.org/packages/ffsclient): `yay -S ffsclient-git` / `yay -S ffsclient-bin`
  - [Homebrew](https://formulae.brew.sh/formula/ffsclient): `brew tap Mikescher/tap && brew install ffsclient`
  - [Chocolatey](https://community.chocolatey.org/packages/ffsclient): `choco install ffsclient`
 
