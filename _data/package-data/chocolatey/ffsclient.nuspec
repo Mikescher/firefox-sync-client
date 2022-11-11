@@ -21,6 +21,8 @@
         Can be used to access bookmarks, passwords or custom data.
 
         See `ffsclient --help` for more usage information.
+
+        Note regarding the (false) positives in the VirusTotal scan: https://github.com/Mikescher/firefox-sync-client/blob/master/_data/windows_virustotal.md
     </description>
   </metadata>
   <files>
