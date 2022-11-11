@@ -28,6 +28,7 @@ type Options struct {
 	RequestServerErrRetryDelay    time.Duration
 	MaxRequestRetries             int
 	RequestTimeout                time.Duration
+	RequestX509Ignore             bool
 }
 
 func DefaultCLIOptions() Options {
@@ -51,5 +52,6 @@ func DefaultCLIOptions() Options {
 		RequestServerErrRetryDelay:    1 * time.Second,
 		MaxRequestRetries:             5,
 		RequestTimeout:                10 * time.Second,
+		RequestX509Ignore:             false,
 	}
 }

@@ -312,6 +312,11 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 
+		if (arg.Key == "request-ignore-certerr") && arg.Value != nil {
+			opt.RequestX509Ignore = true
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

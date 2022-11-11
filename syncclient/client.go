@@ -5,6 +5,7 @@ import (
 	"crypto/dsa"
 	"crypto/rand"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -17,6 +18,7 @@ import (
 	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"gogs.mikescher.com/BlackForestBytes/goext/timeext"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,11 +32,36 @@ type FxAClient struct {
 }
 
 func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
+	c := http.Client{
+		Timeout: ctx.Opt.RequestTimeout,
+	}
+
+	if ctx.Opt.RequestX509Ignore {
+
+		// Standard values from http.DefaultTransport ( except t.TLSClientConfig )
+
+		d := &net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+		}
+
+		t := &http.Transport{
+			Proxy:                 http.ProxyFromEnvironment,
+			DialContext:           d.DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+		}
+
+		c.Transport = t
+	}
+
 	return &FxAClient{
 		authURL: serverurl,
-		client: http.Client{
-			Timeout: ctx.Opt.RequestTimeout,
-		},
+		client:  c,
 	}
 }
 

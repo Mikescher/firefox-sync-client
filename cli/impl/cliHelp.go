@@ -193,6 +193,7 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"--request-retry-delay-servererr <sec>", "Retry delay for requests that failed due to server errors (default: 1 sec)"},
 		{"--request-retry-max <num>", "Max request retries (default: 5)"},
 		{"--request-timeout <sec>", "Timeout for API request (default 10 sec)"},
+		{"--request-ignore-certerr", "Ignore certificate errors (do not verify ssl)"},
 
 		{"--color", "Enforce colored output"},
 		{"--no-color", "Disable colored output"},
