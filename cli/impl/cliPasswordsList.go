@@ -185,9 +185,9 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 		}
 
 		if a.IncludeDeleted && !a.OnlyDeleted {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 2, 3, 4})
+			ctx.PrintPrimaryOutputTableExt(table, []int{0, 1, 2, 3, 4})
 		} else {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3, 4})
+			ctx.PrintPrimaryOutputTableExt(table, []int{0, 2, 3, 4})
 		}
 
 		return nil

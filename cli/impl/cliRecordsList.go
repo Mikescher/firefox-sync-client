@@ -240,7 +240,7 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 			})
 		}
 
-		ctx.PrintPrimaryOutputTable(table, true)
+		ctx.PrintPrimaryOutputTable(table)
 		return nil
 
 	case cli.OutputFormatText:
@@ -314,7 +314,7 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			})
 		}
 
-		ctx.PrintPrimaryOutputTable(table, true)
+		ctx.PrintPrimaryOutputTable(table)
 		return nil
 
 	case cli.OutputFormatText:

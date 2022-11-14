@@ -312,8 +312,23 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
 		}
 
-		if (arg.Key == "request-ignore-certerr") && arg.Value != nil {
+		if (arg.Key == "request-ignore-certerr") && arg.Value == nil {
 			opt.RequestX509Ignore = true
+			continue
+		}
+
+		if (arg.Key == "table-columns") && arg.Value != nil {
+			opt.TableFormatFilter = langext.Ptr(*arg.Value)
+			continue
+		}
+
+		if (arg.Key == "table-truncate") && arg.Value == nil {
+			opt.TableFormatTruncate = true
+			continue
+		}
+
+		if (arg.Key == "no-table-truncate") && arg.Value == nil {
+			opt.TableFormatTruncate = false
 			continue
 		}
 

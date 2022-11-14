@@ -158,7 +158,7 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 			}
 		}
 
-		ctx.PrintPrimaryOutputTable(table, true)
+		ctx.PrintPrimaryOutputTable(table)
 		return nil
 
 	case cli.OutputFormatText:

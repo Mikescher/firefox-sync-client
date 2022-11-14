@@ -14,6 +14,8 @@ github.com/zenazn/pkcs7pad v0.0.0-20170308005700-253a5b1f0e03 h1:m1h+vudopHsI67F
 github.com/zenazn/pkcs7pad v0.0.0-20170308005700-253a5b1f0e03/go.mod h1:8sheVFH84v3PCyFY/O02mIgSQY9I6wMYPWsq7mDnEZY=
 gogs.mikescher.com/BlackForestBytes/goext v0.0.17 h1:jsfbvII7aa0SH9qY0fnXBdtNnQe1YY3DgXDThEwLICc=
 gogs.mikescher.com/BlackForestBytes/goext v0.0.17/go.mod h1:TMBOjo3FRFh/GiTT0z3nwLmgcFJB87oSF2VMs4XUCTQ=
+gogs.mikescher.com/BlackForestBytes/goext v0.0.18 h1:fprrLoAPGdI4ObveHR1DjiP9WhlTJppWtjqMA6ZkyS8=
+gogs.mikescher.com/BlackForestBytes/goext v0.0.18/go.mod h1:TMBOjo3FRFh/GiTT0z3nwLmgcFJB87oSF2VMs4XUCTQ=
 golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8 h1:GIAS/yBem/gq2MUqgNIzUHW7cJMmx3TGZOrnyYaNQ6c=
 golang.org/x/crypto v0.0.0-20220817201139-bc19a97f63c8/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/sys v0.1.0 h1:kunALQeHf1/185U1i0GOB/fy1IPRDDpuoOOqRReG57U=

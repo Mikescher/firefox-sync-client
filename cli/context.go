@@ -11,6 +11,7 @@ import (
 	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"gogs.mikescher.com/BlackForestBytes/goext/mathext"
 	"gogs.mikescher.com/BlackForestBytes/goext/termext"
+	"golang.org/x/term"
 	"io"
 	"os"
 	"os/user"
@@ -72,7 +73,7 @@ func (c FFSContext) PrintPrimaryOutputXML(data any) {
 	c.printPrimaryRaw(string(msg) + "\n")
 }
 
-func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
+func (c FFSContext) PrintPrimaryOutputTable(data [][]string) {
 	if c.Opt.Quiet {
 		return
 	}
@@ -81,10 +82,49 @@ func (c FFSContext) PrintPrimaryOutputTable(data [][]string, header bool) {
 		return
 	}
 
-	c.PrintPrimaryOutputTableExt(data, header, langext.Range(0, len(data[0])))
+	c.PrintPrimaryOutputTableExt(data, langext.Range(0, len(data[0])))
 }
 
-func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, columnFilter []int) {
+func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, columnFilter []int) {
+
+	realColFilter := make([]int, 0, len(columnFilter))
+
+	if c.Opt.TableFormatFilter == nil {
+
+		realColFilter = columnFilter
+
+	} else if len(data) == 0 {
+
+		realColFilter = columnFilter
+
+	} else {
+
+		cleanHeader := func(v string) string {
+			v = strings.TrimSpace(v)
+			v = strings.ToLower(v)
+			v = strings.ReplaceAll(v, " ", "")
+			return v
+		}
+
+		cheaders := langext.ArrMap(data[0], cleanHeader)
+
+		for _, uf := range strings.Split(*c.Opt.TableFormatFilter, ",") {
+
+			cuf := cleanHeader(uf)
+
+			idx := langext.ArrFirstIndex(cheaders, cuf)
+			if idx >= 0 && langext.InArray(idx, columnFilter) {
+
+				realColFilter = append(realColFilter, idx)
+
+			}
+		}
+	}
+
+	c.printPrimaryTable(data, realColFilter, c.Opt.TableFormatTruncate)
+}
+
+func (c FFSContext) printPrimaryTable(data [][]string, columnFilter []int, truncate bool) {
 	if c.Opt.Quiet {
 		return
 	}
@@ -92,11 +132,31 @@ func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, col
 	if len(data) == 0 {
 		return
 	}
+
+	colsep := "    "
 
 	lens := make([]int, len(data[0]))
 	for _, row := range data {
 		for i, cell := range row {
 			lens[i] = mathext.Max(lens[i], len([]rune(cell)))
+		}
+	}
+
+	if truncate && len(data) > 0 {
+		filteredLens := make([]int, 0, len(lens))
+		filteredHdr := make([]string, 0, len(data[0]))
+		for _, colidx := range columnFilter {
+			filteredLens = append(filteredLens, lens[colidx])
+			filteredHdr = append(filteredHdr, data[0][colidx])
+		}
+
+		tableWidth := langext.ArrSum(filteredLens) + (len(filteredLens)-1)*len(colsep)
+		termWidth, _, err := term.GetSize(int(os.Stdout.Fd()))
+		if err == nil && tableWidth > termWidth {
+			filteredLens = c.truncateTableColumns(filteredLens, termWidth, filteredHdr, len(colsep))
+			for ic, colidx := range columnFilter {
+				lens[colidx] = filteredLens[ic]
+			}
 		}
 	}
 
@@ -106,26 +166,91 @@ func (c FFSContext) PrintPrimaryOutputTableExt(data [][]string, header bool, col
 			rowstr := ""
 			for ic, colidx := range columnFilter {
 				if ic > 0 {
-					rowstr += "    "
+					rowstr += colsep
 				}
-				rowstr += langext.StrRunePadRight(data[rowidx][colidx], " ", lens[colidx])
+				str := langext.StrRunePadRight(data[rowidx][colidx], " ", lens[colidx])
+				if truncate {
+					str = c.truncTableData(str, lens[colidx])
+				}
+				rowstr += str
 			}
 			c.printPrimaryRaw(rowstr + "\n")
 		}
 
-		if rowidx == 0 && header {
+		if rowidx == 0 {
 			rowstr := ""
 			for ic, colidx := range columnFilter {
 				if ic > 0 {
-					rowstr += "    "
+					rowstr += colsep
 				}
-				rowstr += langext.StrRunePadRight("", "-", lens[colidx])
+				str := langext.StrRunePadRight("", "-", lens[colidx])
+				if truncate {
+					str = c.truncTableData(str, lens[colidx])
+				}
+				rowstr += str
 			}
 			c.printPrimaryRaw(rowstr + "\n")
 		}
 
 	}
 
+}
+
+func (c FFSContext) truncateTableColumns(calcLens []int, termWidth int, header []string, colsepWidth int) []int {
+
+	colCount := len(calcLens)
+
+	remainingWidth := termWidth - colsepWidth*(colCount-1)
+
+	runelen := func(v string) int {
+		return len([]rune(v))
+	}
+
+	realWidths := make([]int, colCount) // all zero
+
+	// reserve at least header
+	for i := 0; i < colCount; i++ {
+
+		realWidths[i] = runelen(header[i])
+		remainingWidth -= realWidths[i]
+
+	}
+
+	for remainingWidth > 0 {
+
+		changed := false
+		for i := 0; i < colCount; i++ {
+			if realWidths[i] >= calcLens[i] {
+				continue // already happy
+			}
+			realWidths[i]++
+			remainingWidth--
+			changed = true
+
+			if remainingWidth <= 0 {
+				return realWidths // early return
+			}
+
+		}
+		if !changed {
+			return realWidths // everyones happy
+		}
+
+	}
+
+	return realWidths
+}
+
+func (c FFSContext) truncTableData(str string, collen int) string {
+	rlen := len([]rune(str))
+	if rlen > collen {
+		if collen <= 3 {
+			return strings.Repeat(".", collen)
+		}
+		return string(([]rune(str))[0:collen-3]) + "..."
+	} else {
+		return str
+	}
 }
 
 func (c FFSContext) PrintFatalMessage(msg string) {

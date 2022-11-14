@@ -179,9 +179,9 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 		}
 
 		if a.IncludeDeleted && !a.OnlyDeleted {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 1, 2, 3, 4, 5, 6})
+			ctx.PrintPrimaryOutputTableExt(table, []int{0, 1, 2, 3, 4, 5, 6})
 		} else {
-			ctx.PrintPrimaryOutputTableExt(table, true, []int{0, 2, 3, 4, 5, 6})
+			ctx.PrintPrimaryOutputTableExt(table, []int{0, 2, 3, 4, 5, 6})
 		}
 
 		return nil

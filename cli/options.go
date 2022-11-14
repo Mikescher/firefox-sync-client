@@ -3,6 +3,8 @@ package cli
 import (
 	"ffsyncclient/consts"
 	"gogs.mikescher.com/BlackForestBytes/goext/termext"
+	"golang.org/x/term"
+	"os"
 	"time"
 )
 
@@ -29,6 +31,8 @@ type Options struct {
 	MaxRequestRetries             int
 	RequestTimeout                time.Duration
 	RequestX509Ignore             bool
+	TableFormatFilter             *string
+	TableFormatTruncate           bool
 }
 
 func DefaultCLIOptions() Options {
@@ -53,5 +57,7 @@ func DefaultCLIOptions() Options {
 		MaxRequestRetries:             5,
 		RequestTimeout:                10 * time.Second,
 		RequestX509Ignore:             false,
+		TableFormatFilter:             nil,
+		TableFormatTruncate:           term.IsTerminal(int(os.Stdout.Fd())),
 	}
 }
