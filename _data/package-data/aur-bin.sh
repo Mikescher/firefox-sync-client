@@ -28,6 +28,8 @@ cp -v _data/package-data/aur-bin/PKGBUILD _out/ffsclient-bin/PKGBUILD
 cp -v _data/package-data/aur-bin/.SRCINFO _out/ffsclient-bin/.SRCINFO
 
 
+git checkout _data/package-data/aur-bin/PKGBUILD
+
 
 cd _out/ffsclient-bin
 

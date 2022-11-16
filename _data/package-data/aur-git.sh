@@ -28,6 +28,8 @@ git clone ssh://aur@aur.archlinux.org/ffsclient-git.git _out/ffsclient-git
 cp _data/package-data/aur-git/PKGBUILD _out/ffsclient-git/PKGBUILD
 cp _data/package-data/aur-git/.SRCINFO _out/ffsclient-git/.SRCINFO
 
+git checkout _data/package-data/aur-bin/PKGBUILD
+
 
 cd _out/ffsclient-git
 
