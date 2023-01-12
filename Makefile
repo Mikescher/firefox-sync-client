@@ -37,3 +37,23 @@ package:
 	_data/package-data/aur-bin.sh
 	_data/package-data/chocolatey.sh
 	_data/package-data/homebrew.sh
+
+	echo ""
+	echo "[TODO]: call `make package-push-aur-git`"
+	echo "[TODO]: call `make package-push-aur-bin`"
+	echo "[TODO]: call `make package-push-homebrew`"
+	echo "[TODO]: call `make package-push-chocolatey`"
+	echo "[TODO]: create github release"
+	echo ""
+
+package-push-aur-git:
+	cd _out/ffsclient-git && git push
+
+package-push-aur-bin:
+	cd _out/ffsclient-bin && git push
+
+package-push-homebrew:
+	cd _out/homebrew-tap && git push
+
+package-push-chocolatey:
+	docker run --rm --volume "$(shell pwd)/_out/chocolatey:/root/ffsclient" "chocolatey/choco:latest" /root/ffsclient/push.sh "$(shell secret-tool lookup identifier "a834a7ca-f2e4-4ffc-b4b7-27bfc1f146d9")"
