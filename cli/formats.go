@@ -12,6 +12,7 @@ const (
 	OutputFormatNetscape OutputFormat = "netscape"
 	OutputFormatXML      OutputFormat = "xml"
 	OutputFormatTable    OutputFormat = "table"
+	OutputFormatTSV      OutputFormat = "tsv"
 )
 
 func (f OutputFormat) String() string {
@@ -35,6 +36,9 @@ func GetOutputFormat(v string) (OutputFormat, bool) {
 
 	case strings.ToLower(string(OutputFormatTable)):
 		return OutputFormatTable, true
+
+        case strings.ToLower(string(OutputFormatTSV)):
+                return OutputFormatTSV, true
 
 	default:
 		return "", false

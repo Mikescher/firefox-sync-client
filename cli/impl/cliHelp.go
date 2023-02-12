@@ -184,6 +184,7 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"", "- 'netscape'   (default firefox bookmarks format)"},
 		{"", "- 'xml'"},
 		{"", "- 'table'"},
+		{"", "- 'tsv'"},
 
 		{"--table-truncate", "Truncate columns of table-format to fit terminal width (needs -f table)"},
 		{"--no-table-truncate", "Disable truncation of columns in table-format output"},

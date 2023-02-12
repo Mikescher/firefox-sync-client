@@ -253,6 +253,30 @@ func (c FFSContext) truncTableData(str string, collen int) string {
 	}
 }
 
+func (c FFSContext) PrintPrimaryOutputTSV(data [][]string, columnFilter []int) {
+        if c.Opt.Quiet {
+                return
+        }
+
+        if len(data) == 0 {
+                return
+        }
+
+        for rowidx := range data {
+
+                {
+                        rowstr := ""
+                        for ic, colidx := range columnFilter {
+                                if ic > 0 {
+                                        rowstr += "\t"
+                                }
+                                rowstr += data[rowidx][colidx]
+                        }
+                        c.printPrimaryRaw(rowstr + "\n")
+                }
+        }
+
+}
 func (c FFSContext) PrintFatalMessage(msg string) {
 	if c.Opt.Quiet {
 		return

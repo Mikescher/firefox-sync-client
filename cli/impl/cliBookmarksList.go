@@ -52,7 +52,7 @@ func (a *CLIArgumentsBookmarksList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsBookmarksList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatNetscape}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatNetscape, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsBookmarksList) ShortHelp() [][]string {
@@ -336,6 +336,28 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		nc := netscapefmt.Format(ctx, roots)
 		ctx.PrintPrimaryOutput(nc)
 		return nil
+
+        case cli.OutputFormatTSV:
+                table := make([][]string, 0, len(bookmarks))
+                table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI"})
+                for _, v := range bookmarks {
+                        table = append(table, []string{
+                                v.ID,
+				v.ParentID,
+                                string(v.Type),
+                                langext.FormatBool(v.Deleted, "true", "false"),
+                                v.Title,
+                                v.URI,
+                        })
+                }
+
+                if a.IncludeDeleted && !a.OnlyDeleted {
+                        ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 2, 3, 4})
+                } else {
+                        ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 3, 4})
+                }
+
+                return nil
 
 	default:
 		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
