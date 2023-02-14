@@ -155,7 +155,7 @@ This is only recommended for custom collections, you should never write invalid 
 Manual
 ======
 
-*(copied from v1.2.0)*
+*(copied from v1.4.0)*
 
 *If I forgot to update the README you can always get the current version of the help with `./ffsclient --help`*
 
@@ -277,6 +277,13 @@ Usage:
             [--include-deleted]                                      # Show deleted entries
             [--only-deleted]                                         # Show only deleted entries
   ffsclient history delete <id> [--hard]                           Delete the specified history entry
+  ffsclient tabs list                                              List synchronized tabs
+            [--client <n>]                                           # Show only entries from the specified client (must be a valid client-id)
+            [--ignore-schema-errors]                                 # Skip records that cannot be decoded into a tab schema
+            [--limit <n>]                                            # Return max <n> elements (clients)
+            [--offset <o>]                                           # Skip the first <n> elements (clients)
+            [--include-deleted]                                      # Show deleted entries
+            [--only-deleted]                                         # Show only deleted entries
 
 Hint:
   # If you need to supply a record-id / collection that starts with an minus, use the --!arg=... syntax

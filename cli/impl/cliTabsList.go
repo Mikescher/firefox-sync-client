@@ -47,10 +47,10 @@ func (a *CLIArgumentsTabsList) AvailableOutputFormats() []cli.OutputFormat {
 func (a *CLIArgumentsTabsList) ShortHelp() [][]string {
 	return [][]string{
 		{"ffsclient tabs list", "List synchronized tabs"},
-		{"          [--client <n>]", "Show only entries from the specified client (mus be a valid client-id)"},
+		{"          [--client <n>]", "Show only entries from the specified client (must be a valid client-id)"},
 		{"          [--ignore-schema-errors]", "Skip records that cannot be decoded into a tab schema"},
-		{"          [--limit <n>]", "Return max <n> elements"},
-		{"          [--offset <o>]", "Skip the first <n> elements"},
+		{"          [--limit <n>]", "Return max <n> elements (clients)"},
+		{"          [--offset <o>]", "Skip the first <n> elements (clients)"},
 		{"          [--include-deleted]", "Show deleted entries"},
 		{"          [--only-deleted]", "Show only deleted entries"},
 	}
@@ -64,6 +64,7 @@ func (a *CLIArgumentsTabsList) FullHelp() []string {
 		"",
 		"If --ignore-schema-errors is not supplied the programm returns with exitcode [0] if any record in the tabs collection has invalid data. Otherwise we simply skip that record.",
 		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
+		"But because the underlying records are grouped together by client, this limits the number of returned clients and not directly the number of returned records",
 		"By default we skip entries with {deleted:true}, this can be changed with --include-deleted and --only-deleted.",
 		"",
 		"You can filter the returned entries types with --client, the client-filter can be specified multiple times to show tabs of multiple clients. The value must be a valid client-id.",
@@ -74,6 +75,15 @@ func (a *CLIArgumentsTabsList) FullHelp() []string {
 
 func (a *CLIArgumentsTabsList) Init(positionalArgs []string, optionArgs []cli.ArgumentTuple) error {
 	for _, arg := range optionArgs {
+		if arg.Key == "client" && arg.Value != nil {
+			if a.ClientFilter == nil {
+				a.ClientFilter = &[]string{*arg.Value}
+			} else {
+				v := append(*a.ClientFilter, *arg.Value)
+				a.ClientFilter = &v
+			}
+			continue
+		}
 		if arg.Key == "ignore-schema-errors" && arg.Value == nil {
 			a.IgnoreSchemaErrors = true
 			continue
@@ -143,7 +153,7 @@ func (a *CLIArgumentsTabsList) printOutput(ctx *cli.FFSContext, indata []models.
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(alltabs))
-		table = append(table, []string{"CLIENTID", "CLIENT", "DELETED", "POS", "TITLE", "URL", "HISTORY"})
+		table = append(table, []string{"CLIENTID", "CLIENT", "DELETED", "INDEX", "TITLE", "URL", "HISTORY"})
 		for _, v := range alltabs {
 			table = append(table, []string{
 				v.ClientID,
