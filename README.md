@@ -184,7 +184,7 @@ Basic Usage:
             (--raw | --decoded)                                      # Return raw data or decoded payload
             [--pretty-print | --pp]                                  # Pretty-Print json in decoded data / payload (if possible)
             [--data-only]                                            # Only return the payload
-ffsclient delete <collection> <record-id> [--hard]               Delete the specified record
+  ffsclient delete <collection> <record-id> [--hard]               Delete the specified record
   ffsclient delete <collection>                                    Delete all the records in a collection
   ffsclient delete-all --force                                     Delete all (!) records in the server
   ffsclient create <collection> <record-id>                        Insert a new record
@@ -297,6 +297,9 @@ Common Options:
                                                                      # - 'table'
                                                                      # - 'tsv'
                                                                      # - 'csv'
+  --table-truncate                                                 Truncate columns of table-format to fit terminal width (needs -f table)
+  --no-table-truncate                                              Disable truncation of columns in table-format output
+  --table-columns <col-list>                                       Limit displayed columns of table-format output (comma-seperated list of headers)
   --auth-server <url>                                              Specify the (authentication) server-url
   --token-server <url>                                             Specify the (token) server-url
   --request-retry-delay-certerr <sec>                              Retry delay for requests that had a certificate error (default: 5 sec)
@@ -304,6 +307,7 @@ Common Options:
   --request-retry-delay-servererr <sec>                            Retry delay for requests that failed due to server errors (default: 1 sec)
   --request-retry-max <num>                                        Max request retries (default: 5)
   --request-timeout <sec>                                          Timeout for API request (default 10 sec)
+  --request-ignore-certerr                                         Ignore certificate errors (do not verify ssl)
   --color                                                          Enforce colored output
   --no-color                                                       Disable colored output
   --timezone <tz>                                                  Specify the output timezone
