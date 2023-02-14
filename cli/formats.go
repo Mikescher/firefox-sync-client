@@ -13,6 +13,7 @@ const (
 	OutputFormatXML      OutputFormat = "xml"
 	OutputFormatTable    OutputFormat = "table"
 	OutputFormatTSV      OutputFormat = "tsv"
+	OutputFormatCSV      OutputFormat = "csv"
 )
 
 func (f OutputFormat) String() string {
@@ -39,6 +40,9 @@ func GetOutputFormat(v string) (OutputFormat, bool) {
 
 	case strings.ToLower(string(OutputFormatTSV)):
 		return OutputFormatTSV, true
+
+	case strings.ToLower(string(OutputFormatCSV)):
+		return OutputFormatCSV, true
 
 	default:
 		return "", false

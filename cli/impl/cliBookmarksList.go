@@ -52,7 +52,7 @@ func (a *CLIArgumentsBookmarksList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsBookmarksList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatNetscape, cli.OutputFormatTSV}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatNetscape, cli.OutputFormatTSV, cli.OutputFormatCSV}
 }
 
 func (a *CLIArgumentsBookmarksList) ShortHelp() [][]string {
@@ -213,7 +213,8 @@ func (a *CLIArgumentsBookmarksList) Execute(ctx *cli.FFSContext) error {
 func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) error {
 	bookmarks = a.filterDeleted(ctx, bookmarks, a.IncludeDeleted, a.OnlyDeleted, a.TypeFilter, a.ParentFilter)
 
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(bookmarks))
@@ -338,8 +339,10 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		return nil
 
 	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
 		table := make([][]string, 0, len(bookmarks))
-		table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI"})
+		table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI", "KEYWORD", "DATE", "DESCRIPTION", "TAGS"})
 		for _, v := range bookmarks {
 			table = append(table, []string{
 				v.ID,
@@ -348,14 +351,14 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 				langext.FormatBool(v.Deleted, "true", "false"),
 				v.Title,
 				v.URI,
+				v.Keyword,
+				fmOptDate(ctx, v.DateAdded),
+				v.Description,
+				strings.Join(v.Tags, ";"),
 			})
 		}
 
-		if a.IncludeDeleted && !a.OnlyDeleted {
-			ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 2, 3, 4})
-		} else {
-			ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 3, 4})
-		}
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
 
 		return nil
 

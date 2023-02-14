@@ -4,6 +4,7 @@ import (
 	"ffsyncclient/cli"
 	"regexp"
 	"strings"
+	"time"
 )
 
 var urlSchemaRegex = regexp.MustCompile(`^[a-zA-Z0-9\-]+://`)
@@ -140,4 +141,11 @@ func ListSubcommands(m cli.Mode, skipBase bool) []cli.Mode {
 	}
 
 	return r
+}
+
+func fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
+	if d == nil {
+		return ""
+	}
+	return d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
 }

@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
@@ -253,22 +255,26 @@ func (c FFSContext) truncTableData(str string, collen int) string {
 	}
 }
 
-func (c FFSContext) PrintPrimaryOutputTSV(data [][]string, columnFilter []int) {
+func (c FFSContext) PrintPrimaryOutputCSV(data [][]string, tsv bool) {
 	if c.Opt.Quiet {
 		return
 	}
 
-	for rowidx := range data {
-		rowstr := ""
-		for ic, colidx := range columnFilter {
-			if ic > 0 {
-				rowstr += "\t"
-			}
-			rowstr += data[rowidx][colidx]
+	for _, v := range data {
+		buffer := bytes.NewBuffer([]byte{})
+		writer := csv.NewWriter(buffer)
+		if tsv {
+			writer.Comma = '\t'
 		}
-		c.printPrimaryRaw(rowstr + "\n")
+		err := writer.Write(v)
+		writer.Flush()
+		if err != nil {
+			panic("failed to marshal csv: " + err.Error())
+		}
+		c.printPrimaryRaw(buffer.String())
 	}
 }
+
 func (c FFSContext) PrintFatalMessage(msg string) {
 	if c.Opt.Quiet {
 		return
