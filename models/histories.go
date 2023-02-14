@@ -90,7 +90,7 @@ func (r HistoryRecord) ToJSON(ctx *cli.FFSContext) langext.H {
 	visits := make([]langext.H, 0, len(r.Visits))
 	for _, v := range r.Visits {
 		visits = append(visits, langext.H{
-			"date":             v.VisitDate.Format(ctx.Opt.TimeFormat),
+			"date":             v.VisitDate.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat),
 			"date_unix":        v.VisitDate.Unix(),
 			"transition":       v.TransitionType.ConstantString(),
 			"transition_const": int(v.TransitionType),
@@ -113,22 +113,22 @@ func (r HistoryRecord) ToSingleXML(ctx *cli.FFSContext, containsDeleted bool) an
 	}
 	type xmlentry struct {
 		XMLName xml.Name
-		ID      string `xml:"id,attr"`
-		Deleted string `xml:"deleted,omitempty,attr"`
-		Uri     string `xml:"uri,attr"`
-		Title   string `xml:"title,attr"`
+		ID      string `xml:"ID,attr"`
+		Deleted string `xml:"Deleted,omitempty,attr"`
+		Uri     string `xml:"URI,attr"`
+		Title   string `xml:"Title,attr"`
 		Visits  []visitentry
 	}
 	visits := make([]visitentry, 0, len(r.Visits))
 	for _, v := range r.Visits {
 		visits = append(visits, visitentry{
-			XMLName:    xml.Name{Local: "visit"},
-			Date:       v.VisitDate.Format(ctx.Opt.TimeFormat),
+			XMLName:    xml.Name{Local: "Visit"},
+			Date:       v.VisitDate.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat),
 			Transition: v.TransitionType.ConstantString(),
 		})
 	}
 	return xmlentry{
-		XMLName: xml.Name{Local: "entry"},
+		XMLName: xml.Name{Local: "Entry"},
 		ID:      r.ID,
 		Deleted: r.formatDeleted(ctx, containsDeleted),
 		Uri:     r.URI,
@@ -149,14 +149,14 @@ func (r HistoryRecord) LastVisitStr(ctx *cli.FFSContext) string {
 	if len(r.Visits) == 0 {
 		return ""
 	}
-	return r.Visits[len(r.Visits)-1].VisitDate.Format(ctx.Opt.TimeFormat)
+	return r.Visits[len(r.Visits)-1].VisitDate.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
 }
 
 func (r HistoryRecord) FirstVisitStr(ctx *cli.FFSContext) string {
 	if len(r.Visits) == 0 {
 		return ""
 	}
-	return r.Visits[0].VisitDate.Format(ctx.Opt.TimeFormat)
+	return r.Visits[0].VisitDate.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
 }
 
 type HistoryVisit struct {

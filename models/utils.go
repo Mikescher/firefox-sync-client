@@ -182,6 +182,49 @@ func UnmarshalHistory(ctx *cli.FFSContext, record Record) (HistoryRecord, error)
 	return model, nil
 }
 
+func UnmarshalTabs(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bool) ([]TabClientRecord, error) {
+	result := make([]TabClientRecord, 0, len(records))
+
+	for _, v := range records {
+		var jsonschema TabPayloadSchema
+		err := json.Unmarshal(v.DecodedData, &jsonschema)
+		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
+		if err != nil {
+			if ignoreSchemaErrors {
+				ctx.PrintVerbose(fmt.Sprintf("Failed to decode record %s to tab-schema -- skipping", v.ID))
+				continue
+			}
+
+			return nil, errorx.
+				Decorate(err, fmt.Sprintf("Failed to decode record %s to tab-schema", v.ID)).
+				WithProperty(fferr.ExtraData, string(v.DecodedData))
+		}
+
+		result = append(result, jsonschema.ToClientModel())
+
+		ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", v.ID, jsonschema.ClientName))
+	}
+
+	return result, nil
+}
+
+func UnmarshalTab(ctx *cli.FFSContext, record Record) (TabClientRecord, error) {
+	var jsonschema TabPayloadSchema
+	err := json.Unmarshal(record.DecodedData, &jsonschema)
+	err = checkIdFallthrough(err, record.ID, jsonschema.ID)
+	if err != nil {
+		return TabClientRecord{}, errorx.
+			Decorate(err, fmt.Sprintf("Failed to decode record %s to tab-schema", record.ID)).
+			WithProperty(fferr.ExtraData, string(record.DecodedData))
+	}
+
+	model := jsonschema.ToClientModel()
+
+	ctx.PrintVerbose(fmt.Sprintf("Decoded record %s (%s)", record.ID, jsonschema.ClientName))
+
+	return model, nil
+}
+
 func checkIdFallthrough(err error, id1 string, id2 string) error {
 	if err != nil {
 		return err
@@ -200,21 +243,21 @@ func fmtPass(pw string, showPW bool) string {
 	}
 }
 
-func fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
+func fmtOptDate(ctx *cli.FFSContext, d *time.Time) string {
 	if d == nil {
 		return ""
 	}
 	return d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat)
 }
 
-func fmOptDateToNullable(ctx *cli.FFSContext, d *time.Time) *string {
+func fmtOptDateToNullable(ctx *cli.FFSContext, d *time.Time) *string {
 	if d == nil {
 		return nil
 	}
 	return langext.Ptr(d.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat))
 }
 
-func fmOptDateToNullableUnix(d *time.Time) *int64 {
+func fmtOptDateToNullableUnix(d *time.Time) *int64 {
 	if d == nil {
 		return nil
 	}

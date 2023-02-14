@@ -2,7 +2,7 @@ ffsclient - firefox-sync-client
 ===============================
 
 A commandline-utility to list/view/edit/delete entries in a firefox-sync account.  
-Can be used to access bookmarks, passwords or custom data.
+Can be used to access bookmarks, passwords, forms, tabs, history or custom data.
 
 [![asciicast](https://asciinema.org/a/533143.svg)](https://asciinema.org/a/533143)
 
@@ -54,8 +54,8 @@ Almost all commands support different output-formats that can be specified with 
 
 You can get an overview of all commands by invoking `ffsclient --help` and a command-specific help with `ffsclient {command} --help`
 
-For some collections (like `bookmarks`, `passwords`, `forms`, `history`) are specific subcommands available.
-For example you can list your bookmarks with `ffsclient bookmarks list`, this is preferable to the general `ffsclient list {collection}` call, because the bookmark-data in the records gets directly parsed and properly displayed.
+For some collections (like `bookmarks`, `passwords`, `forms`, `history`, `tabs`) are specific subcommands available.
+For example, you can list your bookmarks with `ffsclient bookmarks list`, this is preferable to the general `ffsclient list {collection}` call, because the bookmark-data in the records gets directly parsed and properly displayed.
 
 Example
 =======
@@ -91,7 +91,7 @@ $ ./ffsclient bookmarks create "{title}" "{url}"
 $ ./ffsclient bookmarks create "{title}" "{url}" --parent "{parent-record-id}"
 $ ./ffsclient bookmarks create "{title}" "{url}" --parent "{parent-record-id}" --position "{index}"
 ```
-By default bookmarks are created at the top-level and at the last position in the parent folder.
+By default, bookmarks are created at the top-level and at the last position in the parent folder.
 
 List all passwords
 ------------------
@@ -128,7 +128,7 @@ Delete any record
 $ ./ffsclient delete "{record-id}"
 $ ./ffsclient delete "{record-id}" --hard
 ```
-*By default the sync protocol needs tombstones. This means deleted records still exist, without their payload and wit a deleted:true flag*  
+*By default, the sync protocol needs tombstones. This means deleted records still exist, without their payload and wit a deleted:true flag*  
 *If the `--hard` flag is supplied, the record is instead completely deleted from the server*
 
 Query the server without a session file
@@ -150,7 +150,7 @@ $ ./ffsclient get "{collection}" "{id}" --raw --format text --data-only
 Normally records have an encrypted payload that needs to be decrypted before it can be read (via the `--decrypted` flag in `ffsclient get`).  
 But you can also directly write data in the payload field.  
 The `--raw` flag in `ffsclient create` skips the normal encryption step and the `--raw` flag in `ffsclient get` skips the decryption.  
-This is only recommended for custom collections, you should never write invalid data in one of teh default collections (e.g. `bookmarks`, `passwords`, etc)
+This is only recommended for custom collections, you should never write invalid data in one of the default collections (e.g. `bookmarks`, `passwords`, etc)
 
 Manual
 ======

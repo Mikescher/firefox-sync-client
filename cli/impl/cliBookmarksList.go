@@ -295,7 +295,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		if a.LinearOutput {
 			type xmlroot struct {
 				Entries []any
-				XMLName struct{} `xml:"bookmarks"`
+				XMLName struct{} `xml:"Bookmarks"`
 			}
 			node := xmlroot{Entries: make([]any, 0, len(bookmarks))}
 			for _, v := range bookmarks {
@@ -307,8 +307,8 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 			roots, unreferenced, missing := a.calculateTree(ctx, bookmarks)
 			type xmlroot struct {
 				Entries []any
-				XMLName struct{} `xml:"bookmarks"`
-				Missing string   `xml:"missing,attr,omitempty"`
+				XMLName struct{} `xml:"Bookmarks"`
+				Missing string   `xml:"Missing,attr,omitempty"`
 			}
 			node := xmlroot{Entries: make([]any, 0, len(bookmarks)), Missing: strings.Join(missing, ", ")}
 			for _, v := range roots {

@@ -274,7 +274,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if (arg.Key == "request-retry-delay-certerr") && arg.Value != nil {
 			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
-				opt.RequestX509RetryDelay = timeext.FromSecondsFloat64(v)
+				opt.RequestX509RetryDelay = timeext.FromSeconds(v)
 				continue
 			}
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
@@ -282,7 +282,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if (arg.Key == "request-retry-delay-floodcontrol") && arg.Value != nil {
 			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
-				opt.RequestFloodControlRetryDelay = timeext.FromSecondsFloat64(v)
+				opt.RequestFloodControlRetryDelay = timeext.FromSeconds(v)
 				continue
 			}
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
@@ -290,7 +290,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if (arg.Key == "request-retry-delay-servererr") && arg.Value != nil {
 			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
-				opt.RequestServerErrRetryDelay = timeext.FromSecondsFloat64(v)
+				opt.RequestServerErrRetryDelay = timeext.FromSeconds(v)
 				continue
 			}
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))
@@ -306,7 +306,7 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 
 		if (arg.Key == "request-timeout") && arg.Value != nil {
 			if v, err := strconv.ParseFloat(*arg.Value, 32); err == nil {
-				opt.RequestTimeout = timeext.FromSecondsFloat64(v)
+				opt.RequestTimeout = timeext.FromSeconds(v)
 				continue
 			}
 			return nil, cli.Options{}, fferr.DirectOutput.New(fmt.Sprintf("Failed to parse floatingpoint-number argument '--%s': '%s'", arg.Key, *arg.Value))

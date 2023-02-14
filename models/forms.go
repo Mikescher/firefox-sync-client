@@ -44,7 +44,7 @@ func (bm FormRecord) ToJSON(ctx *cli.FFSContext) langext.H {
 		"deleted":           bm.Deleted,
 		"name":              bm.Name,
 		"value":             bm.Value,
-		"lastModified":      bm.LastModified.Format(ctx.Opt.TimeFormat),
+		"lastModified":      bm.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat),
 		"lastModified_unix": bm.LastModified.Unix(),
 	}
 }
@@ -59,12 +59,12 @@ func (bm FormRecord) ToSingleXML(ctx *cli.FFSContext, containsDeleted bool) any 
 		Date    string `xml:"mdate,omitempty,attr"`
 	}
 	return xmlentry{
-		XMLName: xml.Name{Local: "form"},
+		XMLName: xml.Name{Local: "Form"},
 		Deleted: bm.formatDeleted(ctx, containsDeleted),
 		ID:      bm.ID,
 		Name:    bm.Name,
 		Value:   bm.Value,
-		Date:    bm.LastModified.Format(ctx.Opt.TimeFormat),
+		Date:    bm.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat),
 	}
 }
 

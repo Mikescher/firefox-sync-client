@@ -122,6 +122,10 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 		return NewCLIArgumentsHistoryList()
 	case cli.ModeHistoryDelete:
 		return NewCLIArgumentsHistoryDelete()
+	case cli.ModeTabsBase:
+		return NewCLIArgumentsTabsBase()
+	case cli.ModeTabsList:
+		return NewCLIArgumentsTabsList()
 
 	default:
 		panic("Unknown Mode: " + m)

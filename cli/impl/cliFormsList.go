@@ -223,7 +223,7 @@ func (a *CLIArgumentsFormsList) printOutput(ctx *cli.FFSContext, forms []models.
 	case cli.OutputFormatXML:
 		type xmlroot struct {
 			Entries []any
-			XMLName struct{} `xml:"forms"`
+			XMLName struct{} `xml:"Forms"`
 		}
 		node := xmlroot{Entries: make([]any, 0, len(forms))}
 		for _, v := range forms {

@@ -40,6 +40,8 @@ const (
 	ModeHistoryBase              Mode = "history"
 	ModeHistoryList              Mode = "history list"
 	ModeHistoryDelete            Mode = "history delete"
+	ModeTabsBase                 Mode = "tabs"
+	ModeTabsList                 Mode = "tabs list"
 )
 
 var ModesBase = []Mode{
@@ -88,6 +90,9 @@ var ModesSpecial = []Mode{
 	ModeHistoryBase,
 	ModeHistoryList,
 	ModeHistoryDelete,
+
+	ModeTabsBase,
+	ModeTabsList,
 }
 
 var ModesAll = append(append([]Mode{}, ModesBase...), ModesSpecial...)

@@ -214,7 +214,7 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 	case cli.OutputFormatXML:
 		type xmlroot struct {
 			Entries []any
-			XMLName struct{} `xml:"history"`
+			XMLName struct{} `xml:"History"`
 		}
 		node := xmlroot{Entries: make([]any, 0, len(entries))}
 		for _, v := range entries {
