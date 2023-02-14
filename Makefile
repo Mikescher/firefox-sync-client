@@ -56,4 +56,4 @@ package-push-homebrew:
 	cd _out/homebrew-tap && git push
 
 package-push-chocolatey:
-	docker run --rm --volume "$(shell pwd)/_out/chocolatey:/root/ffsclient" "chocolatey/choco:latest" /root/ffsclient/push.sh "$(shell secret-tool lookup identifier "a834a7ca-f2e4-4ffc-b4b7-27bfc1f146d9")"
+	docker run --rm --volume "$(shell pwd)/_out/chocolatey:/root/ffsclient" "chocolatey/choco:latest" /root/ffsclient/push.sh "$(shell secret-tool lookup Path "Personal/References/ChocoAPIKey")"

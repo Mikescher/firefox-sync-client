@@ -337,27 +337,27 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		ctx.PrintPrimaryOutput(nc)
 		return nil
 
-        case cli.OutputFormatTSV:
-                table := make([][]string, 0, len(bookmarks))
-                table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI"})
-                for _, v := range bookmarks {
-                        table = append(table, []string{
-                                v.ID,
+	case cli.OutputFormatTSV:
+		table := make([][]string, 0, len(bookmarks))
+		table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI"})
+		for _, v := range bookmarks {
+			table = append(table, []string{
+				v.ID,
 				v.ParentID,
-                                string(v.Type),
-                                langext.FormatBool(v.Deleted, "true", "false"),
-                                v.Title,
-                                v.URI,
-                        })
-                }
+				string(v.Type),
+				langext.FormatBool(v.Deleted, "true", "false"),
+				v.Title,
+				v.URI,
+			})
+		}
 
-                if a.IncludeDeleted && !a.OnlyDeleted {
-                        ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 2, 3, 4})
-                } else {
-                        ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 3, 4})
-                }
+		if a.IncludeDeleted && !a.OnlyDeleted {
+			ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 2, 3, 4})
+		} else {
+			ctx.PrintPrimaryOutputTSV(table, []int{0, 1, 3, 4})
+		}
 
-                return nil
+		return nil
 
 	default:
 		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())

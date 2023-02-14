@@ -50,7 +50,7 @@ Call `ffsclient {username} {password}` and a session will be created in `~/.conf
 After this you can freely use ffsclient (see the full [Manual](#manual) for all commands).  
 Common commands are `ffsclient collections` to list all collections in the current account, `ffsclient list {collection}` to list all records in a collection and `ffsclient get {collection} {record-id}` to get a single record.
 
-Almost all commands support different output-formats that can be specified with `--format {fmt}`, available are `text`, `json`, `xml`, `table`, `netscape`. If no format is supplied the command uses a default.
+Almost all commands support different output-formats that can be specified with `--format {fmt}`, available are `text`, `json`, `xml`, `table`, `netscape`, `csv`, `tsv`. If no format is supplied the command uses a default.
 
 You can get an overview of all commands by invoking `ffsclient --help` and a command-specific help with `ffsclient {command} --help`
 

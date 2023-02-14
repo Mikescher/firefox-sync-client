@@ -37,8 +37,8 @@ func GetOutputFormat(v string) (OutputFormat, bool) {
 	case strings.ToLower(string(OutputFormatTable)):
 		return OutputFormatTable, true
 
-        case strings.ToLower(string(OutputFormatTSV)):
-                return OutputFormatTSV, true
+	case strings.ToLower(string(OutputFormatTSV)):
+		return OutputFormatTSV, true
 
 	default:
 		return "", false
