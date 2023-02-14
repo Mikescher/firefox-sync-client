@@ -295,6 +295,7 @@ Common Options:
                                                                      # - 'netscape'   (default firefox bookmarks format)
                                                                      # - 'xml'
                                                                      # - 'table'
+                                                                     # - 'tsv'
   --auth-server <url>                                              Specify the (authentication) server-url
   --token-server <url>                                             Specify the (token) server-url
   --request-retry-delay-certerr <sec>                              Retry delay for requests that had a certificate error (default: 5 sec)
