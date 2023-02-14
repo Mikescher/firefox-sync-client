@@ -44,7 +44,7 @@ func (a *CLIArgumentsHistoryList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsHistoryList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatCSV, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsHistoryList) ShortHelp() [][]string {
@@ -161,7 +161,8 @@ func (a *CLIArgumentsHistoryList) Execute(ctx *cli.FFSContext) error {
 func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []models.HistoryRecord) error {
 	entries = a.filterDeleted(ctx, entries, a.IncludeDeleted, a.OnlyDeleted)
 
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(entries))
@@ -220,6 +221,27 @@ func (a *CLIArgumentsHistoryList) printOutput(ctx *cli.FFSContext, entries []mod
 			node.Entries = append(node.Entries, v.ToSingleXML(ctx, a.IncludeDeleted))
 		}
 		ctx.PrintPrimaryOutputXML(node)
+		return nil
+
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(entries))
+		table = append(table, []string{"ID", "Deleted", "URI", "Title", "Visits", "LastVisit", "FirstVisit"})
+		for _, v := range entries {
+			table = append(table, []string{
+				v.ID,
+				langext.FormatBool(v.Deleted, "true", "false"),
+				v.URI,
+				v.Title,
+				fmt.Sprintf("%d", len(v.Visits)),
+				v.LastVisitStr(ctx),
+				v.FirstVisitStr(ctx),
+			})
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
 		return nil
 
 	default:

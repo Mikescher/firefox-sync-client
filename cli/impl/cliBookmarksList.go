@@ -342,7 +342,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 		fallthrough
 	case cli.OutputFormatCSV:
 		table := make([][]string, 0, len(bookmarks))
-		table = append(table, []string{"ID", "PARENT ID", "TYPE", "DELETED", "TITLE", "URI", "KEYWORD", "DATE", "DESCRIPTION", "TAGS"})
+		table = append(table, []string{"ID", "ParentID", "Type", "Deleted", "Title", "URI", "Keyword", "DateAdded", "Description", "Tags"})
 		for _, v := range bookmarks {
 			table = append(table, []string{
 				v.ID,
@@ -352,7 +352,7 @@ func (a *CLIArgumentsBookmarksList) printOutput(ctx *cli.FFSContext, bookmarks [
 				v.Title,
 				v.URI,
 				v.Keyword,
-				fmOptDate(ctx, v.DateAdded),
+				fmtOptDate(ctx, v.DateAdded),
 				v.Description,
 				strings.Join(v.Tags, ";"),
 			})

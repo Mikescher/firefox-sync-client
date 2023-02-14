@@ -46,7 +46,7 @@ func (a *CLIArgumentsPasswordsList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsPasswordsList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatCSV, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsPasswordsList) ShortHelp() [][]string {
@@ -169,7 +169,8 @@ func (a *CLIArgumentsPasswordsList) Execute(ctx *cli.FFSContext) error {
 func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords []models.PasswordRecord) error {
 	passwords = a.filterDeleted(ctx, passwords, a.IncludeDeleted, a.OnlyDeleted)
 
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(passwords))
@@ -220,6 +221,33 @@ func (a *CLIArgumentsPasswordsList) printOutput(ctx *cli.FFSContext, passwords [
 			node.Entries = append(node.Entries, v.ToXML(ctx, "Password", a.ShowPasswords))
 		}
 		ctx.PrintPrimaryOutputXML(node)
+		return nil
+
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(passwords))
+		table = append(table, []string{"ID", "Deleted", "Hostname", "Username", "Password", "FormSubmitUrl", "PasswordField", "UsernameField", "Created", "HTTPRealm", "LastUsed", "PasswordChanged", "TimesUsed"})
+		for _, v := range passwords {
+			table = append(table, []string{
+				v.ID,
+				langext.FormatBool(v.Deleted, "true", "false"),
+				v.Hostname,
+				v.Username,
+				v.FormatPassword(a.ShowPasswords),
+				v.FormSubmitURL,
+				v.PasswordField,
+				v.UsernameField,
+				fmtOptDate(ctx, v.Created),
+				langext.Coalesce(v.HTTPRealm, ""),
+				fmtOptDate(ctx, v.LastUsed),
+				fmtOptDate(ctx, v.PasswordChanged),
+				fmt.Sprintf("%d", langext.Coalesce(v.TimesUsed, 0)),
+			})
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
 		return nil
 
 	default:

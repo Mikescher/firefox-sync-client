@@ -47,7 +47,7 @@ func (a *CLIArgumentsRecordsList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsRecordsList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatCSV, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsRecordsList) ShortHelp() [][]string {
@@ -227,7 +227,8 @@ func (a *CLIArgumentsRecordsList) printIDOnly(ctx *cli.FFSContext, records []mod
 }
 
 func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models.Record) error {
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(records))
@@ -294,6 +295,23 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 		ctx.PrintPrimaryOutputXML(data)
 		return nil
 
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(records))
+		table = append(table, []string{"ID", "LAST MODIFIED", "PAYLOAD"})
+		for _, v := range records {
+			table = append(table, []string{
+				v.ID,
+				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				v.Payload,
+			})
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
+		return nil
+
 	default:
 		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
 
@@ -301,7 +319,8 @@ func (a *CLIArgumentsRecordsList) printRaw(ctx *cli.FFSContext, records []models
 }
 
 func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []models.Record) error {
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(records))
@@ -377,6 +396,23 @@ func (a *CLIArgumentsRecordsList) printDecoded(ctx *cli.FFSContext, records []mo
 			})
 		}
 		ctx.PrintPrimaryOutputXML(data)
+		return nil
+
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(records))
+		table = append(table, []string{"ID", "LAST MODIFIED", "DATA"})
+		for _, v := range records {
+			table = append(table, []string{
+				v.ID,
+				v.Modified.In(ctx.Opt.TimeZone).Format(time.RFC3339Nano),
+				string(v.DecodedData),
+			})
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
 		return nil
 
 	default:

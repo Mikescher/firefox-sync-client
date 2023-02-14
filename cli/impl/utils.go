@@ -143,7 +143,7 @@ func ListSubcommands(m cli.Mode, skipBase bool) []cli.Mode {
 	return r
 }
 
-func fmOptDate(ctx *cli.FFSContext, d *time.Time) string {
+func fmtOptDate(ctx *cli.FFSContext, d *time.Time) string {
 	if d == nil {
 		return ""
 	}

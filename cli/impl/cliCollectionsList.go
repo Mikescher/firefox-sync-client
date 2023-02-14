@@ -33,7 +33,7 @@ func (a *CLIArgumentsCollectionsList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsCollectionsList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatCSV, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsCollectionsList) ShortHelp() [][]string {
@@ -142,7 +142,9 @@ func (a *CLIArgumentsCollectionsList) Execute(ctx *cli.FFSContext) error {
 }
 
 func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collections []models.Collection) error {
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
+
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable)
+	switch ofmt {
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(collections))
 		if a.ShowUsage {
@@ -219,6 +221,27 @@ func (a *CLIArgumentsCollectionsList) printOutput(ctx *cli.FFSContext, collectio
 			node.Collections = append(node.Collections, obj)
 		}
 		ctx.PrintPrimaryOutputXML(node)
+		return nil
+
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(collections))
+		if a.ShowUsage {
+			table = append(table, []string{"Name", "LastModified", "Count", "Usage"})
+		} else {
+			table = append(table, []string{"Name", "LastModified", "Count"})
+		}
+		for _, v := range collections {
+			if a.ShowUsage {
+				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count), langext.FormatBytes(v.Usage)})
+			} else {
+				table = append(table, []string{v.Name, v.LastModified.In(ctx.Opt.TimeZone).Format(ctx.Opt.TimeFormat), strconv.Itoa(v.Count)})
+			}
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
 		return nil
 
 	default:

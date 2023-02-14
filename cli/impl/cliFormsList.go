@@ -46,7 +46,7 @@ func (a *CLIArgumentsFormsList) PositionArgCount() (*int, *int) {
 }
 
 func (a *CLIArgumentsFormsList) AvailableOutputFormats() []cli.OutputFormat {
-	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML}
+	return []cli.OutputFormat{cli.OutputFormatTable, cli.OutputFormatText, cli.OutputFormatJson, cli.OutputFormatXML, cli.OutputFormatCSV, cli.OutputFormatTSV}
 }
 
 func (a *CLIArgumentsFormsList) ShortHelp() [][]string {
@@ -175,7 +175,8 @@ func (a *CLIArgumentsFormsList) Execute(ctx *cli.FFSContext) error {
 func (a *CLIArgumentsFormsList) printOutput(ctx *cli.FFSContext, forms []models.FormRecord) error {
 	forms = a.filterDeleted(ctx, forms, a.IncludeDeleted, a.OnlyDeleted, a.NameFilter)
 
-	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable) {
+	ofmt := langext.Coalesce(ctx.Opt.Format, cli.OutputFormatTable)
+	switch ofmt {
 
 	case cli.OutputFormatTable:
 		table := make([][]string, 0, len(forms))
@@ -229,6 +230,25 @@ func (a *CLIArgumentsFormsList) printOutput(ctx *cli.FFSContext, forms []models.
 			node.Entries = append(node.Entries, v.ToSingleXML(ctx, a.IncludeDeleted))
 		}
 		ctx.PrintPrimaryOutputXML(node)
+		return nil
+
+	case cli.OutputFormatTSV:
+		fallthrough
+	case cli.OutputFormatCSV:
+		table := make([][]string, 0, len(forms))
+		table = append(table, []string{"ID", "Deleted", "LastModified", "Name", "Value"})
+		for _, v := range forms {
+			table = append(table, []string{
+				v.ID,
+				langext.FormatBool(v.Deleted, "true", "false"),
+				v.LastModified.Format(ctx.Opt.TimeFormat),
+				v.Name,
+				v.Value,
+			})
+		}
+
+		ctx.PrintPrimaryOutputCSV(table, ofmt == cli.OutputFormatTSV)
+
 		return nil
 
 	default:
