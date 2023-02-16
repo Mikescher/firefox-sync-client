@@ -184,12 +184,14 @@ func (a *CLIArgumentsHelp) globalOptions() [][]string { //TODO use yyyy-MM-dd sy
 		{"", "- 'netscape'   (default firefox bookmarks format)"},
 		{"", "- 'xml'"},
 		{"", "- 'table'"},
-		{"", "- 'tsv'"},
 		{"", "- 'csv'"},
+		{"", "- 'tsv'"},
 
 		{"--table-truncate", "Truncate columns of table-format to fit terminal width (needs -f table)"},
 		{"--no-table-truncate", "Disable truncation of columns in table-format output"},
 		{"--table-columns <col-list>", "Limit displayed columns of table-format output (comma-seperated list of headers)"},
+
+		{"--csv-filter", "Only print specified columns in csv/tsv output (comma-seperated index list) (needs -f csv/tsv)"},
 
 		{"--auth-server <url>", "Specify the (authentication) server-url"},
 		{"--token-server <url>", "Specify the (token) server-url"},

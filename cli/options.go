@@ -33,6 +33,7 @@ type Options struct {
 	RequestX509Ignore             bool
 	TableFormatFilter             *string
 	TableFormatTruncate           bool
+	CSVColumnFilter               *[]int
 }
 
 func DefaultCLIOptions() Options {
@@ -44,11 +45,13 @@ func DefaultCLIOptions() Options {
 		AuthServerURL:                 consts.ServerURLProduction,
 		TokenServerURL:                consts.TokenServerURL,
 		OutputColor:                   termext.SupportsColors(),
+		OutputFile:                    nil,
 		TimeZone:                      time.Local,
 		TimeFormat:                    "2006-01-02 15:04:05Z07:00",
-		OutputFile:                    nil,
 		SaveRefreshedSession:          true,
 		ForceRefreshSession:           false,
+		NoXMLDeclaration:              false,
+		LinearizeJson:                 false,
 		ManualAuthLoginEmail:          nil,
 		ManualAuthLoginPassword:       nil,
 		RequestX509RetryDelay:         5 * time.Second,
@@ -59,5 +62,6 @@ func DefaultCLIOptions() Options {
 		RequestX509Ignore:             false,
 		TableFormatFilter:             nil,
 		TableFormatTruncate:           term.IsTerminal(int(os.Stdout.Fd())),
+		CSVColumnFilter:               nil,
 	}
 }

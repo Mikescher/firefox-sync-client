@@ -332,6 +332,23 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if (arg.Key == "csv-filter") && arg.Value != nil {
+
+			colf, err := langext.ArrMapErr(strings.Split(*arg.Value, ","), func(v string) (int, error) {
+				v = strings.TrimSpace(v)
+				i, err := strconv.ParseInt(v, 10, 32)
+				if err != nil {
+					return 0, err
+				}
+				return int(i), nil
+			})
+			if err != nil {
+				return nil, cli.Options{}, fferr.DirectOutput.New("Invalid csv-filter value: " + *arg.Value)
+			}
+			opt.CSVColumnFilter = &colf
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

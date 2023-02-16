@@ -266,13 +266,28 @@ func (c FFSContext) PrintPrimaryOutputCSV(data [][]string, tsv bool) {
 		if tsv {
 			writer.Comma = '\t'
 		}
-		err := writer.Write(v)
+		err := writer.Write(filterCSVRow(v, c.Opt.CSVColumnFilter))
 		writer.Flush()
 		if err != nil {
 			panic("failed to marshal csv: " + err.Error())
 		}
 		c.printPrimaryRaw(buffer.String())
 	}
+}
+
+func filterCSVRow(data []string, filter *[]int) []string {
+	if filter == nil {
+		return data
+	}
+
+	result := make([]string, len(*filter))
+	for i, vidx := range *filter {
+		if vidx >= 0 && vidx < len(data) {
+			result[i] = data[vidx]
+		}
+	}
+
+	return result
 }
 
 func (c FFSContext) PrintFatalMessage(msg string) {
