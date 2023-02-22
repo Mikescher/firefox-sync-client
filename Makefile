@@ -39,10 +39,10 @@ package:
 	_data/package-data/homebrew.sh
 
 	echo ""
-	echo "[TODO]: call `make package-push-aur-git`"
-	echo "[TODO]: call `make package-push-aur-bin`"
-	echo "[TODO]: call `make package-push-homebrew`"
-	echo "[TODO]: call `make package-push-chocolatey`"
+	echo "[TODO]: call 'make package-push-aur-git'    "
+	echo "[TODO]: call 'make package-push-aur-bin'    "
+	echo "[TODO]: call 'make package-push-homebrew'   "
+	echo "[TODO]: call 'make package-push-chocolatey' "
 	echo "[TODO]: create github release"
 	echo ""
 
