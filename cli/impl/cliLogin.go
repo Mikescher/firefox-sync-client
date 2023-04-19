@@ -86,10 +86,6 @@ func (a *CLIArgumentsLogin) Init(positionalArgs []string, optionArgs []cli.Argum
 		return fferr.DirectOutput.New("Unknown argument: " + arg.Key)
 	}
 
-	if len(optionArgs) > 0 {
-		return fferr.DirectOutput.New("Unknown argument: " + optionArgs[0].Key)
-	}
-
 	return nil
 }
 
