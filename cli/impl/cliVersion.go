@@ -49,8 +49,12 @@ func (a *CLIArgumentsVersion) Init(positionalArgs []string, optionArgs []cli.Arg
 
 func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) error {
 	type xml struct {
-		Version string   `xml:"Version,attr"`
-		XMLName struct{} `xml:"FirefoxSyncClient"`
+		Version     string   `xml:"Version,attr"`
+		VCSType     string   `xml:"VCS_Type,attr"`
+		VCSTime     string   `xml:"VCS_Time,attr"`
+		VCSRevision string   `xml:"VCS_Revision,attr"`
+		VCSModified string   `xml:"VCS_Modified,attr"`
+		XMLName     struct{} `xml:"FirefoxSyncClient"`
 	}
 
 	switch langext.Coalesce(ctx.Opt.Format, cli.OutputFormatText) {
@@ -61,10 +65,32 @@ func (a *CLIArgumentsVersion) Execute(ctx *cli.FFSContext) error {
 		ctx.PrintPrimaryOutput(consts.FFSCLIENT_VERSION)
 		return nil
 	case cli.OutputFormatJson:
-		ctx.PrintPrimaryOutputJSON(langext.H{"version": consts.FFSCLIENT_VERSION})
+		rbi, err := consts.ReadBuildInfo()
+		if err != nil {
+			return err
+		}
+		ctx.PrintPrimaryOutputJSON(langext.H{
+			"version": consts.FFSCLIENT_VERSION,
+			"vcs": langext.H{
+				"type":     rbi.VCS,
+				"revision": rbi.VCSRevision,
+				"modified": rbi.VCSModified,
+				"time":     rbi.VCSTime,
+			},
+		})
 		return nil
 	case cli.OutputFormatXML:
-		ctx.PrintPrimaryOutputXML(xml{Version: consts.FFSCLIENT_VERSION})
+		rbi, err := consts.ReadBuildInfo()
+		if err != nil {
+			return err
+		}
+		ctx.PrintPrimaryOutputXML(xml{
+			Version:     consts.FFSCLIENT_VERSION,
+			VCSType:     langext.Coalesce(rbi.VCS, ""),
+			VCSTime:     langext.Coalesce(rbi.VCSTime, ""),
+			VCSRevision: langext.Coalesce(rbi.VCSRevision, ""),
+			VCSModified: langext.Coalesce(rbi.VCSModified, ""),
+		})
 		return nil
 	default:
 		return fferr.NewDirectOutput(consts.ExitcodeUnsupportedOutputFormat, "Unsupported output-format: "+ctx.Opt.Format.String())
