@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -30,6 +31,8 @@ type FxAClient struct {
 	authURL string
 	client  http.Client
 }
+
+var OtpNeededError error = errors.New("OTP verification needed")
 
 func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 	c := http.Client{
@@ -130,10 +133,6 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 		return LoginSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
 	}
 
-	if !resp.Verified {
-		return LoginSession{}, fferr.DirectOutput.New("You must verify the login attempt (e.g. per e-mail) before continuing")
-	}
-
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
 	if err != nil {
 		return LoginSession{}, errorx.Decorate(err, "failed to read KeyFetchToken: "+resp.KeyFetchToken)
@@ -148,12 +147,52 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	ctx.PrintVerboseKV("SessionToken", st)
 	ctx.PrintVerboseKV("KeyFetchToken", kft)
 
+	if !resp.Verified {
+		if resp.VerificationMethod == "totp-2fa" {
+			ctx.PrintVerbose("OTP verification will be required in the next step")
+
+			return LoginSession{
+				StretchPassword: stretchpwd,
+				UserId:          resp.UserID,
+				SessionToken:    st,
+				KeyFetchToken:   kft,
+			}, OtpNeededError
+		} else {
+			return LoginSession{}, fferr.DirectOutput.New("You must verify the login attempt (e.g. per e-mail) before continuing")
+		}
+	}
+
 	return LoginSession{
 		StretchPassword: stretchpwd,
 		UserId:          resp.UserID,
 		SessionToken:    st,
 		KeyFetchToken:   kft,
 	}, nil
+}
+
+func (f FxAClient) VerifyWithOTP(ctx *cli.FFSContext, session LoginSession, otp string) error {
+	body := totpVerifyRequestSchema{
+		Code:    otp,
+		Service: "login",
+	}
+	binResp, _, err := f.requestWithHawkToken(ctx, "POST", "/session/verify/totp", body, session.SessionToken, "sessionToken")
+	if err != nil {
+		return errorx.Decorate(err, "Failed to verify session with OTP")
+	}
+
+	var resp totpVerifyResponseSchema
+	err = json.Unmarshal(binResp, &resp)
+	if err != nil {
+		return errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
+	}
+
+	if !resp.Success {
+		return errorx.Decorate(err, "OTP was not accepted by the server")
+	}
+
+	ctx.PrintVerbose("Session verified")
+
+	return nil
 }
 
 func (f FxAClient) RegisterDevice(ctx *cli.FFSContext, session LoginSession, deviceName string, deviceType string) error {
