@@ -45,7 +45,7 @@ Usage
 =====
 
 Before the first use you have to authenticate your client and create a session.  
-Call `ffsclient {username} {password}` and a session will be created in `~/.config/firefox-sync-client.secret`
+Call `ffsclient login {username} {password}` and a session will be created in `~/.config/firefox-sync-client.secret`
 
 After this you can freely use ffsclient (see the full [Manual](#manual) for all commands).  
 Common commands are `ffsclient collections` to list all collections in the current account, `ffsclient list {collection}` to list all records in a collection and `ffsclient get {collection} {record-id}` to get a single record.
