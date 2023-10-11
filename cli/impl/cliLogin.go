@@ -45,10 +45,15 @@ func (a *CLIArgumentsLogin) AvailableOutputFormats() []cli.OutputFormat {
 }
 
 func (a *CLIArgumentsLogin) ShortHelp() [][]string {
+
+	// --otp is theoretically a global option, but kinda behaves like an option of cliLogin
+	// because its only useful globally in combination with --auth-login-*
+
 	return [][]string{
 		{"ffsclient login <login> <password>", "Login to FF-Sync account, uses ~/.config as default session location"},
-		{"          [--device-name=<name>]", ""},
-		{"          [--device-type=<type>]", ""},
+		{"          [--device-name=<name>]", "Send your device-name to identify the session later"},
+		{"          [--device-type=<type>]", "Send your device-type to identify the session later"},
+		{"          [--otp=<value>]", "A valid TOTP token, in case one is needed for the login"},
 	}
 }
 
@@ -58,9 +63,10 @@ func (a *CLIArgumentsLogin) FullHelp() []string {
 		"",
 		"Login to FF-Sync account",
 		"",
-		"This needs to be doe before all other commands that need a valid FirefoxSync connection",
+		"This needs to be done before all other commands that need a valid FirefoxSync connection",
 		"If no sesionfile location is provided this uses the default ~/.config/firefox-sync-client.secret",
 		"Specify a Device-name to identify the client in the Firefox Account page",
+		"if a 2-Factor TOTP token is needed an prompt will request one, or a totp can be pre-supplied with the --otp parameter",
 	}
 }
 

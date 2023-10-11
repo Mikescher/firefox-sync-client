@@ -1,7 +1,6 @@
 package impl
 
 import (
-	"errors"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -94,47 +93,73 @@ func (a *CLIArgumentsBaseUtil) SyncLogin(ctx *cli.FFSContext, client *syncclient
 
 	session, verificationMethod, err := client.Login(ctx, email, password)
 	if err != nil {
-		if errors.Is(err, syncclient.OtpNeededError) {
-
-		} else {
-			return syncclient.CryptoSession{}, err
-		}
+		return syncclient.CryptoSession{}, err
 	}
 
 	if verificationMethod == syncclient.VerificationTOTP2FA {
+
 		ctx.PrintVerboseHeader("[1b] Verify with OTP")
 
-		var otp string
-		fmt.Println("Enter your OTP (2-Factor Authentication Code): ")
-		_, err = fmt.Scanln(&otp)
-		if err != nil {
-			return syncclient.CryptoSession{}, err
+		if ctx.Opt.OTPOverride != nil {
+			ctx.PrintVerbose("Use otp value from params")
+
+			ctx.PrintVerboseKV("OTP", *ctx.Opt.OTPOverride)
+
+			err := client.VerifyWithOTP(ctx, session, *ctx.Opt.OTPOverride)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
+		} else {
+			ctx.PrintVerbose("Use otp value from stdin")
+
+			var otp string
+			fmt.Println("Enter your OTP (2-Factor Authentication Code): ")
+			_, err = fmt.Scanln(&otp)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
+
+			ctx.PrintVerboseKV("OTP", otp)
+
+			err := client.VerifyWithOTP(ctx, session, otp)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
 		}
 
-		ctx.PrintVerboseKV("OTP", otp)
-
-		err := client.VerifyWithOTP(ctx, session, otp)
-		if err != nil {
-			return syncclient.CryptoSession{}, err
-		}
 	}
 
 	if verificationMethod == syncclient.VerificationMail2FA {
+
 		ctx.PrintVerboseHeader("[1b] Verify with OTP")
 
-		var otp string
-		fmt.Println("Enter your OTP (E-Mail Authentication Code): ")
-		_, err = fmt.Scanln(&otp)
-		if err != nil {
-			return syncclient.CryptoSession{}, err
+		if ctx.Opt.OTPOverride != nil {
+			ctx.PrintVerbose("Use otp value from params")
+
+			ctx.PrintVerboseKV("OTP", *ctx.Opt.OTPOverride)
+
+			err := client.VerifyWithOTP(ctx, session, *ctx.Opt.OTPOverride)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
+		} else {
+			ctx.PrintVerbose("Use otp value from stdin")
+
+			var otp string
+			fmt.Println("Enter your OTP (E-Mail Authentication Code): ")
+			_, err = fmt.Scanln(&otp)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
+
+			ctx.PrintVerboseKV("OTP", otp)
+
+			err := client.VerifyWithOTP(ctx, session, otp)
+			if err != nil {
+				return syncclient.CryptoSession{}, err
+			}
 		}
 
-		ctx.PrintVerboseKV("OTP", otp)
-
-		err := client.VerifyWithOTP(ctx, session, otp)
-		if err != nil {
-			return syncclient.CryptoSession{}, err
-		}
 	}
 
 	// ========================================================================

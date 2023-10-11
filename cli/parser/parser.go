@@ -349,6 +349,13 @@ func parseCommandlineInternal() (cli.Verb, cli.Options, error) {
 			continue
 		}
 
+		if (arg.Key == "otp") && arg.Value != nil {
+			// theoretically a global option, but kinda behaves like an option of cliLogin
+			// because its only useful globally in combination with --auth-login-*
+			opt.OTPOverride = langext.Ptr(*arg.Value)
+			continue
+		}
+
 		optionArguments = append(optionArguments, arg)
 	}
 

@@ -166,8 +166,9 @@ firefox-sync-client.
 
 Basic Usage:
   ffsclient login <login> <password>                               Login to FF-Sync account, uses ~/.config as default session location
-            [--device-name=<name>]                                 
-            [--device-type=<type>]                                 
+            [--device-name=<name>]                                   # Send your device-name to identify the session later
+            [--device-type=<type>]                                   # Send your device-type to identify the session later
+            [--otp=<value>]                                          # A valid TOTP token, in case one is needed for the login
   ffsclient refresh [--force]                                      Refresh the current session token (BID Assertion)
   ffsclient check-session                                          Verify that the current session is valid
   ffsclient collections                                            List all available collections

@@ -34,6 +34,7 @@ type Options struct {
 	TableFormatFilter             *string
 	TableFormatTruncate           bool
 	CSVColumnFilter               *[]int
+	OTPOverride                   *string
 }
 
 func DefaultCLIOptions() Options {
@@ -63,5 +64,6 @@ func DefaultCLIOptions() Options {
 		TableFormatFilter:             nil,
 		TableFormatTruncate:           term.IsTerminal(int(os.Stdout.Fd())),
 		CSVColumnFilter:               nil,
+		OTPOverride:                   nil,
 	}
 }

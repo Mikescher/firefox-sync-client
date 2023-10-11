@@ -8,7 +8,6 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
@@ -31,8 +30,6 @@ type FxAClient struct {
 	authURL string
 	client  http.Client
 }
-
-var OtpNeededError error = errors.New("OTP verification needed")
 
 func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 	c := http.Client{
