@@ -1,6 +1,6 @@
 package cli
 
-type Mode string
+type Mode string //@enum:type
 
 const (
 	ModeHelp                     Mode = "help"
@@ -93,12 +93,6 @@ var ModesSpecial = []Mode{
 
 	ModeTabsBase,
 	ModeTabsList,
-}
-
-var ModesAll = append(append([]Mode{}, ModesBase...), ModesSpecial...)
-
-func (m Mode) String() string {
-	return string(m)
 }
 
 type Verb interface {

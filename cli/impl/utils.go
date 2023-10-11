@@ -36,7 +36,7 @@ func ParseSubcommand(v []string) (cli.Verb, string, int, bool) {
 }
 
 func GetSubcommand(v string) (cli.Verb, bool) {
-	for _, verb := range cli.ModesAll {
+	for _, verb := range cli.ModeValues() {
 		if strings.ToLower(v) == strings.ToLower(string(verb)) {
 			return GetModeImpl(verb), true
 		}
@@ -135,7 +135,7 @@ func GetModeImpl(m cli.Mode) cli.Verb {
 func ListSubcommands(m cli.Mode, skipBase bool) []cli.Mode {
 	r := make([]cli.Mode, 0)
 
-	for _, v := range cli.ModesAll {
+	for _, v := range cli.ModeValues() {
 		if strings.HasPrefix(string(v), string(m)+" ") {
 			if skipBase && GetModeImpl(v).ShortHelp() == nil {
 				continue

@@ -14,6 +14,7 @@ clean:
 
 enums:
 	go generate syncclient/enums.go
+	go generate cli/enums.go
 
 package:
 	go clean

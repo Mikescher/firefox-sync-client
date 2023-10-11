@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-type OutputFormat string
+type OutputFormat string //@enum:type
 
 const (
 	OutputFormatText     OutputFormat = "text"
@@ -16,36 +16,12 @@ const (
 	OutputFormatCSV      OutputFormat = "csv"
 )
 
-func (f OutputFormat) String() string {
-	return string(f)
-}
-
 func GetOutputFormat(v string) (OutputFormat, bool) {
-	switch strings.ToLower(v) {
-
-	case strings.ToLower(string(OutputFormatText)):
-		return OutputFormatText, true
-
-	case strings.ToLower(string(OutputFormatJson)):
-		return OutputFormatJson, true
-
-	case strings.ToLower(string(OutputFormatNetscape)):
-		return OutputFormatNetscape, true
-
-	case strings.ToLower(string(OutputFormatXML)):
-		return OutputFormatXML, true
-
-	case strings.ToLower(string(OutputFormatTable)):
-		return OutputFormatTable, true
-
-	case strings.ToLower(string(OutputFormatTSV)):
-		return OutputFormatTSV, true
-
-	case strings.ToLower(string(OutputFormatCSV)):
-		return OutputFormatCSV, true
-
-	default:
-		return "", false
+	for _, fmt := range OutputFormatValues() {
+		if strings.EqualFold(v, fmt.String()) {
+			return fmt, true
+		}
 	}
 
+	return "", false
 }
