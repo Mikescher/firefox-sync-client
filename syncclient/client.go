@@ -68,14 +68,14 @@ func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 	}
 }
 
-func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, error) {
+func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, SessionVerification, error) {
 	stretchpwd := stretchPassword(email, password)
 
 	ctx.PrintVerboseKV("StretchPW", stretchpwd)
 
 	authPW, err := deriveKey(stretchpwd, "authPW", 32)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to derive key")
+		return LoginSession{}, "", errorx.Decorate(err, "failed to derive key")
 	}
 
 	ctx.PrintVerboseKV("AuthPW", authPW)
@@ -88,14 +88,14 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 
 	bytesBody, err := json.Marshal(body)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to marshal body")
+		return LoginSession{}, "", errorx.Decorate(err, "failed to marshal body")
 	}
 
 	requestURL := f.authURL + "/account/login?keys=true"
 
 	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(bytesBody))
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to create request")
+		return LoginSession{}, "", errorx.Decorate(err, "failed to create request")
 	}
 
 	req.Header.Add("Content-Type", "application/json")
@@ -108,19 +108,19 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 
 	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to do request")
+		return LoginSession{}, "", errorx.Decorate(err, "failed to do request")
 	}
 
 	respBodyRaw, err := io.ReadAll(rawResp.Body)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to read response-body request")
+		return LoginSession{}, "", errorx.Decorate(err, "failed to read response-body request")
 	}
 
 	if rawResp.StatusCode != 200 {
 		if len(string(respBodyRaw)) > 1 {
-			return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
+			return LoginSession{}, "", errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
 		} else {
-			return LoginSession{}, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v", rawResp.StatusCode))
+			return LoginSession{}, "", errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v", rawResp.StatusCode))
 		}
 	}
 
@@ -130,17 +130,17 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	var resp loginResponseSchema
 	err = json.Unmarshal(respBodyRaw, &resp)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+		return LoginSession{}, "", errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
 	}
 
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to read KeyFetchToken: "+resp.KeyFetchToken)
+		return LoginSession{}, "", errorx.Decorate(err, "failed to read KeyFetchToken: "+resp.KeyFetchToken)
 	}
 
 	st, err := hex.DecodeString(resp.SessionToken)
 	if err != nil {
-		return LoginSession{}, errorx.Decorate(err, "failed to read SessionToken: "+resp.SessionToken)
+		return LoginSession{}, "", errorx.Decorate(err, "failed to read SessionToken: "+resp.SessionToken)
 	}
 
 	ctx.PrintVerboseKV("UserID", resp.UserID)
@@ -149,17 +149,46 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 
 	if !resp.Verified {
 		if resp.VerificationMethod == "totp-2fa" {
-			ctx.PrintVerbose("OTP verification will be required in the next step")
+			ctx.PrintVerbose("OTP verification will be required in the next step (totp-2fa)")
 
 			return LoginSession{
 				StretchPassword: stretchpwd,
 				UserId:          resp.UserID,
 				SessionToken:    st,
 				KeyFetchToken:   kft,
-			}, OtpNeededError
-		} else {
-			return LoginSession{}, fferr.DirectOutput.New("You must verify the login attempt (e.g. per e-mail) before continuing")
+			}, VerificationTOTP2FA, nil
 		}
+
+		if resp.VerificationMethod == "email" {
+			return LoginSession{}, "", fferr.DirectOutput.New("You must verify the login attempt (per e-mail) before continuing")
+		}
+
+		if resp.VerificationMethod == "email-otp" {
+			ctx.PrintVerbose("OTP verification will be required in the next step (email-otp)")
+
+			// is this the same as 2fa ?, can we simply use the same code and input the "otp" code from the mail in /session/verifiy/totp  ??
+			return LoginSession{}, "", fferr.DirectOutput.New("You must verify the login attempt (e.g. per e-mail) before continuing")
+		}
+
+		if resp.VerificationMethod == "email-2fa" {
+			ctx.PrintVerbose("2FA verification will be required in the next step (email-2fa)")
+
+			return LoginSession{
+				StretchPassword: stretchpwd,
+				UserId:          resp.UserID,
+				SessionToken:    st,
+				KeyFetchToken:   kft,
+			}, VerificationMail2FA, nil
+		}
+
+		if resp.VerificationMethod == "email-captcha" {
+			ctx.PrintVerbose("Captcha verification will be required in the next step (email-captcha)")
+
+			// is this the same as 2fa ?, can we simply use the same code and input the "captcha" code from the mail in /session/verifiy/totp  ??
+			return LoginSession{}, "", fferr.DirectOutput.New("Your account was issued a captcha, please solve the captcha mail to your e-mail address first")
+		}
+
+		return LoginSession{}, "", errorx.InternalError.New(fmt.Sprintf("The requested verification method '%s' is unknown", resp.VerificationMethod))
 	}
 
 	return LoginSession{
@@ -167,7 +196,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 		UserId:          resp.UserID,
 		SessionToken:    st,
 		KeyFetchToken:   kft,
-	}, nil
+	}, VerificationNone, nil
 }
 
 func (f FxAClient) VerifyWithOTP(ctx *cli.FFSContext, session LoginSession, otp string) error {
@@ -187,7 +216,7 @@ func (f FxAClient) VerifyWithOTP(ctx *cli.FFSContext, session LoginSession, otp 
 	}
 
 	if !resp.Success {
-		return errorx.Decorate(err, "OTP was not accepted by the server")
+		return fferr.DirectOutput.New(fmt.Sprintf("OTP '%s' was not accepted by the server", otp))
 	}
 
 	ctx.PrintVerbose("Session verified")

@@ -18,6 +18,14 @@ type LoginSession struct {
 	KeyFetchToken   []byte
 }
 
+type SessionVerification string //@enum:type
+
+const (
+	VerificationNone    SessionVerification = "NONE"
+	VerificationTOTP2FA SessionVerification = "TOTP_2FA"
+	VerificationMail2FA SessionVerification = "MAIL_2FA"
+)
+
 type KeyedSession struct {
 	UserId       string
 	SessionToken []byte

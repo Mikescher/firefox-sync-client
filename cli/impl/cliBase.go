@@ -92,20 +92,47 @@ func (a *CLIArgumentsBaseUtil) SyncLogin(ctx *cli.FFSContext, client *syncclient
 
 	ctx.PrintVerboseHeader("[1] Login to Sync Account")
 
-	session, err := client.Login(ctx, email, password)
+	session, verificationMethod, err := client.Login(ctx, email, password)
 	if err != nil {
 		if errors.Is(err, syncclient.OtpNeededError) {
-			ctx.PrintVerboseHeader("[1b] Verify with OTP")
 
-			var otp string
-			fmt.Println("Enter your OTP: ")
-			fmt.Scanln(&otp)
-
-			errotp := client.VerifyWithOTP(ctx, session, otp)
-			if errotp != nil {
-				return syncclient.CryptoSession{}, errotp
-			}
 		} else {
+			return syncclient.CryptoSession{}, err
+		}
+	}
+
+	if verificationMethod == syncclient.VerificationTOTP2FA {
+		ctx.PrintVerboseHeader("[1b] Verify with OTP")
+
+		var otp string
+		fmt.Println("Enter your OTP (2-Factor Authentication Code): ")
+		_, err = fmt.Scanln(&otp)
+		if err != nil {
+			return syncclient.CryptoSession{}, err
+		}
+
+		ctx.PrintVerboseKV("OTP", otp)
+
+		err := client.VerifyWithOTP(ctx, session, otp)
+		if err != nil {
+			return syncclient.CryptoSession{}, err
+		}
+	}
+
+	if verificationMethod == syncclient.VerificationMail2FA {
+		ctx.PrintVerboseHeader("[1b] Verify with OTP")
+
+		var otp string
+		fmt.Println("Enter your OTP (E-Mail Authentication Code): ")
+		_, err = fmt.Scanln(&otp)
+		if err != nil {
+			return syncclient.CryptoSession{}, err
+		}
+
+		ctx.PrintVerboseKV("OTP", otp)
+
+		err := client.VerifyWithOTP(ctx, session, otp)
+		if err != nil {
 			return syncclient.CryptoSession{}, err
 		}
 	}
