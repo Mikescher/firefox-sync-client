@@ -7,12 +7,22 @@ type loginRequestSchema struct {
 }
 
 type loginResponseSchema struct {
-	UserID         string `json:"uid"`
-	SessionToken   string `json:"sessionToken"`
-	AuthAt         int64  `json:"authAt"`
-	MetricsEnabled bool   `json:"metricsEnabled"`
-	KeyFetchToken  string `json:"keyFetchToken"`
-	Verified       bool   `json:"verified"`
+	UserID             string `json:"uid"`
+	SessionToken       string `json:"sessionToken"`
+	AuthAt             int64  `json:"authAt"`
+	MetricsEnabled     bool   `json:"metricsEnabled"`
+	KeyFetchToken      string `json:"keyFetchToken"`
+	Verified           bool   `json:"verified"`
+	VerificationMethod string `json:"verificationMethod"`
+}
+
+type totpVerifyRequestSchema struct {
+	Code    string `json:"code"`
+	Service string `json:"service"`
+}
+
+type totpVerifyResponseSchema struct {
+	Success bool `json:"success"`
 }
 
 type keysResponseSchema struct {
