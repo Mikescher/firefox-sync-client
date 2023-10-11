@@ -2,7 +2,7 @@
 # ./firefox-sync-client
 #########################
 
-build:
+build: enums
 	CGO_ENABLED=0 go build -o _out/ffsclient ./cmd/ffsclient
 
 run: build
@@ -11,6 +11,9 @@ run: build
 clean:
 	go clean
 	rm -rf ./_out/*
+
+enums:
+	go generate syncclient/enums.go
 
 package:
 	go clean
