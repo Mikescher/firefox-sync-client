@@ -20,6 +20,8 @@ package:
 	go clean
 	rm -rf ./_out/*
 
+	_data/package-data/sanitycheck.sh
+
 	GOARCH=386   GOOS=linux   CGO_ENABLED=0 go build -o _out/ffsclient_linux-386-static                                      ./cmd/ffsclient  # Linux - 32 bit
 	GOARCH=amd64 GOOS=linux   CGO_ENABLED=0 go build -o _out/ffsclient_linux-amd64-static                                    ./cmd/ffsclient  # Linux - 64 bit
 	GOARCH=arm64 GOOS=linux   CGO_ENABLED=0 go build -o _out/ffsclient_linux-arm64-static                                    ./cmd/ffsclient  # Linux - ARM
