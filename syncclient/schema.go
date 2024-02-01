@@ -16,6 +16,15 @@ type loginResponseSchema struct {
 	VerificationMethod string `json:"verificationMethod"`
 }
 
+type loginErrorResponseSchema struct {
+	Code    int    `json:"code"`
+	ErrNo   int    `json:"errno"`
+	Error   string `json:"error"`
+	Message string `json:"message"`
+	Info    string `json:"info"`
+	Email   string `json:"email"`
+}
+
 type totpVerifyRequestSchema struct {
 	Code    string `json:"code"`
 	Service string `json:"service"`
