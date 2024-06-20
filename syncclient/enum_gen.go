@@ -5,13 +5,14 @@ package syncclient
 import "gogs.mikescher.com/BlackForestBytes/goext/langext"
 import "gogs.mikescher.com/BlackForestBytes/goext/enums"
 
-const ChecksumEnumGenerator = "30df78de97aaf28429d34eb5b5da8fa2a31d78d70039fa275e862d8a619a91b8" // GoExtVersion: 0.0.286
+const ChecksumEnumGenerator = "24e2aacc95e837c65163c3b80e4d6a235e9d9b38e3aeb8518a720a5ac9d41de5" // GoExtVersion: 0.0.475
 
 // ================================ SessionVerification ================================
 //
 // File:       session.go
 // StringEnum: true
 // DescrEnum:  false
+// DataEnum:   false
 //
 
 var __SessionVerificationValues = []SessionVerification{
@@ -53,6 +54,14 @@ func (e SessionVerification) VarName() string {
 	return ""
 }
 
+func (e SessionVerification) TypeName() string {
+	return "SessionVerification"
+}
+
+func (e SessionVerification) PackageName() string {
+	return "syncclient"
+}
+
 func (e SessionVerification) Meta() enums.EnumMetaValue {
 	return enums.EnumMetaValue{VarName: e.VarName(), Value: e, Description: nil}
 }
@@ -75,5 +84,13 @@ func SessionVerificationValuesMeta() []enums.EnumMetaValue {
 		VerificationNone.Meta(),
 		VerificationTOTP2FA.Meta(),
 		VerificationMail2FA.Meta(),
+	}
+}
+
+// ================================ ================= ================================
+
+func AllPackageEnums() []enums.Enum {
+	return []enums.Enum{
+		VerificationNone, // SessionVerification
 	}
 }

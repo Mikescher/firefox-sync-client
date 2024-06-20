@@ -5,13 +5,14 @@ package cli
 import "gogs.mikescher.com/BlackForestBytes/goext/langext"
 import "gogs.mikescher.com/BlackForestBytes/goext/enums"
 
-const ChecksumEnumGenerator = "cbde7e4d7a9da1c4a896281f5036726b0b82584bd83b27641fbd40026f5106e0" // GoExtVersion: 0.0.286
+const ChecksumEnumGenerator = "34f0a5719e249d761d8c47f0c12a25c54a34b38d3a7cafb32c29e2c6eab42472" // GoExtVersion: 0.0.475
 
 // ================================ OutputFormat ================================
 //
 // File:       formats.go
 // StringEnum: true
 // DescrEnum:  false
+// DataEnum:   false
 //
 
 var __OutputFormatValues = []OutputFormat{
@@ -61,6 +62,14 @@ func (e OutputFormat) VarName() string {
 	return ""
 }
 
+func (e OutputFormat) TypeName() string {
+	return "OutputFormat"
+}
+
+func (e OutputFormat) PackageName() string {
+	return "cli"
+}
+
 func (e OutputFormat) Meta() enums.EnumMetaValue {
 	return enums.EnumMetaValue{VarName: e.VarName(), Value: e, Description: nil}
 }
@@ -95,6 +104,7 @@ func OutputFormatValuesMeta() []enums.EnumMetaValue {
 // File:       subcommands.go
 // StringEnum: true
 // DescrEnum:  false
+// DataEnum:   false
 //
 
 var __ModeValues = []Mode{
@@ -102,11 +112,14 @@ var __ModeValues = []Mode{
 	ModeVersion,
 	ModeLogin,
 	ModeTokenRefresh,
+	ModeCheckSession,
 	ModeQuotaGet,
 	ModeCollectionsList,
 	ModeRecordsList,
 	ModeRecordsGet,
 	ModeRecordsDelete,
+	ModeCollectionsDelete,
+	ModeDeleteAll,
 	ModeRecordsCreate,
 	ModeRecordsUpdate,
 	ModeMetaGet,
@@ -141,11 +154,14 @@ var __ModeVarnames = map[Mode]string{
 	ModeVersion:                  "ModeVersion",
 	ModeLogin:                    "ModeLogin",
 	ModeTokenRefresh:             "ModeTokenRefresh",
+	ModeCheckSession:             "ModeCheckSession",
 	ModeQuotaGet:                 "ModeQuotaGet",
 	ModeCollectionsList:          "ModeCollectionsList",
 	ModeRecordsList:              "ModeRecordsList",
 	ModeRecordsGet:               "ModeRecordsGet",
 	ModeRecordsDelete:            "ModeRecordsDelete",
+	ModeCollectionsDelete:        "ModeCollectionsDelete",
+	ModeDeleteAll:                "ModeDeleteAll",
 	ModeRecordsCreate:            "ModeRecordsCreate",
 	ModeRecordsUpdate:            "ModeRecordsUpdate",
 	ModeMetaGet:                  "ModeMetaGet",
@@ -202,6 +218,14 @@ func (e Mode) VarName() string {
 	return ""
 }
 
+func (e Mode) TypeName() string {
+	return "Mode"
+}
+
+func (e Mode) PackageName() string {
+	return "cli"
+}
+
 func (e Mode) Meta() enums.EnumMetaValue {
 	return enums.EnumMetaValue{VarName: e.VarName(), Value: e, Description: nil}
 }
@@ -225,11 +249,14 @@ func ModeValuesMeta() []enums.EnumMetaValue {
 		ModeVersion.Meta(),
 		ModeLogin.Meta(),
 		ModeTokenRefresh.Meta(),
+		ModeCheckSession.Meta(),
 		ModeQuotaGet.Meta(),
 		ModeCollectionsList.Meta(),
 		ModeRecordsList.Meta(),
 		ModeRecordsGet.Meta(),
 		ModeRecordsDelete.Meta(),
+		ModeCollectionsDelete.Meta(),
+		ModeDeleteAll.Meta(),
 		ModeRecordsCreate.Meta(),
 		ModeRecordsUpdate.Meta(),
 		ModeMetaGet.Meta(),
@@ -257,5 +284,14 @@ func ModeValuesMeta() []enums.EnumMetaValue {
 		ModeHistoryDelete.Meta(),
 		ModeTabsBase.Meta(),
 		ModeTabsList.Meta(),
+	}
+}
+
+// ================================ ================= ================================
+
+func AllPackageEnums() []enums.Enum {
+	return []enums.Enum{
+		OutputFormatText, // OutputFormat
+		ModeHelp,         // Mode
 	}
 }

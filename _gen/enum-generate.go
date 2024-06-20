@@ -13,7 +13,7 @@ func main() {
 		panic(err)
 	}
 
-	err = bfcodegen.GenerateEnumSpecs(wd, dest)
+	err = bfcodegen.GenerateEnumSpecs(wd, dest, bfcodegen.EnumGenOptions{})
 	if err != nil {
 		panic(err)
 	}

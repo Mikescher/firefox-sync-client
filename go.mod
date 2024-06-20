@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.4
 
 require (
-	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/uuid v1.5.0
 	github.com/joomcode/errorx v1.1.1
 	github.com/zenazn/pkcs7pad v0.0.0-20170308005700-253a5b1f0e03
