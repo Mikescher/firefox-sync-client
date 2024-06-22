@@ -187,9 +187,9 @@ func (a *CLIArgumentsBaseUtil) SyncLogin(ctx *cli.FFSContext, client *syncclient
 
 	// ========================================================================
 
-	ctx.PrintVerboseHeader("[4] Assert BrowserID")
+	ctx.PrintVerboseHeader("[4] Acquire OAuth Token")
 
-	sessionBID, err := client.AssertBrowserID(ctx, extsession)
+	sessionOAuth, err := client.AcquireOAuthToken(ctx, extsession)
 	if err != nil {
 		return syncclient.CryptoSession{}, err
 	}
@@ -198,7 +198,7 @@ func (a *CLIArgumentsBaseUtil) SyncLogin(ctx *cli.FFSContext, client *syncclient
 
 	ctx.PrintVerboseHeader("[5] Get HAWK Credentials")
 
-	sessionHawk, err := client.HawkAuth(ctx, sessionBID)
+	sessionHawk, err := client.HawkAuth(ctx, sessionOAuth)
 	if err != nil {
 		return syncclient.CryptoSession{}, err
 	}

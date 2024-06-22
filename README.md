@@ -169,7 +169,7 @@ Basic Usage:
             [--device-name=<name>]                                   # Send your device-name to identify the session later
             [--device-type=<type>]                                   # Send your device-type to identify the session later
             [--otp=<value>]                                          # A valid TOTP token, in case one is needed for the login
-  ffsclient refresh [--force]                                      Refresh the current session token (BID Assertion)
+  ffsclient refresh [--force]                                      Refresh the current session token (via OAuth RefreshToken)
   ffsclient check-session                                          Verify that the current session is valid
   ffsclient collections                                            List all available collections
             [--usage]                                                # Include usage (storage space)

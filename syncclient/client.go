@@ -2,10 +2,9 @@ package syncclient
 
 import (
 	"bytes"
-	"crypto/dsa"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"ffsyncclient/cli"
@@ -13,7 +12,6 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/models"
 	"fmt"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/joomcode/errorx"
 	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"gogs.mikescher.com/BlackForestBytes/goext/timeext"
@@ -307,80 +305,139 @@ func (f FxAClient) FetchKeys(ctx *cli.FFSContext, session LoginSession) ([]byte,
 	return keyA, keyB, nil
 }
 
-func (f FxAClient) AssertBrowserID(ctx *cli.FFSContext, session KeyedSession) (BrowserIdSession, error) {
-	ctx.PrintVerbose("Create & Sign Certificate")
+func (f FxAClient) AcquireOAuthToken(ctx *cli.FFSContext, session KeyedSession) (OAuthSession, error) {
 
-	duration := time.Second * consts.DefaultBIDAssertionDuration
-
-	params := dsa.Parameters{}
-	err := dsa.GenerateParameters(&params, rand.Reader, dsa.L1024N160)
-	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "Failed to generate DSA params")
-	}
-
-	var privateKey dsa.PrivateKey
-	privateKey.PublicKey.Parameters = params
-
-	err = dsa.GenerateKey(&privateKey, rand.Reader)
-	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "Failed to generate DSA key-pair")
-	}
-
-	ctx.PrintVerboseKV("pub[P]", privateKey.P.Text(16))
-	ctx.PrintVerboseKV("pub[Q]", privateKey.Q.Text(16))
-	ctx.PrintVerboseKV("pub[G]", privateKey.G.Text(16))
-	ctx.PrintVerboseKV("pub[Y]", privateKey.Y.Text(16))
-	ctx.PrintVerboseKV("priv[X]", privateKey.X.Text(16))
-
-	body := signCertRequestSchema{
-		PublicKey: signCertRequestSchemaPKey{
-			Algorithm: "DS",
-			P:         privateKey.P.Text(16),
-			Q:         privateKey.Q.Text(16),
-			G:         privateKey.G.Text(16),
-			Y:         privateKey.Y.Text(16),
-		},
-		Duration: duration.Milliseconds(),
-	}
-
-	ctx.PrintVerbose("Sign new certificate via " + "/certificate/sign")
-
-	binResp, _, err := f.requestWithHawkToken(ctx, "POST", "/certificate/sign", body, session.SessionToken, "sessionToken")
-	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "Failed to sign cert")
-	}
-
-	var resp signCertResponseSchema
-	err = json.Unmarshal(binResp, &resp)
-	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binResp))
-	}
-
-	ctx.PrintVerboseKV("Certificate", resp.Certificate)
+	ctx.PrintVerbose("Create OAuth Token")
 
 	t0 := time.Now()
-	exp := t0.UnixMilli() + duration.Milliseconds()
 
-	token := jwt.NewWithClaims(&SigningMethodDS128{}, jwt.MapClaims{
-		"exp": exp,
-		"aud": ctx.Opt.TokenServerURL,
-	})
-
-	assertion, err := token.SignedString(&privateKey)
-	if err != nil {
-		return BrowserIdSession{}, errorx.Decorate(err, "failed to generate JWT")
+	oAuthBody := oauthTokenRequestSchema{
+		GrantType:  "fxa-credentials",
+		AccessType: "offline",
+		ClientID:   consts.OAuthClientID,
+		Scope:      consts.OAuthScope,
 	}
 
-	ctx.PrintVerboseKV("Assertion:JWT", assertion)
+	binRespOAuth, _, err := f.requestWithHawkToken(ctx, "POST", "/oauth/token", oAuthBody, session.SessionToken, "sessionToken")
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "Failed to request oauth-token")
+	}
 
-	bid := resp.Certificate + "~" + assertion
+	var respOAuth oauthTokenResponseSchema
+	err = json.Unmarshal(binRespOAuth, &respOAuth)
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binRespOAuth))
+	}
 
-	ctx.PrintVerboseKV("BID-Assertion", bid)
+	accTokenDuration := timeext.FromSeconds(respOAuth.ExpiresIn)
 
-	return session.Extend(bid, t0, duration), nil
+	ctx.PrintVerboseKV("AccessToken", respOAuth.AccessToken)
+	ctx.PrintVerboseKV("RefreshToken", respOAuth.RefreshToken)
+	ctx.PrintVerboseKV("Expiration", accTokenDuration)
+
+	ctx.PrintVerbose("Query ScopedKeyData")
+
+	keyDataBody := scopedKeyDataRequestSchema{
+		ClientID: consts.OAuthClientID,
+		Scope:    consts.OAuthScope,
+	}
+
+	binRespScopedKeyData, _, err := f.requestWithHawkToken(ctx, "POST", "/account/scoped-key-data", keyDataBody, session.SessionToken, "sessionToken")
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "Failed to request scoped-key-data")
+	}
+
+	var respKeyData scopedKeyDataResponseSchema
+	err = json.Unmarshal(binRespScopedKeyData, &respKeyData)
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binRespScopedKeyData))
+	}
+
+	data, ok := respKeyData[consts.OAuthScope]
+	if !ok {
+		return OAuthSession{}, errorx.InternalError.New("scoped-key-data does not contain scope")
+	}
+
+	ctx.PrintVerboseKV("KeyRotationTimestamp", data.KeyRotationTimestamp)
+
+	clientStateBin := sha256.Sum256(session.KeyB)
+	clientStateB64 := base64.RawURLEncoding.EncodeToString(clientStateBin[0:16])
+	keyID := fmt.Sprintf("%d-%s", data.KeyRotationTimestamp, clientStateB64)
+
+	ctx.PrintVerboseKV("ClientState", clientStateB64)
+	ctx.PrintVerboseKV("KeyID", keyID)
+
+	return session.Extend(respOAuth.AccessToken, respOAuth.RefreshToken, keyID, t0, accTokenDuration), nil
 }
 
-func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (HawkSession, error) {
+func (f FxAClient) RefreshOAuthToken(ctx *cli.FFSContext, session KeyedSession, refreshToken string) (OAuthSession, error) {
+
+	ctx.PrintVerbose("Create OAuth Token (via refreshToken)")
+
+	ctx.PrintVerboseKV("RefreshToken", refreshToken)
+
+	t0 := time.Now()
+
+	oAuthBody := oauthTokenRequestSchema{
+		GrantType:    "fxa-credentials",
+		RefreshToken: refreshToken,
+		ClientID:     consts.OAuthClientID,
+		Scope:        consts.OAuthScope,
+	}
+
+	binRespOAuth, _, err := f.requestWithHawkToken(ctx, "POST", "/oauth/token", oAuthBody, session.SessionToken, "sessionToken")
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "Failed to request oauth-token")
+	}
+
+	var respOAuth oauthTokenResponseSchema
+	err = json.Unmarshal(binRespOAuth, &respOAuth)
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binRespOAuth))
+	}
+
+	accTokenDuration := timeext.FromSeconds(respOAuth.ExpiresIn)
+
+	ctx.PrintVerboseKV("AccessToken", respOAuth.AccessToken)
+	ctx.PrintVerboseKV("RefreshToken", refreshToken)
+	ctx.PrintVerboseKV("Expiration", accTokenDuration)
+
+	ctx.PrintVerbose("Query ScopedKeyData")
+
+	keyDataBody := scopedKeyDataRequestSchema{
+		ClientID: consts.OAuthClientID,
+		Scope:    consts.OAuthScope,
+	}
+
+	binRespScopedKeyData, _, err := f.requestWithHawkToken(ctx, "POST", "/account/scoped-key-data", keyDataBody, session.SessionToken, "sessionToken")
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "Failed to request scoped-key-data")
+	}
+
+	var respKeyData scopedKeyDataResponseSchema
+	err = json.Unmarshal(binRespScopedKeyData, &respKeyData)
+	if err != nil {
+		return OAuthSession{}, errorx.Decorate(err, "failed to unmarshal response:\n"+string(binRespScopedKeyData))
+	}
+
+	data, ok := respKeyData[consts.OAuthScope]
+	if !ok {
+		return OAuthSession{}, errorx.InternalError.New("scoped-key-data does not contain scope")
+	}
+
+	ctx.PrintVerboseKV("KeyRotationTimestamp", data.KeyRotationTimestamp)
+
+	clientStateBin := sha256.Sum256(session.KeyB)
+	clientStateB64 := base64.RawURLEncoding.EncodeToString(clientStateBin[0:16])
+	keyID := fmt.Sprintf("%d-%s", data.KeyRotationTimestamp, clientStateB64)
+
+	ctx.PrintVerboseKV("ClientState", clientStateB64)
+	ctx.PrintVerboseKV("KeyID", keyID)
+
+	return session.Extend(respOAuth.AccessToken, refreshToken, keyID, t0, accTokenDuration), nil
+}
+
+func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session OAuthSession) (HawkSession, error) {
 	ctx.PrintVerbose("Authenticate HAWK")
 
 	sha := sha256.New()
@@ -388,16 +445,16 @@ func (f FxAClient) HawkAuth(ctx *cli.FFSContext, session BrowserIdSession) (Hawk
 	sessionState := hex.EncodeToString(sha.Sum(nil)[0:16])
 
 	ctx.PrintVerboseKV("Session-State", sessionState)
-
-	auth := "BrowserID " + session.BrowserID
+	ctx.PrintVerboseKV("AccessToken", session.AccessToken)
+	ctx.PrintVerboseKV("KeyID", session.KeyID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", ctx.Opt.TokenServerURL+"/1.0/sync/1.5", nil)
 	if err != nil {
 		return HawkSession{}, errorx.Decorate(err, "failed to create request")
 	}
 
-	req.Header.Add("Authorization", auth)
-	req.Header.Add("X-Client-State", sessionState)
+	req.Header.Add("Authorization", "Bearer "+session.AccessToken)
+	req.Header.Add("X-KeyID", session.KeyID)
 
 	ctx.PrintVerbose("Query HAWK credentials")
 
@@ -530,21 +587,21 @@ func (f FxAClient) RefreshSession(ctx *cli.FFSContext, session FFSyncSession, fo
 
 	if session.Expired() {
 		ctx.PrintVerbose("Saved session is expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
-		ctx.PrintVerbose("Refreshing session (AssertBrowserID + HawkAuth)")
+		ctx.PrintVerbose("Refreshing session (OAuth via refreshToken + HawkAuth)")
 	} else if force {
 		ctx.PrintVerbose("Saved session is not expired (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
-		ctx.PrintVerbose("Refreshing session by force (AssertBrowserID + HawkAuth)")
+		ctx.PrintVerbose("Refreshing session by force (OAuth via refreshToken + HawkAuth)")
 	} else {
 		ctx.PrintVerbose("Saved session is valid (valid until " + session.Timeout.In(ctx.Opt.TimeZone).Format(time.RFC3339) + ")")
 		return session, false, nil
 	}
 
-	sessionBID, err := f.AssertBrowserID(ctx, session.ToKeyed())
+	sessionOAuth, err := f.RefreshOAuthToken(ctx, session.ToKeyed(), session.RefreshToken)
 	if err != nil {
-		return FFSyncSession{}, false, errorx.Decorate(err, "failed to assert BID")
+		return FFSyncSession{}, false, errorx.Decorate(err, "failed to refresh OAuth")
 	}
 
-	sessionHawk, err := f.HawkAuth(ctx, sessionBID)
+	sessionHawk, err := f.HawkAuth(ctx, sessionOAuth)
 	if err != nil {
 		return FFSyncSession{}, false, errorx.Decorate(err, "failed to authenticate HAWK")
 	}
