@@ -17,6 +17,13 @@ enums:
 	go generate cli/enums.go
 
 package:
+	#
+	# Manually do beforehand:
+	#   - Update version in version.go
+	#   - Create tag
+	#   - Commit
+	#
+
 	go clean
 	rm -rf ./_out/*
 
