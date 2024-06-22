@@ -12,6 +12,7 @@ import (
 )
 
 type LoginSession struct {
+	Mail            string
 	StretchPassword []byte
 	UserId          string
 	SessionToken    []byte
@@ -27,6 +28,7 @@ const (
 )
 
 type KeyedSession struct {
+	Mail         string
 	UserId       string
 	SessionToken []byte
 	KeyA         []byte
@@ -34,12 +36,14 @@ type KeyedSession struct {
 }
 
 type FxABrowserID struct {
+	Mail         string
 	BrowserID    string
 	CertTime     time.Time
 	CertDuration time.Duration
 }
 
 type OAuthSession struct {
+	Mail         string
 	UserId       string
 	SessionToken []byte
 	KeyA         []byte
@@ -52,6 +56,7 @@ type OAuthSession struct {
 }
 
 type HawkCredentials struct {
+	Mail              string
 	HawkID            string
 	HawkKey           string
 	APIEndpoint       string
@@ -59,6 +64,7 @@ type HawkCredentials struct {
 }
 
 type HawkSession struct {
+	Mail              string
 	UserId            string
 	SessionToken      []byte
 	KeyA              []byte
@@ -74,6 +80,7 @@ type HawkSession struct {
 }
 
 type CryptoSession struct {
+	Mail              string
 	UserId            string
 	SessionToken      []byte
 	KeyA              []byte
@@ -90,6 +97,7 @@ type CryptoSession struct {
 }
 
 type FFSyncSession struct {
+	Mail              string
 	SessionToken      []byte
 	KeyA              []byte
 	KeyB              []byte
@@ -113,6 +121,7 @@ type sessionHawkJson struct {
 }
 
 type sessionJson struct {
+	Mail         string          `json:"mail"`
 	SessionToken string          `json:"sessionToken"`
 	KeyA         string          `json:"keyA"`
 	KeyB         string          `json:"keyB"`
@@ -125,6 +134,7 @@ type sessionJson struct {
 
 func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
 	return KeyedSession{
+		Mail:         s.Mail,
 		UserId:       s.UserId,
 		SessionToken: s.SessionToken,
 		KeyA:         ka,
@@ -134,6 +144,7 @@ func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
 
 func (e KeyedSession) Extend(accToken string, refreshToken string, keyID string, t0 time.Time, dur time.Duration) OAuthSession {
 	return OAuthSession{
+		Mail:         e.Mail,
 		UserId:       e.UserId,
 		SessionToken: e.SessionToken,
 		KeyA:         e.KeyA,
@@ -148,6 +159,7 @@ func (e KeyedSession) Extend(accToken string, refreshToken string, keyID string,
 
 func (e OAuthSession) Extend(cred HawkCredentials, hawkTimeout time.Time) HawkSession {
 	return HawkSession{
+		Mail:              e.Mail,
 		UserId:            e.UserId,
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
@@ -165,6 +177,7 @@ func (e OAuthSession) Extend(cred HawkCredentials, hawkTimeout time.Time) HawkSe
 
 func (e HawkSession) Extend(keys map[string]KeyBundle) CryptoSession {
 	return CryptoSession{
+		Mail:              e.Mail,
 		UserId:            e.UserId,
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
@@ -183,6 +196,7 @@ func (e HawkSession) Extend(keys map[string]KeyBundle) CryptoSession {
 
 func (e HawkSession) ToKeylessSession() FFSyncSession {
 	return FFSyncSession{
+		Mail:              e.Mail,
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
@@ -197,6 +211,7 @@ func (e HawkSession) ToKeylessSession() FFSyncSession {
 
 func (s CryptoSession) Reduce() FFSyncSession {
 	return FFSyncSession{
+		Mail:              s.Mail,
 		SessionToken:      s.SessionToken,
 		KeyA:              s.KeyA,
 		KeyB:              s.KeyB,
@@ -221,6 +236,7 @@ func (s FFSyncSession) Save(path string) error {
 	}
 
 	sj := sessionJson{
+		Mail:         s.Mail,
 		SessionToken: hex.EncodeToString(s.SessionToken),
 		KeyA:         hex.EncodeToString(s.KeyA),
 		KeyB:         hex.EncodeToString(s.KeyB),
@@ -259,6 +275,7 @@ func (s FFSyncSession) Expired() bool {
 
 func (s FFSyncSession) ToKeyed() KeyedSession {
 	return KeyedSession{
+		Mail:         s.Mail,
 		UserId:       s.UserId,
 		SessionToken: s.SessionToken,
 		KeyA:         s.KeyA,
@@ -324,6 +341,8 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 		return FFSyncSession{}, errorx.InternalError.New("failed to load session: RefreshToken is empty")
 	}
 
+	mail := sj.Mail
+
 	ctx.PrintVerboseKV("SessionToken", sessionToken)
 	ctx.PrintVerboseKV("KeyA", keya)
 	ctx.PrintVerboseKV("KeyB", keyb)
@@ -341,6 +360,7 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 	}
 
 	return FFSyncSession{
+		Mail:              mail,
 		SessionToken:      sessionToken,
 		KeyA:              keya,
 		KeyB:              keyb,

@@ -5,7 +5,7 @@ package syncclient
 import "gogs.mikescher.com/BlackForestBytes/goext/langext"
 import "gogs.mikescher.com/BlackForestBytes/goext/enums"
 
-const ChecksumEnumGenerator = "092701e59ecc021c422fdc6a1f3ea20ebd269c6a0e4b740aec9af4d714543bc0" // GoExtVersion: 0.0.475
+const ChecksumEnumGenerator = "b403ffe66d1a6c28fac6ee7286bc15beaab81947d6409c5bd91e472b433cc1d5" // GoExtVersion: 0.0.475
 
 // ================================ SessionVerification ================================
 //

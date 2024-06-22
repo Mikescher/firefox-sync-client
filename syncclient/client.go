@@ -88,6 +88,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 			ctx.PrintVerbose("OTP verification will be required in the next step (totp-2fa)")
 
 			return LoginSession{
+				Mail:            email,
 				StretchPassword: stretchpwd,
 				UserId:          resp.UserID,
 				SessionToken:    st,
@@ -110,6 +111,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 			ctx.PrintVerbose("2FA verification will be required in the next step (email-2fa)")
 
 			return LoginSession{
+				Mail:            email,
 				StretchPassword: stretchpwd,
 				UserId:          resp.UserID,
 				SessionToken:    st,
@@ -128,6 +130,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	}
 
 	return LoginSession{
+		Mail:            email,
 		StretchPassword: stretchpwd,
 		UserId:          resp.UserID,
 		SessionToken:    st,

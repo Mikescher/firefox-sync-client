@@ -24,6 +24,7 @@ Additional Info:
  - https://web.archive.org/web/20191008073724/https://developer.mozilla.org/en-US/docs/Mozilla/Tech/XPCOM/Reference/Interface/nsINavHistoryService
 
 OAuth:
+ - https://www.codejam.info/2021/08/scripting-firefox-sync-lockwise-hybrid-oauth.html
  - https://www.codejam.info/2021/08/scripting-firefox-sync-lockwise-complete-oauth.html
  - https://vladikoff.github.io/app-services-site/docs/accounts/welcome.html
  - https://github.com/mozilla/fxa/blob/v1.228.3/packages/fxa-auth-server/docs/api.md#post-oauthtoken
