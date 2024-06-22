@@ -65,7 +65,7 @@ type CLIArgumentsBookmarksUtil struct {
 	CLIArgumentsBaseUtil
 }
 
-func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType, parents *[]string) []models.BookmarkRecord {
+func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records []models.BookmarkRecord, includeDeleted bool, onlyDeleted bool, bmtype *[]models.BookmarkType, parents *[]string, includeParent bool) []models.BookmarkRecord {
 	result := make([]models.BookmarkRecord, 0, len(records))
 
 	for _, v := range records {
@@ -84,7 +84,7 @@ func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records [
 			continue
 		}
 
-		if parents != nil && !langext.InArray(v.ParentID, *parents) {
+		if parents != nil && !langext.InArray(v.ParentID, *parents) && (!includeParent || !langext.InArray(v.ID, *parents)) {
 			ctx.PrintVerbose(fmt.Sprintf("Skip entry %v (not in parent-filter)", v.ID))
 			continue
 		}
@@ -95,11 +95,18 @@ func (a *CLIArgumentsBookmarksUtil) filterDeleted(ctx *cli.FFSContext, records [
 	return result
 }
 
-func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord) ([]*models.BookmarkTreeRecord, []*models.BookmarkRecord, []string) {
+func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks []models.BookmarkRecord, extraRoots []string) ([]*models.BookmarkTreeRecord, []*models.BookmarkRecord, []string) {
 	processedOkay := make(map[string]*models.BookmarkTreeRecord)
 	parentMap := make(map[string]*models.BookmarkTreeRecord)
 
 	roots := make([]*models.BookmarkTreeRecord, 0)
+
+	idSet := langext.ArrToKVMap(bookmarks, func(p models.BookmarkRecord) string { return p.ID }, func(p models.BookmarkRecord) bool { return true })
+
+	idExists := func(id string) bool {
+		_, ok := idSet[id]
+		return ok
+	}
 
 	// create tree(s) from root nodes
 	i := 0
@@ -111,7 +118,7 @@ func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks
 				continue
 			}
 
-			if v.ParentID == "" || v.ParentID == "places" {
+			if v.ParentID == "" || v.ParentID == "places" || (langext.InArray(v.ID, extraRoots) && !idExists(v.ParentID)) {
 				record := models.BookmarkTreeRecord{BookmarkRecord: v, ResolvedChildren: make([]*models.BookmarkTreeRecord, 0)}
 				roots = append(roots, &record)
 				processedOkay[v.ID] = &record
@@ -144,7 +151,7 @@ func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks
 	}
 	ctx.PrintVerbose(fmt.Sprintf("Build boookmark-tree after %d iterations (Processed %d/%d with %d roots)", i, len(processedOkay), len(bookmarks), len(roots)))
 
-	missing := make(map[string]bool, 0)
+	missing := make(map[string]bool)
 
 	// properly sort children
 	for _, record := range processedOkay {
@@ -165,6 +172,10 @@ func (a *CLIArgumentsBookmarksUtil) calculateTree(ctx *cli.FFSContext, bookmarks
 
 	for _, record := range roots {
 		if record.ParentID != "" {
+			if langext.InArray(record.ID, extraRoots) {
+				continue // extraRoots are allowed to have missing parents
+			}
+
 			ctx.PrintVerbose(fmt.Sprintf("[Warn] the bookmark<%s> record %s references a parent '%s' that was not found", record.Type, record.ID, record.ParentID))
 			missing[record.ParentID] = true
 		}
