@@ -64,68 +64,9 @@ func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 }
 
 func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, SessionVerification, error) {
-	stretchpwd := stretchPassword(email, password)
-
-	ctx.PrintVerboseKV("StretchPW", stretchpwd)
-
-	authPW, err := deriveKey(stretchpwd, "authPW", 32)
+	resp, stretchpwd, err := f.makeLoginRequest(ctx, email, password, stretchPassword(email, password))
 	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to derive key")
-	}
-
-	ctx.PrintVerboseKV("AuthPW", authPW)
-
-	body := loginRequestSchema{
-		Email:  email,
-		AuthPW: hex.EncodeToString(authPW), //lowercase
-		Reason: "login",
-	}
-
-	bytesBody, err := json.Marshal(body)
-	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to marshal body")
-	}
-
-	requestURL := f.authURL + "/account/login?keys=true"
-
-	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(bytesBody))
-	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to create request")
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "Mozilla/5.0 (Mobile; Firefox Accounts; rv:1.0) firefox-sync-client/"+consts.FFSCLIENT_VERSION+"golang/1.19")
-	req.Header.Add("Accept", "*/*")
-
-	ctx.PrintVerbose("Request session from " + requestURL)
-
-	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", "POST", requestURL))
-
-	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
-	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to do request")
-	}
-
-	respBodyRaw, err := io.ReadAll(rawResp.Body)
-	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to read response-body request")
-	}
-
-	if rawResp.StatusCode != 200 {
-		if len(string(respBodyRaw)) > 1 {
-			return LoginSession{}, "", errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
-		} else {
-			return LoginSession{}, "", errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v", rawResp.StatusCode))
-		}
-	}
-
-	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
-	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%v", string(respBodyRaw)))
-
-	var resp loginResponseSchema
-	err = json.Unmarshal(respBodyRaw, &resp)
-	if err != nil {
-		return LoginSession{}, "", errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+		return LoginSession{}, "", err
 	}
 
 	kft, err := hex.DecodeString(resp.KeyFetchToken)
@@ -192,6 +133,84 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 		SessionToken:    st,
 		KeyFetchToken:   kft,
 	}, VerificationNone, nil
+}
+
+func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password string, stretchpwd []byte) (loginResponseSchema, []byte, error) {
+	ctx.PrintVerboseKV("StretchPW", stretchpwd)
+
+	authPW, err := deriveKey(stretchpwd, "authPW", 32)
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to derive key")
+	}
+
+	ctx.PrintVerboseKV("AuthPW", authPW)
+
+	body := loginRequestSchema{
+		Email:  email,
+		AuthPW: hex.EncodeToString(authPW), //lowercase
+		Reason: "login",
+	}
+
+	bytesBody, err := json.Marshal(body)
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to marshal body")
+	}
+
+	requestURL := f.authURL + "/account/login?keys=true"
+
+	req, err := http.NewRequestWithContext(ctx, "POST", requestURL, bytes.NewBuffer(bytesBody))
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to create request")
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Mobile; Firefox Accounts; rv:1.0) firefox-sync-client/"+consts.FFSCLIENT_VERSION+"golang/1.19")
+	req.Header.Add("Accept", "*/*")
+
+	ctx.PrintVerbose("Request session from " + requestURL)
+
+	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", "POST", requestURL))
+
+	rawResp, err := f.doRequestWithRetries(ctx, req, 1)
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to do request")
+	}
+
+	respBodyRaw, err := io.ReadAll(rawResp.Body)
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to read response-body request")
+	}
+
+	if rawResp.StatusCode != 200 {
+		var errResp loginErrorResponseSchema
+		err = json.Unmarshal(respBodyRaw, &errResp)
+		if err != nil {
+			return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to unmarshal error:\n"+string(respBodyRaw))
+		}
+
+		// If the email used to stretch the password is different from sync server, the server throws a 400 error
+		// with message "Incorrect email case". The response json contains the correct email for stretching the password
+		if rawResp.StatusCode == 400 && errResp.ErrNo == 120 {
+			ctx.PrintVerbose("Using " + errResp.Email + " for stretch password and retrying login")
+			return f.makeLoginRequest(ctx, email, password, stretchPassword(errResp.Email, password))
+		}
+
+		if len(string(respBodyRaw)) > 1 {
+			return loginResponseSchema{}, nil, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v\nBody:\n%v", rawResp.StatusCode, string(respBodyRaw)))
+		} else {
+			return loginResponseSchema{}, nil, errorx.InternalError.New(fmt.Sprintf("call to /login returned statuscode %v", rawResp.StatusCode))
+		}
+	}
+
+	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
+	ctx.PrintVerbose(fmt.Sprintf("Request returned body:\n%v", string(respBodyRaw)))
+
+	var resp loginResponseSchema
+	err = json.Unmarshal(respBodyRaw, &resp)
+	if err != nil {
+		return loginResponseSchema{}, nil, errorx.Decorate(err, "failed to unmarshal response:\n"+string(respBodyRaw))
+	}
+	return resp, stretchpwd, nil
 }
 
 func (f FxAClient) VerifyWithOTP(ctx *cli.FFSContext, session LoginSession, otp string) error {
