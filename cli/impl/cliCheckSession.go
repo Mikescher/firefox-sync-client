@@ -40,8 +40,8 @@ func (a *CLIArgumentsCheckSession) FullHelp() []string {
 		"",
 		"Validate that the current session is valid.",
 		"",
-		"This does not mean that browser-id-assertion is valid.",
-		"The BID can still be expired and would need to be refreshed.",
+		"This does not mean that AccessToken is valid.",
+		"The OAuth can still be expired and would need to be refreshed.",
 		"(see `ffsclient refresh --help`)",
 	}
 }

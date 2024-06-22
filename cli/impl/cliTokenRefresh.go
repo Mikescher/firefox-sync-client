@@ -34,7 +34,7 @@ func (a *CLIArgumentsTokenRefresh) AvailableOutputFormats() []cli.OutputFormat {
 
 func (a *CLIArgumentsTokenRefresh) ShortHelp() [][]string {
 	return [][]string{
-		{"ffsclient refresh [--force]", "Refresh the current session token (BID Assertion)"},
+		{"ffsclient refresh [--force]", "Refresh the current session token (via OAuth RefreshToken)"},
 	}
 }
 

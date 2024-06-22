@@ -25,6 +25,8 @@ Additional Info:
 
 OAuth:
  - https://www.codejam.info/2021/08/scripting-firefox-sync-lockwise-complete-oauth.html
+ - https://vladikoff.github.io/app-services-site/docs/accounts/welcome.html
+ - https://github.com/mozilla/fxa/blob/v1.228.3/packages/fxa-auth-server/docs/api.md#post-oauthtoken
  - https://github.com/valeriangalliat/node-firefox-sync
  - https://github.com/mozilla/fxa/blob/f6bc0268a9be12407456fa42494243f336d81a38/packages/fxa-auth-server/docs/api.md#request-body-18
  - https://github.com/mozilla-lockwise/lockwise-android/blob/d3c0511f73c34e8759e1bb597f2d3dc9bcc146f0/app/src/main/java/mozilla/lockbox/support/Constant.kt#L29%3E

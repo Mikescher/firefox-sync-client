@@ -109,3 +109,31 @@ type sessionStatusResponseSchema struct {
 	State  string `json:"state"`
 	UserID string `json:"uid"`
 }
+
+type oauthTokenRequestSchema struct {
+	GrantType    string `json:"grant_type"`
+	AccessType   string `json:"access_type,omitempty"`
+	ClientID     string `json:"client_id"`
+	Scope        string `json:"scope"`
+	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+type oauthTokenResponseSchema struct {
+	AccessToken  string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	Scope        string `json:"scope"`
+	ExpiresIn    int    `json:"expires_in"`
+	AuthAt       int    `json:"auth_at"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type scopedKeyDataRequestSchema struct {
+	ClientID string `json:"client_id"`
+	Scope    string `json:"scope"`
+}
+
+type scopedKeyDataResponseSchema map[string]struct {
+	Identifier           string `json:"identifier"`
+	KeyRotationSecret    string `json:"keyRotationSecret"`
+	KeyRotationTimestamp int64  `json:"keyRotationTimestamp"`
+}

@@ -39,12 +39,14 @@ type FxABrowserID struct {
 	CertDuration time.Duration
 }
 
-type BrowserIdSession struct {
+type OAuthSession struct {
 	UserId       string
 	SessionToken []byte
 	KeyA         []byte
 	KeyB         []byte
-	BrowserID    string
+	AccessToken  string
+	RefreshToken string
+	KeyID        string
 	CertTime     time.Time
 	CertDuration time.Duration
 }
@@ -61,7 +63,9 @@ type HawkSession struct {
 	SessionToken      []byte
 	KeyA              []byte
 	KeyB              []byte
-	BrowserID         string
+	AccessToken       string
+	RefreshToken      string
+	KeyID             string
 	Timeout           time.Time
 	HawkID            string
 	HawkKey           string
@@ -74,7 +78,9 @@ type CryptoSession struct {
 	SessionToken      []byte
 	KeyA              []byte
 	KeyB              []byte
-	BrowserID         string
+	AccessToken       string
+	RefreshToken      string
+	KeyID             string
 	Timeout           time.Time
 	HawkID            string
 	HawkKey           string
@@ -87,6 +93,8 @@ type FFSyncSession struct {
 	SessionToken      []byte
 	KeyA              []byte
 	KeyB              []byte
+	AccessToken       string
+	RefreshToken      string
 	UserId            string
 	APIEndpoint       string
 	HawkID            string
@@ -108,6 +116,8 @@ type sessionJson struct {
 	SessionToken string          `json:"sessionToken"`
 	KeyA         string          `json:"keyA"`
 	KeyB         string          `json:"keyB"`
+	AccessToken  string          `json:"accessToken"`
+	RefreshToken string          `json:"refreshToken"`
 	UserId       string          `json:"userID"`
 	Hawk         sessionHawkJson `json:"hawk"`
 	Timeout      int64           `json:"timeout"`
@@ -122,25 +132,29 @@ func (s LoginSession) Extend(ka []byte, kb []byte) KeyedSession {
 	}
 }
 
-func (e KeyedSession) Extend(bid string, t0 time.Time, dur time.Duration) BrowserIdSession {
-	return BrowserIdSession{
+func (e KeyedSession) Extend(accToken string, refreshToken string, keyID string, t0 time.Time, dur time.Duration) OAuthSession {
+	return OAuthSession{
 		UserId:       e.UserId,
 		SessionToken: e.SessionToken,
 		KeyA:         e.KeyA,
 		KeyB:         e.KeyB,
-		BrowserID:    bid,
+		AccessToken:  accToken,
+		RefreshToken: refreshToken,
+		KeyID:        keyID,
 		CertTime:     t0,
 		CertDuration: dur,
 	}
 }
 
-func (e BrowserIdSession) Extend(cred HawkCredentials, hawkTimeout time.Time) HawkSession {
+func (e OAuthSession) Extend(cred HawkCredentials, hawkTimeout time.Time) HawkSession {
 	return HawkSession{
 		UserId:            e.UserId,
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
-		BrowserID:         e.BrowserID,
+		AccessToken:       e.AccessToken,
+		RefreshToken:      e.RefreshToken,
+		KeyID:             e.KeyID,
 		Timeout:           timeext.Min(e.CertTime.Add(e.CertDuration), hawkTimeout),
 		HawkID:            cred.HawkID,
 		HawkKey:           cred.HawkKey,
@@ -155,7 +169,9 @@ func (e HawkSession) Extend(keys map[string]KeyBundle) CryptoSession {
 		SessionToken:      e.SessionToken,
 		KeyA:              e.KeyA,
 		KeyB:              e.KeyB,
-		BrowserID:         e.BrowserID,
+		AccessToken:       e.AccessToken,
+		RefreshToken:      e.RefreshToken,
+		KeyID:             e.KeyID,
 		Timeout:           e.Timeout,
 		HawkID:            e.HawkID,
 		HawkKey:           e.HawkKey,
@@ -184,6 +200,8 @@ func (s CryptoSession) Reduce() FFSyncSession {
 		SessionToken:      s.SessionToken,
 		KeyA:              s.KeyA,
 		KeyB:              s.KeyB,
+		AccessToken:       s.AccessToken,
+		RefreshToken:      s.RefreshToken,
 		UserId:            s.UserId,
 		APIEndpoint:       s.APIEndpoint,
 		HawkID:            s.HawkID,
@@ -206,6 +224,8 @@ func (s FFSyncSession) Save(path string) error {
 		SessionToken: hex.EncodeToString(s.SessionToken),
 		KeyA:         hex.EncodeToString(s.KeyA),
 		KeyB:         hex.EncodeToString(s.KeyB),
+		AccessToken:  s.AccessToken,
+		RefreshToken: s.RefreshToken,
 		UserId:       s.UserId,
 		Timeout:      s.Timeout.UnixMicro(),
 		Hawk: sessionHawkJson{
@@ -291,16 +311,24 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 			return FFSyncSession{}, errorx.Decorate(err, "failed to decode bulkKeys['"+k+"'][1]")
 		}
 
-		if err != nil {
-			return FFSyncSession{}, errorx.Decorate(err, "failed to unmarshal session file (BulkKeys)")
-		}
-
 		bulkkeys[k] = KeyBundle{EncryptionKey: ec, HMACKey: hc}
+	}
+
+	accessToken := sj.AccessToken
+	if accessToken == "" {
+		return FFSyncSession{}, errorx.InternalError.New("failed to load session: AccessToken is empty")
+	}
+
+	refreshToken := sj.RefreshToken
+	if refreshToken == "" {
+		return FFSyncSession{}, errorx.InternalError.New("failed to load session: RefreshToken is empty")
 	}
 
 	ctx.PrintVerboseKV("SessionToken", sessionToken)
 	ctx.PrintVerboseKV("KeyA", keya)
 	ctx.PrintVerboseKV("KeyB", keyb)
+	ctx.PrintVerboseKV("AccessToken", accessToken)
+	ctx.PrintVerboseKV("RefreshToken", refreshToken)
 	ctx.PrintVerboseKV("UserId", sj.UserId)
 	ctx.PrintVerboseKV("HawkAPIEndpoint", sj.Hawk.APIEndpoint)
 	ctx.PrintVerboseKV("HawkID", sj.Hawk.ID)
@@ -316,6 +344,8 @@ func LoadSession(ctx *cli.FFSContext, path string) (FFSyncSession, error) {
 		SessionToken:      sessionToken,
 		KeyA:              keya,
 		KeyB:              keyb,
+		AccessToken:       accessToken,
+		RefreshToken:      refreshToken,
 		UserId:            sj.UserId,
 		APIEndpoint:       sj.Hawk.APIEndpoint,
 		HawkID:            sj.Hawk.ID,
