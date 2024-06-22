@@ -64,7 +64,7 @@ func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 }
 
 func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, SessionVerification, error) {
-	resp, stretchpwd, err := f.makeLoginRequest(ctx, email, password, stretchPassword(email, password))
+	resp, stretchpwd, err := f.makeLoginRequest(ctx, email, password, stretchPassword(email, password), false)
 	if err != nil {
 		return LoginSession{}, "", err
 	}
@@ -135,7 +135,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	}, VerificationNone, nil
 }
 
-func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password string, stretchpwd []byte) (loginResponseSchema, []byte, error) {
+func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password string, stretchpwd []byte, is120Retry bool) (loginResponseSchema, []byte, error) {
 	ctx.PrintVerboseKV("StretchPW", stretchpwd)
 
 	authPW, err := deriveKey(stretchpwd, "authPW", 32)
@@ -190,9 +190,9 @@ func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password 
 
 		// If the email used to stretch the password is different from sync server, the server throws a 400 error
 		// with message "Incorrect email case". The response json contains the correct email for stretching the password
-		if rawResp.StatusCode == 400 && errResp.ErrNo == 120 {
+		if rawResp.StatusCode == 400 && errResp.ErrNo == 120 && !is120Retry {
 			ctx.PrintVerbose("Using " + errResp.Email + " for stretch password and retrying login")
-			return f.makeLoginRequest(ctx, email, password, stretchPassword(errResp.Email, password))
+			return f.makeLoginRequest(ctx, email, password, stretchPassword(errResp.Email, password), true)
 		}
 
 		if len(string(respBodyRaw)) > 1 {
