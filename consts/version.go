@@ -6,7 +6,7 @@ import (
 	"runtime/debug"
 )
 
-const FFSCLIENT_VERSION = "1.7.0"
+const FFSCLIENT_VERSION = "1.8.0"
 
 type BuildInfo struct {
 	VCS         *string
