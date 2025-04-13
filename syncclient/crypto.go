@@ -10,12 +10,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"ffsyncclient/cli"
+	"io"
+	"strings"
+
 	"github.com/joomcode/errorx"
 	"github.com/zenazn/pkcs7pad"
 	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"
-	"io"
 )
 
 func stretchPassword(email string, password string) []byte {
@@ -132,7 +134,7 @@ func removePadding(ctx *cli.FFSContext, data []byte, blocksize int) []byte {
 	}
 	pi01 := len(data) - pi00
 
-	if pi01 >= 0 && data[pi01] == '}' {
+	if pi01 >= 0 && data[pi01] == '}' && !strings.ContainsAny(string(data[pi01+1:]), "}]") {
 		// well-formed JSON payload
 		return data[:pi01+1]
 	}
