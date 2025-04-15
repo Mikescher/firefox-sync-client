@@ -14,6 +14,11 @@ func UnmarshalPasswords(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 	result := make([]PasswordRecord, 0, len(records))
 
 	for _, v := range records {
+		if isAnonDeleted(v) {
+			ctx.PrintVerbose(fmt.Sprintf("Record %s is deleted and no longer has any real payload - must skip", v.ID))
+			continue
+		}
+
 		var jsonschema PasswordPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
@@ -57,6 +62,11 @@ func UnmarshalBookmarks(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 	result := make([]BookmarkRecord, 0, len(records))
 
 	for _, v := range records {
+		if isAnonDeleted(v) {
+			ctx.PrintVerbose(fmt.Sprintf("Record %s is deleted and no longer has any real payload - must skip", v.ID))
+			continue
+		}
+
 		var jsonschema BookmarkPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
@@ -100,6 +110,11 @@ func UnmarshalForms(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors bo
 	result := make([]FormRecord, 0, len(records))
 
 	for _, v := range records {
+		if isAnonDeleted(v) {
+			ctx.PrintVerbose(fmt.Sprintf("Record %s is deleted and no longer has any real payload - must skip", v.ID))
+			continue
+		}
+
 		var jsonschema FormPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
@@ -143,6 +158,11 @@ func UnmarshalHistories(ctx *cli.FFSContext, records []Record, ignoreSchemaError
 	result := make([]HistoryRecord, 0, len(records))
 
 	for _, v := range records {
+		if isAnonDeleted(v) {
+			ctx.PrintVerbose(fmt.Sprintf("Record %s is deleted and no longer has any real payload - must skip", v.ID))
+			continue
+		}
+
 		var jsonschema HistoryPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
@@ -186,6 +206,11 @@ func UnmarshalTabs(ctx *cli.FFSContext, records []Record, ignoreSchemaErrors boo
 	result := make([]TabClientRecord, 0, len(records))
 
 	for _, v := range records {
+		if isAnonDeleted(v) {
+			ctx.PrintVerbose(fmt.Sprintf("Record %s is deleted and no longer has any real payload - must skip", v.ID))
+			continue
+		}
+
 		var jsonschema TabPayloadSchema
 		err := json.Unmarshal(v.DecodedData, &jsonschema)
 		err = checkIdFallthrough(err, v.ID, jsonschema.ID)
@@ -233,6 +258,37 @@ func checkIdFallthrough(err error, id1 string, id2 string) error {
 		return fferr.UnmarshalConsistency.New("cannot unmarshal, inner ID <> outer ID")
 	}
 	return nil
+}
+
+// isAnonDeleted returns true if (and-only-if) r contains a single json field deleted:true
+// aka `{"deleted":true}`
+// these are fully deleted records, which no longer contain any data, and are only here for deletion-syncing
+func isAnonDeleted(r Record) bool {
+	var jsonschema map[string]any
+	err := json.Unmarshal(r.DecodedData, &jsonschema)
+	if err != nil {
+		return false
+	}
+
+	if len(jsonschema) != 1 {
+		return false
+	}
+
+	delAny, ok := jsonschema["deleted"]
+	if !ok {
+		return false
+	}
+
+	del, ok := delAny.(bool)
+	if !ok {
+		return false
+	}
+
+	if !del {
+		return false
+	}
+
+	return true
 }
 
 func fmtPass(pw string, showPW bool) string {
