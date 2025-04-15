@@ -11,7 +11,6 @@ import (
 	"encoding/hex"
 	"ffsyncclient/cli"
 	"io"
-	"strings"
 
 	"github.com/joomcode/errorx"
 	"github.com/zenazn/pkcs7pad"
