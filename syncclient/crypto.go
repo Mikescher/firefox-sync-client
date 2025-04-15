@@ -10,12 +10,14 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"ffsyncclient/cli"
+	"io"
+	"strings"
+
 	"github.com/joomcode/errorx"
 	"github.com/zenazn/pkcs7pad"
 	"gogs.mikescher.com/BlackForestBytes/goext/langext"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"
-	"io"
 )
 
 func stretchPassword(email string, password string) []byte {
@@ -115,56 +117,72 @@ func decryptPayload(ctx *cli.FFSContext, rawciphertext string, rawiv string, raw
 }
 
 func removePadding(ctx *cli.FFSContext, data []byte, blocksize int) []byte {
-	// this is a weird amount of guesswork?, I can't find any spec how the data must be padded
+	// If data is padded (with PKCS#7) we add bytes until len(data) is a multiple of blocksize
+	// the added bytes equal the amount of added bytes
+	// see https://commons.wikimedia.org/wiki/File:Padding_en.png
 
+	// Trivial case - no data, no padding
 	if len(data) == 0 {
 		return data
 	}
 
+	// data-length is not a multiple of blocksize
+	// This means teh data is not padded (should not really be possible?)
+	// Anyway - just return the plain data - we will probably fail later...
 	if len(data)%blocksize != 0 {
-		// not padded ???
+		ctx.PrintVerbose("Failed to determine padding (invalid data len), return raw data")
 		return data
 	}
 
-	pi00 := len(data) % blocksize
-	if pi00 == 0 {
-		pi00 = blocksize
-	}
-	pi01 := len(data) - pi00
+	pkcsPadLen := int(data[len(data)-1])
+	lastBlock := data[len(data)-blocksize:]
 
-	if pi01 >= 0 && data[pi01] == '}' {
-		// well-formed JSON payload
-		return data[:pi01+1]
-	}
-
-	if data[len(data)-1] == '}' {
-		// well-formed JSON payload without padding ?!?
-		return data
-	}
-
-	if c := data[len(data)-1]; int(c) <= blocksize {
-		//PKCS7 padded payload
-		allpad := true
-		for i := 0; i < int(c); i++ {
-			if data[len(data)-1-i] != c {
-				allpad = false
+	if pkcsPadLen == blocksize {
+		//PKCS#7 padded payload - whole last block is padding
+		padOkay := true
+		for i := 0; i < pkcsPadLen; i++ {
+			if data[len(data)-1-i] != byte(pkcsPadLen) {
+				padOkay = false
 			}
 		}
-		if allpad {
-			return data[:len(data)-int(c)]
+		if padOkay {
+			// The whole last block is padding - simply remove it
+			return data[:len(data)-pkcsPadLen]
+		} else {
+			// invalid padding?
+			// the last byte should determine the amount of padding
+			// and the padding should then fill the last {x} bytes with {x}
+			ctx.PrintVerbose("Failed to determine padding, return raw data")
+			ctx.PrintVerbose("Last data-block: " + hex.EncodeToString(lastBlock))
+			return data
 		}
+	} else if pkcsPadLen < blocksize {
+		//PKCS#7 padded payload - last block is partially padded
+		padOkay := true
+		for i := 0; i < pkcsPadLen; i++ {
+			if data[len(data)-1-i] != byte(pkcsPadLen) {
+				padOkay = false
+			}
+		}
+		if padOkay {
+			// Remove the last {pkcsPadLen} bytes - they are padding
+			return data[:len(data)-pkcsPadLen]
+		} else {
+			// invalid padding?
+			// the last byte should determine the amount of padding
+			// and the padding should then fill the last {x} bytes with {x}
+			ctx.PrintVerbose("Failed to determine padding, return raw data")
+			ctx.PrintVerbose("Last data-block: " + hex.EncodeToString(lastBlock))
+			return data
+		}
+	} else {
+		// invalid padding?
+		// the last byte should determine the amount of padding - and that should never be more than the blocksize
+
+		ctx.PrintVerbose("Failed to determine padding, return raw data")
+		ctx.PrintVerbose("Last data-block: " + hex.EncodeToString(lastBlock))
+		return data
 	}
-
-	eot := bytes.LastIndexByte(data, '}')
-	if eot >= 0 && len(data)-eot-1 <= blocksize {
-		// well-formed JSON payload
-		return data[:eot+1]
-	}
-
-	ctx.PrintVerbose("Failed to determine padding, return raw data")
-
-	// idk, just return data
-	return data
 }
 
 func encryptPayload(ctx *cli.FFSContext, plaintext string, key KeyBundle) (string, string, string, error) {
