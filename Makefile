@@ -24,7 +24,7 @@ package:
 	#   - Commit
 	#
 	# Funny oneliner:
-	# $> make package && sleep 20s && \
+	# $> make package && read -p 'Press Enter to continue...' && \
 	#    echo ">>> package-push-aur-git" && make package-push-aur-git && \
 	#    echo ">>> package-push-aur-bin" && make package-push-aur-bin && \
 	#    echo ">>> package-push-homebrew" && make package-push-homebrew && \
