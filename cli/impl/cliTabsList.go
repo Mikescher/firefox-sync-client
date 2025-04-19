@@ -62,7 +62,7 @@ func (a *CLIArgumentsTabsList) FullHelp() []string {
 		"",
 		"List synchronized tabs from clients",
 		"",
-		"If --ignore-schema-errors is not supplied the programm returns with exitcode [0] if any record in the tabs collection has invalid data. Otherwise we simply skip that record.",
+		"If --ignore-schema-errors is not supplied the programm returns with exitcode [60] if any record in the tabs collection has invalid data. Otherwise we simply skip that record.",
 		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
 		"But because the underlying records are grouped together by client, this limits the number of returned clients and not directly the number of returned records",
 		"By default we skip entries with {deleted:true}, this can be changed with --include-deleted and --only-deleted.",

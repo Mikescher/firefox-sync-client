@@ -66,7 +66,7 @@ func (a *CLIArgumentsHistoryList) FullHelp() []string {
 		"",
 		"List HTML-Form autocomplete suggestions",
 		"",
-		"If --ignore-schema-errors is not supplied the programm returns with exitcode [0] if any record in the history collection has invalid data. Otherwise we simply skip that record.",
+		"If --ignore-schema-errors is not supplied the programm returns with exitcode [60] if any record in the history collection has invalid data. Otherwise we simply skip that record.",
 		"If --after is specified (as an RFC 3339 timestamp) only records with an newer update-time are returned.",
 		"If --sort is specified the resulting records are sorted by ( newest | index | oldest ).",
 		"The --limit and --offset parameter can be used to get a subset of the result and paginate through it.",
