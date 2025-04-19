@@ -23,6 +23,15 @@ package:
 	#   - Create tag
 	#   - Commit
 	#
+	# Funny oneliner:
+	# $> make package && sleep 20s && \
+	#    echo ">>> package-push-aur-git" && make package-push-aur-git && \
+	#    echo ">>> package-push-aur-bin" && make package-push-aur-bin && \
+	#    echo ">>> package-push-homebrew" && make package-push-homebrew && \
+	#    echo ">>> package-push-chocolatey" && make package-push-chocolatey && \
+	#    echo ">>> push" && git push && \
+	#    echo ">>> DONE."
+	#
 
 	go clean
 	rm -rf ./_out/*
