@@ -4,7 +4,7 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsCollectionsDelete struct {

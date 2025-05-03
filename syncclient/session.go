@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"ffsyncclient/cli"
 	"github.com/joomcode/errorx"
-	"gogs.mikescher.com/BlackForestBytes/goext/timeext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/timeext"
 	"os"
 	"path/filepath"
 	"time"

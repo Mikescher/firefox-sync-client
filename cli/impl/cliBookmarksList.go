@@ -8,7 +8,7 @@ import (
 	"ffsyncclient/models"
 	"ffsyncclient/netscapefmt"
 	"fmt"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"strconv"
 	"strings"
 	"time"

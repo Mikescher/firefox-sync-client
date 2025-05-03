@@ -5,7 +5,7 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"github.com/joomcode/errorx"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsFormsDelete struct {

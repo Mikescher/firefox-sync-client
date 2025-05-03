@@ -3,7 +3,7 @@ package models
 import (
 	"encoding/xml"
 	"ffsyncclient/cli"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"time"
 )
 

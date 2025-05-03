@@ -8,7 +8,7 @@ import (
 	"ffsyncclient/models"
 	"fmt"
 	"github.com/joomcode/errorx"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"strconv"
 	"time"
 )

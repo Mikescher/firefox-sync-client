@@ -5,7 +5,7 @@ import (
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
 	"ffsyncclient/syncclient"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsTokenRefresh struct {

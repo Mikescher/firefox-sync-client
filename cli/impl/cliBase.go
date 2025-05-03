@@ -7,7 +7,7 @@ import (
 	"ffsyncclient/syncclient"
 	"fmt"
 	"github.com/joomcode/errorx"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"os"
 )
 

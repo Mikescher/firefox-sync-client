@@ -14,7 +14,7 @@ import (
 
 	"github.com/joomcode/errorx"
 	"github.com/zenazn/pkcs7pad"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"golang.org/x/crypto/hkdf"
 	"golang.org/x/crypto/pbkdf2"
 )

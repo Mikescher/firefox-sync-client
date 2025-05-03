@@ -4,8 +4,8 @@ import (
 	"ffsyncclient/cli"
 	"ffsyncclient/consts"
 	"ffsyncclient/fferr"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
-	"gogs.mikescher.com/BlackForestBytes/goext/mathext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/mathext"
 	"strings"
 )
 

@@ -2,7 +2,7 @@ package cli
 
 import (
 	"ffsyncclient/consts"
-	"gogs.mikescher.com/BlackForestBytes/goext/termext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/termext"
 	"golang.org/x/term"
 	"os"
 	"time"

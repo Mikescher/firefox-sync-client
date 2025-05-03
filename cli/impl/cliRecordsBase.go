@@ -3,7 +3,7 @@ package impl
 import (
 	"encoding/json"
 	"ffsyncclient/cli"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsRecordsUtil struct {

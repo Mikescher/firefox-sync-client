@@ -6,7 +6,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/models"
 	"fmt"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsTabsBase struct {

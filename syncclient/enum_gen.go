@@ -2,8 +2,8 @@
 
 package syncclient
 
-import "gogs.mikescher.com/BlackForestBytes/goext/langext"
-import "gogs.mikescher.com/BlackForestBytes/goext/enums"
+import "git.blackforestbytes.com/BlackForestBytes/goext/langext"
+import "git.blackforestbytes.com/BlackForestBytes/goext/enums"
 
 const ChecksumEnumGenerator = "774bdc3948d5d1d7896e177657a062c54996141bc9e4ec9192ecd6351bf4107d" // GoExtVersion: 0.0.475
 

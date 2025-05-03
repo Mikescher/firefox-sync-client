@@ -2,7 +2,7 @@ package consts
 
 import (
 	"errors"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"runtime/debug"
 )
 

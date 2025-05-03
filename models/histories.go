@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"ffsyncclient/cli"
 	"fmt"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"time"
 )
 

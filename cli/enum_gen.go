@@ -2,8 +2,8 @@
 
 package cli
 
-import "gogs.mikescher.com/BlackForestBytes/goext/langext"
-import "gogs.mikescher.com/BlackForestBytes/goext/enums"
+import "git.blackforestbytes.com/BlackForestBytes/goext/langext"
+import "git.blackforestbytes.com/BlackForestBytes/goext/enums"
 
 const ChecksumEnumGenerator = "34f0a5719e249d761d8c47f0c12a25c54a34b38d3a7cafb32c29e2c6eab42472" // GoExtVersion: 0.0.475
 

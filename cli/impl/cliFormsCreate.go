@@ -7,7 +7,7 @@ import (
 	"ffsyncclient/fferr"
 	"ffsyncclient/models"
 	"github.com/joomcode/errorx"
-	"gogs.mikescher.com/BlackForestBytes/goext/langext"
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
 type CLIArgumentsFormsCreate struct {

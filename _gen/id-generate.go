@@ -1,7 +1,7 @@
 package main
 
 import (
-	"gogs.mikescher.com/BlackForestBytes/goext/bfcodegen"
+	"git.blackforestbytes.com/BlackForestBytes/goext/bfcodegen"
 	"os"
 )
 
