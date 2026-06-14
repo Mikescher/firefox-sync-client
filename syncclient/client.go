@@ -198,7 +198,7 @@ func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password 
 		// which yields a cookie for .firefox.com covering all Firefox subdomains.
 		if rawResp.StatusCode == 406 && !isFastlyRetry {
 			ctx.PrintVerbose("Detected Fastly anti-bot challenge on login endpoint, solving...")
-			cookie, cErr := solveFastlyChallenge("https://accounts.firefox.com/")
+			cookie, cErr := solveFastlyChallenge(ctx, &f.client, fastlyChallengePageURL)
 			if cErr != nil {
 				return loginResponseSchema{}, nil, errorx.Decorate(cErr, "failed to solve Fastly anti-bot challenge")
 			}
@@ -1170,7 +1170,7 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 	// Handle Fastly anti-bot challenge: 406, retry once after solving.
 	if rawResp.StatusCode == 406 && len(fastlyRetry) == 0 {
 		ctx.PrintVerbose("Detected Fastly anti-bot challenge, solving...")
-		cookie, cErr := solveFastlyChallenge("https://accounts.firefox.com/")
+		cookie, cErr := solveFastlyChallenge(ctx, &f.client, fastlyChallengePageURL)
 		if cErr != nil {
 			return nil, errorx.Decorate(cErr, "failed to solve Fastly anti-bot challenge")
 		}

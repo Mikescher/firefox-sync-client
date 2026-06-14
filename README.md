@@ -10,6 +10,7 @@ Table of contents
 =================
    * [Installation](#installation)
    * [Usage](#usage)
+   * [Fastly anti-bot challenges](#fastly-anti-bot-challenges)
    * [Examples](#example)
       * [Get all bookmarks as json](#get-all-bookmarks-as-json)
       * [Get all bookmarks in netscape format (same as firefox bookmarks.html)](#get-all-bookmarks-in-netscape-format-same-as-firefox-bookmarkshtml)
@@ -56,6 +57,14 @@ You can get an overview of all commands by invoking `ffsclient --help` and a com
 
 For some collections (like `bookmarks`, `passwords`, `forms`, `history`, `tabs`) are specific subcommands available.
 For example, you can list your bookmarks with `ffsclient bookmarks list`, this is preferable to the general `ffsclient list {collection}` call, because the bookmark-data in the records gets directly parsed and properly displayed.
+
+Fastly anti-bot challenges
+==========================
+
+The Mozilla servers are protected by a Fastly anti-bot system that occasionally answers requests with a JavaScript proof-of-work challenge (HTTP 406) instead of the expected response.
+ffsclient automatically detects this, solves the challenge, and retries the request transparently, so in most cases you should not notice it.
+
+This mechanism reverse-engineers an undocumented, third-party challenge protocol. Mozilla/Fastly can change it at any time, which would silently break the solver and cause requests to fail again. If you run into persistent `406` errors, this is the most likely cause — please open an PR.
 
 Example
 =======

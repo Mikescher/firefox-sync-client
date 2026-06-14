@@ -7,13 +7,14 @@ package syncclient
 // - GET challenge script → extract token
 // - POST PAT check (optional Apple PAT, always fails gracefully)
 // - POST fst-post-back to receive PoW + clientmetrics challenges
-// - Solve PoW: brute-force 2-char suffix such that SHA256(base+suffix) == target
+// - Solve PoW: brute-force a short suffix such that SHA256(base+suffix) == target
 // - POST solutions → server sets _fs_ch_cp_* cookie (valid ~1 hour)
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"ffsyncclient/cli"
 	"fmt"
 	"io"
 	"net/http"
@@ -23,6 +24,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+)
+
+// The challenge is always solved against accounts.firefox.com: it serves the
+// Fastly challenge page and yields a _fs_ch_cp_* cookie scoped to .firefox.com,
+// which covers api.accounts.firefox.com and the other Firefox subdomains.
+const fastlyChallengePageURL = "https://accounts.firefox.com/"
+
+const fastlyUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
+
+// fastlyMaxPOWSuffixLen bounds the brute-force; live challenges use a 2-char suffix.
+const fastlyMaxPOWSuffixLen = 3
+
+var (
+	fastlyScriptIDRegex = regexp.MustCompile(`_fs-ch-([^/'"?\s]+)`)
+	fastlyTokenRegex    = regexp.MustCompile(`init\(\[[^\]]*\],\s*"([^"]+)"`)
 )
 
 // ── cookie cache ────────────────────────────────────────────────────────────
@@ -62,19 +78,36 @@ func (c *fastlyCookieCache) set(domain, value string) {
 
 // ── PoW solver ───────────────────────────────────────────────────────────────
 
-func solvePOW(base, targetHex string) string {
+// solvePOW finds a suffix (up to fastlyMaxPOWSuffixLen chars) such that
+// SHA256(base+suffix) hex-encodes to targetHex. Returns false if none is found.
+func solvePOW(base, targetHex string) (string, bool) {
 	const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 	target := strings.ToLower(targetHex)
-	for i := 0; i < len(charset); i++ {
-		for j := 0; j < len(charset); j++ {
-			suffix := string([]byte{charset[i], charset[j]})
-			sum := sha256.Sum256([]byte(base + suffix))
+	for length := 1; length <= fastlyMaxPOWSuffixLen; length++ {
+		idx := make([]int, length)
+		for {
+			suffix := make([]byte, length)
+			for k := range idx {
+				suffix[k] = charset[idx[k]]
+			}
+			sum := sha256.Sum256([]byte(base + string(suffix)))
 			if hex.EncodeToString(sum[:]) == target {
-				return suffix
+				return string(suffix), true
+			}
+			p := length - 1
+			for ; p >= 0; p-- {
+				idx[p]++
+				if idx[p] < len(charset) {
+					break
+				}
+				idx[p] = 0
+			}
+			if p < 0 {
+				break
 			}
 		}
 	}
-	return ""
+	return "", false
 }
 
 // ── challenge protocol types ─────────────────────────────────────────────────
@@ -97,7 +130,7 @@ type fastlyPostBackResponse struct {
 	Status     string                 `json:"status"`
 }
 
-type fastlyPOWResponse struct {
+type fastlyPOWSolution struct {
 	Ty      string `json:"ty"`
 	Base    string `json:"base"`
 	Answer  string `json:"answer"`
@@ -105,12 +138,12 @@ type fastlyPOWResponse struct {
 	Expires string `json:"expires"`
 }
 
-type fastlyClientMetricsResponse struct {
+type fastlyClientMetrics struct {
 	Ty                 string `json:"ty"`
 	Webdriver          bool   `json:"webdriver"`
 	BotDetectionResult struct {
-		BotDetected bool        `json:"bot_detected"`
-		BotKind     interface{} `json:"bot_kind"`
+		BotDetected bool `json:"bot_detected"`
+		BotKind     any  `json:"bot_kind"`
 	} `json:"bot_detection_result"`
 	BrowserMetrics struct {
 		ClientData string `json:"client_data"`
@@ -118,8 +151,8 @@ type fastlyClientMetricsResponse struct {
 	} `json:"browser_metrics"`
 }
 
-func newFastlyClientMetrics() fastlyClientMetricsResponse {
-	r := fastlyClientMetricsResponse{
+func newFastlyClientMetrics() fastlyClientMetrics {
+	r := fastlyClientMetrics{
 		Ty:        "clientmetrics",
 		Webdriver: false,
 	}
@@ -133,10 +166,8 @@ func newFastlyClientMetrics() fastlyClientMetricsResponse {
 
 // ── HTTP helpers ─────────────────────────────────────────────────────────────
 
-const fastlyUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
-
-func fastlyGetScriptID(client *http.Client, targetURL string) (string, error) {
-	req, err := http.NewRequest("GET", targetURL, nil)
+func fastlyGetScriptID(ctx *cli.FFSContext, client *http.Client, targetURL string) (string, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", targetURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -151,17 +182,16 @@ func fastlyGetScriptID(client *http.Client, targetURL string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	re := regexp.MustCompile(`_fs-ch-([^/'"?\s]+)`)
-	m := re.FindSubmatch(body)
+	m := fastlyScriptIDRegex.FindSubmatch(body)
 	if len(m) < 2 {
-		return "", fmt.Errorf("Fastly challenge script ID not found in response")
+		return "", fmt.Errorf("fastly challenge script ID not found in response")
 	}
 	return string(m[1]), nil
 }
 
-func fastlyGetToken(client *http.Client, domain, scriptID, referer string) (string, error) {
+func fastlyGetToken(ctx *cli.FFSContext, client *http.Client, domain, scriptID, referer string) (string, error) {
 	scriptURL := fmt.Sprintf("%s/_fs-ch-%s/script.js?reload=true", domain, scriptID)
-	req, err := http.NewRequest("GET", scriptURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", scriptURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -177,17 +207,16 @@ func fastlyGetToken(client *http.Client, domain, scriptID, referer string) (stri
 	if err != nil {
 		return "", err
 	}
-	re := regexp.MustCompile(`init\(\[[^\]]*\],\s*"([^"]+)"`)
-	m := re.FindSubmatch(body)
+	m := fastlyTokenRegex.FindSubmatch(body)
 	if len(m) < 2 {
-		return "", fmt.Errorf("Fastly challenge token not found in script")
+		return "", fmt.Errorf("fastly challenge token not found in script")
 	}
 	return string(m[1]), nil
 }
 
-func fastlyDoPAT(client *http.Client, domain, scriptID, token, referer string) {
+func fastlyDoPAT(ctx *cli.FFSContext, client *http.Client, domain, scriptID, token, referer string) {
 	patURL := fmt.Sprintf("%s/_fs-ch-%s/pat?token=%s", domain, scriptID, token)
-	req, err := http.NewRequest("POST", patURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "POST", patURL, nil)
 	if err != nil {
 		return
 	}
@@ -202,7 +231,7 @@ func fastlyDoPAT(client *http.Client, domain, scriptID, token, referer string) {
 	resp.Body.Close()
 }
 
-func fastlyPostBack(client *http.Client, domain, scriptID, referer, token string, data any) (*fastlyPostBackResponse, error) {
+func fastlyPostBack(ctx *cli.FFSContext, client *http.Client, domain, scriptID, referer, token string, data any) (*fastlyPostBackResponse, error) {
 	postURL := fmt.Sprintf("%s/_fs-ch-%s/fst-post-back", domain, scriptID)
 
 	buf := &strings.Builder{}
@@ -217,7 +246,7 @@ func fastlyPostBack(client *http.Client, domain, scriptID, referer, token string
 	tokenJSON, _ := json.Marshal(token)
 	payload := fmt.Sprintf(`{"token":%s,"data":%s}`, string(tokenJSON), dataJSON)
 
-	req, err := http.NewRequest("POST", postURL, strings.NewReader(payload))
+	req, err := http.NewRequestWithContext(ctx, "POST", postURL, strings.NewReader(payload))
 	if err != nil {
 		return nil, err
 	}
@@ -239,13 +268,17 @@ func fastlyPostBack(client *http.Client, domain, scriptID, referer, token string
 	return &result, nil
 }
 
-func fastlySolveChallenges(challenges *fastlyPostBackResponse) []any {
+func fastlySolveChallenges(ctx *cli.FFSContext, challenges *fastlyPostBackResponse) ([]any, error) {
 	results := make([]any, 0, len(challenges.Challenges))
 	for _, chl := range challenges.Challenges {
 		switch chl.Type {
 		case "pow":
-			answer := solvePOW(chl.Data.Base, chl.Data.Hash)
-			results = append(results, fastlyPOWResponse{
+			answer, ok := solvePOW(chl.Data.Base, chl.Data.Hash)
+			if !ok {
+				return nil, fmt.Errorf("failed to solve proof-of-work challenge (base=%q, hash=%q)", chl.Data.Base, chl.Data.Hash)
+			}
+			ctx.PrintVerbose("Solved Fastly proof-of-work challenge")
+			results = append(results, fastlyPOWSolution{
 				Ty:      "pow",
 				Base:    chl.Data.Base,
 				Answer:  answer,
@@ -256,19 +289,21 @@ func fastlySolveChallenges(challenges *fastlyPostBackResponse) []any {
 			results = append(results, newFastlyClientMetrics())
 		}
 	}
-	return results
+	return results, nil
 }
 
 // solveFastlyChallenge performs the full Fastly non-interactive PoW challenge
-// flow for targetURL and returns the resulting cookie as "name=value".
-func solveFastlyChallenge(targetURL string) (string, error) {
+// flow for targetURL and returns the resulting cookie as "name=value". It reuses
+// the base client's transport (proxy/TLS settings) but with its own cookie jar.
+func solveFastlyChallenge(ctx *cli.FFSContext, base *http.Client, targetURL string) (string, error) {
 	jar, err := cookiejar.New(nil)
 	if err != nil {
 		return "", err
 	}
 	client := &http.Client{
-		Timeout: 30 * time.Second,
-		Jar:     jar,
+		Transport: base.Transport,
+		Timeout:   base.Timeout,
+		Jar:       jar,
 	}
 
 	parsedURL, err := url.Parse(targetURL)
@@ -277,27 +312,31 @@ func solveFastlyChallenge(targetURL string) (string, error) {
 	}
 	domain := parsedURL.Scheme + "://" + parsedURL.Host
 
-	scriptID, err := fastlyGetScriptID(client, targetURL)
+	ctx.PrintVerbose("Fetching Fastly challenge script ID from " + targetURL)
+	scriptID, err := fastlyGetScriptID(ctx, client, targetURL)
 	if err != nil {
 		return "", fmt.Errorf("fastly challenge: %w", err)
 	}
 
-	token, err := fastlyGetToken(client, domain, scriptID, targetURL)
+	token, err := fastlyGetToken(ctx, client, domain, scriptID, targetURL)
 	if err != nil {
 		return "", fmt.Errorf("fastly challenge: %w", err)
 	}
 
-	fastlyDoPAT(client, domain, scriptID, token, targetURL)
+	fastlyDoPAT(ctx, client, domain, scriptID, token, targetURL)
 
-	initResp, err := fastlyPostBack(client, domain, scriptID, targetURL, token, []map[string]string{{"ty": "pat", "auth": ""}})
+	initResp, err := fastlyPostBack(ctx, client, domain, scriptID, targetURL, token, []map[string]string{{"ty": "pat", "auth": ""}})
 	if err != nil {
 		return "", fmt.Errorf("fastly challenge: initial post-back: %w", err)
 	}
 
 	token = initResp.Token
-	solutions := fastlySolveChallenges(initResp)
+	solutions, err := fastlySolveChallenges(ctx, initResp)
+	if err != nil {
+		return "", fmt.Errorf("fastly challenge: %w", err)
+	}
 
-	finalResp, err := fastlyPostBack(client, domain, scriptID, targetURL, token, solutions)
+	finalResp, err := fastlyPostBack(ctx, client, domain, scriptID, targetURL, token, solutions)
 	if err != nil {
 		return "", fmt.Errorf("fastly challenge: solution post-back: %w", err)
 	}
@@ -312,6 +351,7 @@ func solveFastlyChallenge(targetURL string) (string, error) {
 	}
 	// Fallback to any cookie set (older Fastly versions may use different naming)
 	if cookies := jar.Cookies(parsedURL); len(cookies) > 0 {
+		ctx.PrintVerbose(fmt.Sprintf("No _fs_ch_cp_* cookie found, falling back to cookie %q", cookies[0].Name))
 		return cookies[0].Name + "=" + cookies[0].Value, nil
 	}
 	return "", fmt.Errorf("fastly challenge: no cookie found after successful solve")
