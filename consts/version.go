@@ -2,11 +2,12 @@ package consts
 
 import (
 	"errors"
-	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 	"runtime/debug"
+
+	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
-const FFSCLIENT_VERSION = "1.9.0"
+const FFSCLIENT_VERSION = "1.10.0"
 
 type BuildInfo struct {
 	VCS         *string
