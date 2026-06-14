@@ -25,8 +25,9 @@ import (
 )
 
 type FxAClient struct {
-	authURL string
-	client  http.Client
+	authURL     string
+	client      http.Client
+	cookieCache *fastlyCookieCache
 }
 
 func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
@@ -58,13 +59,14 @@ func NewFxAClient(ctx *cli.FFSContext, serverurl string) *FxAClient {
 	}
 
 	return &FxAClient{
-		authURL: serverurl,
-		client:  c,
+		authURL:     serverurl,
+		client:      c,
+		cookieCache: newFastlyCookieCache(),
 	}
 }
 
 func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (LoginSession, SessionVerification, error) {
-	resp, stretchpwd, err := f.makeLoginRequest(ctx, email, password, stretchPassword(email, password), false)
+	resp, stretchpwd, err := f.makeLoginRequest(ctx, email, password, stretchPassword(email, password), false, false)
 	if err != nil {
 		return LoginSession{}, "", err
 	}
@@ -138,7 +140,7 @@ func (f FxAClient) Login(ctx *cli.FFSContext, email string, password string) (Lo
 	}, VerificationNone, nil
 }
 
-func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password string, stretchpwd []byte, is120Retry bool) (loginResponseSchema, []byte, error) {
+func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password string, stretchpwd []byte, is120Retry bool, isFastlyRetry bool) (loginResponseSchema, []byte, error) {
 	ctx.PrintVerboseKV("StretchPW", stretchpwd)
 
 	authPW, err := deriveKey(stretchpwd, "authPW", 32)
@@ -170,6 +172,12 @@ func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password 
 	req.Header.Add("User-Agent", "Mozilla/5.0 (Mobile; Firefox Accounts; rv:1.0) firefox-sync-client/"+consts.FFSCLIENT_VERSION+"golang/1.19")
 	req.Header.Add("Accept", "*/*")
 
+	// Inject cached Fastly anti-bot cookie if available
+	if cookie, ok := f.cookieCache.get("firefox.com"); ok {
+		ctx.PrintVerbose("Injecting cached Fastly anti-bot cookie")
+		req.Header.Add("Cookie", cookie)
+	}
+
 	ctx.PrintVerbose("Request session from " + requestURL)
 
 	ctx.PrintVerbose(fmt.Sprintf("Do HTTP Request [%s]::%s", "POST", requestURL))
@@ -185,6 +193,19 @@ func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password 
 	}
 
 	if rawResp.StatusCode != 200 {
+		// Handle Fastly anti-bot challenge: api.accounts.firefox.com returns 406 with empty body
+		// when the _fs_ch_cp_* cookie is missing. Solve on accounts.firefox.com (challenge page)
+		// which yields a cookie for .firefox.com covering all Firefox subdomains.
+		if rawResp.StatusCode == 406 && !isFastlyRetry {
+			ctx.PrintVerbose("Detected Fastly anti-bot challenge on login endpoint, solving...")
+			cookie, cErr := solveFastlyChallenge("https://accounts.firefox.com/")
+			if cErr != nil {
+				return loginResponseSchema{}, nil, errorx.Decorate(cErr, "failed to solve Fastly anti-bot challenge")
+			}
+			f.cookieCache.set("firefox.com", cookie)
+			return f.makeLoginRequest(ctx, email, password, stretchpwd, is120Retry, true)
+		}
+
 		var errResp loginErrorResponseSchema
 		err = json.Unmarshal(respBodyRaw, &errResp)
 		if err != nil {
@@ -195,7 +216,7 @@ func (f FxAClient) makeLoginRequest(ctx *cli.FFSContext, email string, password 
 		// with message "Incorrect email case". The response json contains the correct email for stretching the password
 		if rawResp.StatusCode == 400 && errResp.ErrNo == 120 && !is120Retry {
 			ctx.PrintVerbose("Using " + errResp.Email + " for stretch password and retrying login")
-			return f.makeLoginRequest(ctx, email, password, stretchPassword(errResp.Email, password), true)
+			return f.makeLoginRequest(ctx, email, password, stretchPassword(errResp.Email, password), true, false)
 		}
 
 		if len(string(respBodyRaw)) > 1 {
@@ -1090,7 +1111,7 @@ func (f FxAClient) request(ctx *cli.FFSContext, session FFSyncSession, method st
 	return res, nil
 }
 
-func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string, url string, body string, contentType string) (string, error), method string, requestURL string, body any) ([]byte, error) {
+func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string, url string, body string, contentType string) (string, error), method string, requestURL string, body any, fastlyRetry ...bool) ([]byte, error) {
 	strBody := ""
 	var bodyReader io.Reader = nil
 	if body != nil {
@@ -1111,6 +1132,14 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 	req.Header.Add("User-Agent", "firefox-sync-client/"+consts.FFSCLIENT_VERSION)
 	req.Header.Add("Accept", "application/json")
 	req.Header.Add("Host", req.URL.Host)
+
+	// Inject cached Fastly anti-bot cookie for *.firefox.com requests
+	if strings.HasSuffix(req.URL.Host, ".firefox.com") || req.URL.Host == "firefox.com" {
+		if cookie, ok := f.cookieCache.get("firefox.com"); ok {
+			ctx.PrintVerbose("Injecting cached Fastly anti-bot cookie")
+			req.Header.Add("Cookie", cookie)
+		}
+	}
 
 	hawkAuth, err := auth(req.Method, req.URL.String(), strBody, "application/json")
 	if err != nil {
@@ -1136,6 +1165,18 @@ func (f FxAClient) internalRequest(ctx *cli.FFSContext, auth func(method string,
 	respBodyRaw, err := io.ReadAll(rawResp.Body)
 	if err != nil {
 		return nil, errorx.Decorate(err, "failed to read response-body request")
+	}
+
+	// Handle Fastly anti-bot challenge: 406, retry once after solving.
+	if rawResp.StatusCode == 406 && len(fastlyRetry) == 0 {
+		ctx.PrintVerbose("Detected Fastly anti-bot challenge, solving...")
+		cookie, cErr := solveFastlyChallenge("https://accounts.firefox.com/")
+		if cErr != nil {
+			return nil, errorx.Decorate(cErr, "failed to solve Fastly anti-bot challenge")
+		}
+		f.cookieCache.set("firefox.com", cookie)
+		ctx.PrintVerbose("Retrying request with Fastly cookie...")
+		return f.internalRequest(ctx, auth, method, requestURL, body, true)
 	}
 
 	ctx.PrintVerbose(fmt.Sprintf("Request returned statuscode %d", rawResp.StatusCode))
