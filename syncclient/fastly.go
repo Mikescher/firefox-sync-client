@@ -33,6 +33,8 @@ const fastlyChallengePageURL = "https://accounts.firefox.com/"
 
 const fastlyUA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36"
 
+const fastlyAcceptLanguage = "en-US,en;q=0.9"
+
 // fastlyMaxPOWSuffixLen bounds the brute-force; live challenges use a 2-char suffix.
 const fastlyMaxPOWSuffixLen = 3
 
@@ -172,6 +174,7 @@ func fastlyGetScriptID(ctx *cli.FFSContext, client *http.Client, targetURL strin
 		return "", err
 	}
 	req.Header.Set("User-Agent", fastlyUA)
+	req.Header.Set("Accept-Language", fastlyAcceptLanguage)
 	req.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -196,6 +199,7 @@ func fastlyGetToken(ctx *cli.FFSContext, client *http.Client, domain, scriptID, 
 		return "", err
 	}
 	req.Header.Set("User-Agent", fastlyUA)
+	req.Header.Set("Accept-Language", fastlyAcceptLanguage)
 	req.Header.Set("Referer", referer)
 	req.Header.Set("Accept", "*/*")
 	resp, err := client.Do(req)
@@ -206,6 +210,9 @@ func fastlyGetToken(ctx *cli.FFSContext, client *http.Client, domain, scriptID, 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
+	}
+	if strings.Contains(string(body), `"ty":"captcha"`) {
+		return "", fmt.Errorf("interactive captcha requested, which is not supported")
 	}
 	m := fastlyTokenRegex.FindSubmatch(body)
 	if len(m) < 2 {
@@ -221,6 +228,7 @@ func fastlyDoPAT(ctx *cli.FFSContext, client *http.Client, domain, scriptID, tok
 		return
 	}
 	req.Header.Set("User-Agent", fastlyUA)
+	req.Header.Set("Accept-Language", fastlyAcceptLanguage)
 	req.Header.Set("Referer", referer)
 	req.Header.Set("Accept", "text/plain")
 	req.Header.Set("Content-Type", "application/json")
@@ -251,6 +259,7 @@ func fastlyPostBack(ctx *cli.FFSContext, client *http.Client, domain, scriptID, 
 		return nil, err
 	}
 	req.Header.Set("User-Agent", fastlyUA)
+	req.Header.Set("Accept-Language", fastlyAcceptLanguage)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Referer", referer)
@@ -260,6 +269,9 @@ func fastlyPostBack(ctx *cli.FFSContext, client *http.Client, domain, scriptID, 
 		return nil, err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("post-back returned statuscode %d", resp.StatusCode)
+	}
 
 	var result fastlyPostBackResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
