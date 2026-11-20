@@ -7,7 +7,7 @@ import (
 	"git.blackforestbytes.com/BlackForestBytes/goext/langext"
 )
 
-const FFSCLIENT_VERSION = "1.10.0"
+const FFSCLIENT_VERSION = "1.11.0"
 
 type BuildInfo struct {
 	VCS         *string
